@@ -323,11 +323,47 @@ CPhysical::PpprCreate
 	}
 
 	ULONG ulOuterChild = (*exprhdl.Pgexpr())[0]->UlId();
-	ULONG ulInnerChild = (*exprhdl.Pgexpr())[1]->UlId();
-	ULONG ulScalarChild = (*exprhdl.Pgexpr())[2]->UlId();
+    ULONG ulInnerChild = -1;
+    ULONG ulScalarChild = -1;
+    switch (exprhdl.Pop()->Eopid())
+    {
+        case EopPhysicalMotionBroadcast:
+        case EopPhysicalMotionRandom:
+        case EopPhysicalMotionGather:
+        case EopPhysicalMotionHashDistribute:
+        case EopPhysicalMotionRoutedDistribute:
+        {
+            break;
+        }
+        case EopPhysicalInnerHashJoin:
+        case EopPhysicalInnerNLJoin:
+        case EopPhysicalLeftOuterHashJoin:
+        case EopPhysicalLeftSemiHashJoin:
+        case EopPhysicalLeftAntiSemiHashJoin:
+        case EopPhysicalLeftAntiSemiHashJoinNotIn:
+        case EopPhysicalInnerIndexNLJoin:
+        case EopPhysicalCorrelatedInnerNLJoin:
+        case EopPhysicalLeftOuterNLJoin:
+        case EopPhysicalCorrelatedLeftOuterNLJoin:
+        case EopPhysicalLeftSemiNLJoin:
+        case EopPhysicalCorrelatedLeftSemiNLJoin:
+        case EopPhysicalCorrelatedInLeftSemiNLJoin:
+        case EopPhysicalLeftAntiSemiNLJoin:
+        case EopPhysicalCorrelatedLeftAntiSemiNLJoin:
+        case EopPhysicalLeftAntiSemiNLJoinNotIn:
+        case EopPhysicalCorrelatedNotInLeftAntiSemiNLJoin:
+        {
+            ulInnerChild = (*exprhdl.Pgexpr())[1]->UlId();
+            ulScalarChild = (*exprhdl.Pgexpr())[2]->UlId();
+			break;
+        }
+        default:
+            return NULL;
+    }
+    pppsRequired->AddRef();
+    return  GPOS_NEW(pmp) CPartPropReq(pppsRequired, ulChildIndex, ulOuterChild, ulInnerChild, ulScalarChild);
 
-	pppsRequired->AddRef();
-	return  GPOS_NEW(pmp) CPartPropReq(pppsRequired, ulChildIndex, ulOuterChild, ulInnerChild, ulScalarChild);
+
 }
 
 //---------------------------------------------------------------------------
