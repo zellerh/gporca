@@ -47,7 +47,8 @@ CPhysical::CPhysical
 	COperator(pmp),
 	m_phmrcr(NULL),
 	m_pdrgpulpOptReqsExpanded(NULL),
-	m_ulTotalOptRequests(1) // by default, an operator creates a single request for each property
+	m_ulTotalOptRequests(1), // by default, an operator creates a single request for each property
+    m_phmpp(NULL)
 {
 	GPOS_ASSERT(NULL != pmp);
 
@@ -59,6 +60,7 @@ CPhysical::CPhysical
 	UpdateOptRequests(0 /*ulPropIndex*/, 1 /*ulOrderReqs*/);
 
 	m_phmrcr = GPOS_NEW(pmp) HMReqdColsRequest(pmp);
+    m_phmpp = GPOS_NEW(pmp) HMPartPropagation(pmp);
 }
 
 

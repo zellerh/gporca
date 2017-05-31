@@ -35,9 +35,7 @@ CPhysicalJoin::CPhysicalJoin
 	)
 	:
 	CPhysical(pmp)
-{
-	m_phmpp = GPOS_NEW(pmp) HMPartPropagation(pmp);
-}
+{}
 
 
 //---------------------------------------------------------------------------
@@ -49,9 +47,7 @@ CPhysicalJoin::CPhysicalJoin
 //
 //---------------------------------------------------------------------------
 CPhysicalJoin::~CPhysicalJoin()
-{
-	m_phmpp->Release();
-}
+{}
 
 
 //---------------------------------------------------------------------------
