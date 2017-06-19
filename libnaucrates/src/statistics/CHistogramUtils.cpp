@@ -667,5 +667,28 @@ CHistogramUtils::FNewStatsColumn
 	return (ULONG_MAX == ulColId || ulColId != ulColIdLast);
 }
 
+BOOL
+CHistogramUtils::FNDVBasedCardEstimationDatum(IDatum *pdatum)
+{
+       IMDType::ETypeInfo eti = pdatum->Eti();
+       if (IMDType::EtiInt2 == eti ||
+		   IMDType::EtiInt4 == eti ||
+           IMDType::EtiInt8 == eti ||
+           IMDType::EtiBool == eti ||
+           IMDType::EtiOid == eti )
+       {
+               return false;
+       }
+       if (pdatum->FStatsMappable())
+       {
+               IDatumStatisticsMappable *pdatumMappable = (IDatumStatisticsMappable *) pdatum;
+
+               if (pdatumMappable->FHasStatsDoubleMapping())
+               {
+                       return false;
+               }
+       }
+       return true;
+}
 // EOF
 

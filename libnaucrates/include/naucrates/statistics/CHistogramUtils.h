@@ -157,6 +157,10 @@ namespace gpnaucrates
 			static
 			BOOL FNDVBasedCardEstimation(const CHistogram *phist);
 
+			// check if the cardinality estimation needs to be done based on NDV alone
+			static
+			BOOL FNDVBasedCardEstimationDatum(IDatum *pdatum);
+
 	}; // class CHistogramUtils
 }
 

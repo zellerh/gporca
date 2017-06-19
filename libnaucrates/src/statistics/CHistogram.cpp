@@ -200,7 +200,14 @@ CHistogram::PhistLessThanOrLessThanEqual
 
 	CDouble dDistinctRemain = 0.0;
 	CDouble dFreqRemain = 0.0;
-	if (CStatistics::DEpsilon < m_dDistinctRemain * DDefaultSelectivity)
+
+	if(CHistogramUtils::FNDVBasedCardEstimationDatum(ppoint->Pdatum()))
+	{
+
+		dDistinctRemain = m_dDistinctRemain;
+		dFreqRemain = m_dFreqRemain;
+	}
+	else if (CStatistics::DEpsilon < m_dDistinctRemain * DDefaultSelectivity)
 	{
 		dDistinctRemain = m_dDistinctRemain * DDefaultSelectivity;
 		dFreqRemain = m_dFreqRemain * DDefaultSelectivity;
@@ -477,7 +484,14 @@ CHistogram::PhistGreaterThanOrGreaterThanEqual
 
 	CDouble dDistinctRemain = 0.0;
 	CDouble dFreqRemain = 0.0;
-	if (CStatistics::DEpsilon < m_dDistinctRemain * DDefaultSelectivity)
+
+	if(CHistogramUtils::FNDVBasedCardEstimationDatum(ppoint->Pdatum()))
+	{
+
+		dDistinctRemain = m_dDistinctRemain;
+		dFreqRemain = m_dFreqRemain;
+	}
+	else if (CStatistics::DEpsilon < m_dDistinctRemain * DDefaultSelectivity)
 	{
 		dDistinctRemain = m_dDistinctRemain * DDefaultSelectivity;
 		dFreqRemain = m_dFreqRemain * DDefaultSelectivity;
