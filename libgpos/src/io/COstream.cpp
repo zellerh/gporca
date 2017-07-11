@@ -237,7 +237,7 @@ COstream::operator <<
 	const DOUBLE d
 	)
 {
-	return AppendFormat(GPOS_WSZ_LIT("%f"), d);
+	return AppendFormat(GPOS_WSZ_LIT("%g"), d);
 }
 
 

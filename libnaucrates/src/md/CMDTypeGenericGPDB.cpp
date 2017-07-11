@@ -415,9 +415,9 @@ CMDTypeGenericGPDB::Pdxldatum
 			{&CMDIdGPDB::m_mdidFloat4 , &CMDTypeGenericGPDB::PdxldatumStatsDoubleMappable},
 			{&CMDIdGPDB::m_mdidFloat8 , &CMDTypeGenericGPDB::PdxldatumStatsDoubleMappable},
 			// has lint mapping
-			{&CMDIdGPDB::m_mdidBPChar  , &CMDTypeGenericGPDB::PdxldatumStatsLintMappable},
-			{&CMDIdGPDB::m_mdidVarChar  , &CMDTypeGenericGPDB::PdxldatumStatsLintMappable},
-			{&CMDIdGPDB::m_mdidText  , &CMDTypeGenericGPDB::PdxldatumStatsLintMappable},
+			{&CMDIdGPDB::m_mdidBPChar  , &CMDTypeGenericGPDB::PdxldatumStatsDoubleMappable},
+			{&CMDIdGPDB::m_mdidVarChar  , &CMDTypeGenericGPDB::PdxldatumStatsDoubleMappable},
+			{&CMDIdGPDB::m_mdidText  , &CMDTypeGenericGPDB::PdxldatumStatsDoubleMappable},
 			{&CMDIdGPDB::m_mdidCash  , &CMDTypeGenericGPDB::PdxldatumStatsLintMappable},
 			// time-related types
 			{&CMDIdGPDB::m_mdidDate , &CMDTypeGenericGPDB::PdxldatumStatsDoubleMappable},
@@ -562,10 +562,7 @@ CMDTypeGenericGPDB::FHasByteLintMapping
 	const IMDId *pmdid
 	)
 {
-	return pmdid->FEquals(&CMDIdGPDB::m_mdidBPChar)
-			|| pmdid->FEquals(&CMDIdGPDB::m_mdidVarChar)
-			|| pmdid->FEquals(&CMDIdGPDB::m_mdidText)
-			|| pmdid->FEquals(&CMDIdGPDB::m_mdidCash);
+	return pmdid->FEquals(&CMDIdGPDB::m_mdidCash);
 }
 
 //---------------------------------------------------------------------------
@@ -585,6 +582,7 @@ CMDTypeGenericGPDB::FHasByteDoubleMapping
 	return pmdid->FEquals(&CMDIdGPDB::m_mdidNumeric)
 			|| pmdid->FEquals(&CMDIdGPDB::m_mdidFloat4)
 			|| pmdid->FEquals(&CMDIdGPDB::m_mdidFloat8)
+			|| FTextRelatedType(pmdid)
 			|| FTimeRelatedType(pmdid)
 			|| FNetworkRelatedType(pmdid);
 }
@@ -629,6 +627,19 @@ CMDTypeGenericGPDB::FNetworkRelatedType
 	return pmdid->FEquals(&CMDIdGPDB::m_mdidInet)
 			|| pmdid->FEquals(&CMDIdGPDB::m_mdidCidr)
 			|| pmdid->FEquals(&CMDIdGPDB::m_mdidMacaddr);
+}
+
+
+// is this a text-related type
+BOOL
+CMDTypeGenericGPDB::FTextRelatedType
+	(
+	const IMDId *pmdid
+	)
+{
+	return pmdid->FEquals(&CMDIdGPDB::m_mdidBPChar)
+			|| pmdid->FEquals(&CMDIdGPDB::m_mdidVarChar)
+			|| pmdid->FEquals(&CMDIdGPDB::m_mdidText);
 }
 
 #ifdef GPOS_DEBUG

@@ -360,6 +360,9 @@ namespace gpmd
 			static
 			BOOL FNetworkRelatedType(const IMDId *pmdid);
 
+			// is this a text-related type
+			static
+			BOOL FTextRelatedType(const IMDId *pmdid);
 	};
 }
 

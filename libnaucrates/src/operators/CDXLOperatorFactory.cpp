@@ -2884,9 +2884,9 @@ CDXLOperatorFactory::Pdxldatum
 		{CMDIdGPDB::m_mdidBool.OidObjectId() , &CDXLOperatorFactory::PdxldatumBool},
 		{CMDIdGPDB::m_mdidOid.OidObjectId() , &CDXLOperatorFactory::PdxldatumOid},
 		// types with long int mapping
-		{CMDIdGPDB::m_mdidBPChar.OidObjectId(), &CDXLOperatorFactory::PdxldatumStatsLintMappable},
-		{CMDIdGPDB::m_mdidVarChar.OidObjectId(), &CDXLOperatorFactory::PdxldatumStatsLintMappable},
-		{CMDIdGPDB::m_mdidText.OidObjectId(), &CDXLOperatorFactory::PdxldatumStatsLintMappable},
+		{CMDIdGPDB::m_mdidBPChar.OidObjectId(), &CDXLOperatorFactory::PdxldatumStatsDoubleMappable},
+		{CMDIdGPDB::m_mdidVarChar.OidObjectId(), &CDXLOperatorFactory::PdxldatumStatsDoubleMappable},
+		{CMDIdGPDB::m_mdidText.OidObjectId(), &CDXLOperatorFactory::PdxldatumStatsDoubleMappable},
 		{CMDIdGPDB::m_mdidCash.OidObjectId(), &CDXLOperatorFactory::PdxldatumStatsLintMappable},
 		// non-integer numeric types
 		{CMDIdGPDB::m_mdidNumeric.OidObjectId(), &CDXLOperatorFactory::PdxldatumStatsDoubleMappable},
