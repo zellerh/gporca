@@ -1,0 +1,269 @@
+groups: []
+resources:
+- name: xerces_patch
+  type: git
+  source:
+    branch: test-auto-commit
+    paths:
+    - patches/xerces-c-gpdb.patch
+    - concourse/xerces-c
+    - concourse/package_tarball.bash
+    uri: https://github.com/bhuvnesh2703/gporca
+- name: regression_out
+  type: s3
+  source:
+    access_key_id: {{access_key_id}}
+    bucket: {{bucket-name}}
+    region_name: us-west-2
+    secret_access_key: {{secret_access_key}}
+    versioned_file: regression.out
+- name: regression_diffs
+  type: s3
+  source:
+    access_key_id: {{access_key_id}}
+    bucket: {{bucket-name}}
+    region_name: us-west-2
+    secret_access_key: {{secret_access_key}}
+    versioned_file: regression.diffs
+- name: bin_gpdb_centos6
+  type: s3
+  source:
+    access_key_id: {{access_key_id}}
+    bucket: {{bucket-name}}
+    region_name: us-west-2
+    secret_access_key: {{secret_access_key}}
+    versioned_file: bin_gpdb_with_orca_centos6.tar.gz
+- name: bin_orca_centos5_debug
+  type: s3
+  source:
+    access_key_id: {{access_key_id}}
+    bucket: {{bucket-name}}
+    region_name: us-west-2
+    secret_access_key: {{secret_access_key}}
+    versioned_file: bin_orca_centos5_debug.tar.gz
+- name: orca_test_trigger_branch
+  type: git
+  source:
+    branch: test-auto-commit
+    paths:
+    - concourse/test_commit_files/*.txt
+    uri: https://github.com/bhuvnesh2703/gporca
+- name: gpdb_ref
+  type: git
+  source:
+    branch: test-autocommit
+    ignore_paths:
+    - README.md
+    - LICENSE
+    - COPYRIGHT
+    - .gitignore
+    uri: https://github.com/bhuvnesh2703/gpdb
+- name: bin_orca_centos5_release
+  type: s3
+  source:
+    access_key_id: {{access_key_id}}
+    bucket: {{bucket-name}}
+    region_name: us-west-2
+    secret_access_key: {{secret_access_key}}
+    versioned_file: bin_orca_centos5_release.tar.gz
+- name: gpdb_tarball
+  type: s3
+  source:
+    access_key_id: {{access_key_id}}
+    bucket: {{bucket-name}}
+    region_name: us-west-2
+    secret_access_key: {{secret_access_key}}
+    versioned_file: gpdb_src.tar.gz
+- name: bin_xerces_centos5
+  type: s3
+  source:
+    access_key_id: {{access_key_id}}
+    bucket: {{bucket-name}}
+    region_name: us-west-2
+    secret_access_key: {{secret_access_key}}
+    versioned_file: bin_xerces_centos5.tar.gz
+- name: orca_tarball
+  type: s3
+  source:
+    access_key_id: {{access_key_id}}
+    bucket: {{bucket-name}}
+    region_name: us-west-2
+    secret_access_key: {{secret_access_key}}
+    versioned_file: orca_src.tar.gz
+resource_types: []
+jobs:
+- name: xerces_centos5
+  max_in_flight: 2
+  plan:
+  - get: xerces_patch
+    trigger: true
+  - aggregate:
+    - task: build
+      file: xerces_patch/concourse/xerces-c/build_xerces_centos5.yml
+  - aggregate:
+    - task: package_tarball
+      file: xerces_patch/concourse/xerces-c/package_tarball_centos5.yml
+  - aggregate:
+    - put: bin_xerces_centos5
+      params:
+        from: package_tarball_centos5/bin_xerces_centos5.tar.gz
+- name: orca_centos5_release
+  max_in_flight: 2
+  plan:
+  - get: orca
+    resource: orca_test_trigger_branch
+    passed:
+    - clone_repos_to_test
+  - get: bin_xerces_centos5
+    passed:
+    - xerces_centos5
+  - get: orca_tarball
+    passed:
+    - clone_repos_to_test
+    trigger: true
+  - task: untar_build_and_test_release
+    file: orca/concourse/untar_build_and_test_centos5_release.yml
+  - aggregate:
+    - put: bin_orca_centos5_release
+      params:
+        from: package_tarball_release/bin_orca_centos5_release.tar.gz
+- name: orca_centos5_debug
+  max_in_flight: 2
+  plan:
+  - get: orca
+    resource: orca_test_trigger_branch
+    passed:
+    - clone_repos_to_test
+  - get: bin_xerces_centos5
+    passed:
+    - xerces_centos5
+  - get: orca_tarball
+    passed:
+    - clone_repos_to_test
+    trigger: true
+  - task: untar_build_and_test_debug
+    file: orca/concourse/untar_build_and_test_centos5_debug.yml
+  - aggregate:
+    - put: bin_orca_centos5_debug
+      params:
+        from: package_tarball_debug/bin_orca_centos5_debug.tar.gz
+- name: build_gpdb
+  plan:
+  - aggregate:
+    - get: bin_orca
+      passed:
+      - orca_centos5_release
+      trigger: true
+      resource: bin_orca_centos5_release
+      params:
+        globs:
+        - bin_orca_centos5_release.tar.gz
+    - get: bin_orca_centos5_debug
+      passed:
+      - orca_centos5_debug
+    - get: bin_xerces
+      passed:
+      - xerces_centos5
+      resource: bin_xerces_centos5
+    - get: gpdb_tarball
+      passed:
+      - clone_repos_to_test
+    - get: gpdb
+      resource: gpdb_ref
+  - task: build_with_orca
+    file: gpdb/concourse/tasks/untar_build_with_orca.yml
+  - aggregate:
+    - put: bin_gpdb_centos6
+      params:
+        from: package_tarball/bin_gpdb.tar.gz
+- name: gpdb_icg_with_orca
+  plan:
+  - aggregate:
+    - get: bin_orca
+      passed:
+      - build_gpdb
+      trigger: true
+      resource: bin_orca_centos5_release
+      params:
+        globs:
+        - bin_orca_centos5_release.tar.gz
+    - get: bin_xerces
+      passed:
+      - build_gpdb
+      resource: bin_xerces_centos5
+    - get: bin_gpdb
+      passed:
+      - build_gpdb
+      trigger: true
+      resource: bin_gpdb_centos6
+    - get: gpdb_src
+      passed:
+      - build_gpdb
+      resource: gpdb_ref
+      params:
+        submodules: none
+  - task: icg_with_orca
+    file: gpdb_src/concourse/tasks/test_with_orca.yml
+    on_failure:
+      aggregate:
+      - put: regression_diffs
+        params:
+          file: icg_output/regression.diffs
+      - put: regression_out
+        params:
+          file: icg_output/regression.out
+    timeout: 64m
+- name: clone_repos_to_test
+  max_in_flight: 2
+  plan:
+  - get: orca
+    trigger: true
+    resource: orca_test_trigger_branch
+  - aggregate:
+    - task: clone_repos_to_test
+      file: orca/concourse/clone_remote_repo.yml
+  - aggregate:
+    - put: orca_tarball
+      params:
+        from: package_tarball/orca_src.tar.gz
+  - aggregate:
+    - put: gpdb_tarball
+      params:
+        from: package_tarball/gpdb_src.tar.gz
+- name: gpdb_icg_with_planner
+  plan:
+  - aggregate:
+    - get: bin_orca
+      passed:
+      - build_gpdb
+      trigger: true
+      resource: bin_orca_centos5_release
+      params:
+        globs:
+        - bin_orca_centos5_release.tar.gz
+    - get: bin_xerces
+      passed:
+      - build_gpdb
+      resource: bin_xerces_centos5
+    - get: bin_gpdb
+      passed:
+      - build_gpdb
+      trigger: true
+      resource: bin_gpdb_centos6
+    - get: gpdb_src
+      passed:
+      - build_gpdb
+      resource: gpdb_ref
+      params:
+        submodules: none
+  - task: icg_with_planner
+    file: gpdb_src/concourse/tasks/test_with_planner.yml
+    on_failure:
+      aggregate:
+      - put: regression_diffs
+        params:
+          file: icg_output/regression.diffs
+      - put: regression_out
+        params:
+          file: icg_output/regression.out
+    timeout: 64m
