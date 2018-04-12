@@ -226,6 +226,12 @@ namespace gpopt
 			{
 				return IDefaultTypeModifier;
 			}
+
+			virtual
+			OID OidCollation() const
+			{
+				return OidInvalidCollation;
+			}
 			
 	}; // class CScalar
 

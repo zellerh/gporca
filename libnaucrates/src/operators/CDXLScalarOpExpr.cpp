@@ -22,25 +22,19 @@ using namespace gpopt;
 using namespace gpdxl;
 using namespace gpmd;
 
-//---------------------------------------------------------------------------
-//	@function:
-//		CDXLScalarOpExpr::CDXLScalarOpExpr
-//
-//	@doc:
-//		Constructs a scalar OpExpr node
-//
-//---------------------------------------------------------------------------
 CDXLScalarOpExpr::CDXLScalarOpExpr
-	(
+(
 	IMemoryPool *pmp,
 	IMDId *pmdidOp,
 	IMDId *pmdidReturnType,
+	OID oidCollation,
 	const CWStringConst *pstrOpName
 	)
 	:
 	CDXLScalar(pmp),
 	m_pmdid(pmdidOp),
 	m_pmdidReturnType(pmdidReturnType),
+	m_oidCollation(oidCollation),
 	m_pstrOpName(pstrOpName)
 {
 	GPOS_ASSERT(m_pmdid->FValid());
@@ -132,6 +126,12 @@ CDXLScalarOpExpr::PmdidReturnType() const
 	return m_pmdidReturnType;
 }
 
+OID
+CDXLScalarOpExpr::OidCollation() const
+{
+	return m_oidCollation;
+}
+
 //---------------------------------------------------------------------------
 //	@function:
 //		CDXLScalarOpExpr::FBoolean
@@ -181,7 +181,12 @@ CDXLScalarOpExpr::SerializeToDXL
 	{
 		m_pmdidReturnType->Serialize(pxmlser, CDXLTokens::PstrToken(EdxltokenOpType));
 	}
-	
+
+	if (OidInvalidCollation != OidCollation())
+	{
+		pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenCollation), OidCollation());
+	}
+
 	pdxln->SerializeChildrenToDXL(pxmlser);
 	pxmlser->CloseElement(CDXLTokens::PstrToken(EdxltokenNamespacePrefix), pstrElemName);
 

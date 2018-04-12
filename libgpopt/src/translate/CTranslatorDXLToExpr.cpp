@@ -1723,7 +1723,7 @@ CTranslatorDXLToExpr::PexprLogicalSeqPr
 			CName name(pdxlopPrEl->PmdnameAlias()->Pstr());
 
 			// generate a new column reference
-			CColRef *pcr = m_pcf->PcrCreate(pmdtype, popScalar->ITypeModifier(), OidInvalidCollation /* FIXME COLLATION */, name);
+			CColRef *pcr = m_pcf->PcrCreate(pmdtype, popScalar->ITypeModifier(), popScalar->OidCollation(), name);
 			CScalarProjectElement *popScPrEl = GPOS_NEW(m_pmp) CScalarProjectElement(m_pmp, pcr);
 
 			// store colid -> colref mapping
@@ -2728,6 +2728,8 @@ CTranslatorDXLToExpr::PexprScalarOp
 
 	IMDId *pmdid = pdxlop->Pmdid();
 	pmdid->AddRef();
+
+	OID oidCollation = pdxlop->OidCollation();
 	
 	IMDId *pmdidReturnType = pdxlop->PmdidReturnType(); 
 	if (NULL != pmdidReturnType)
@@ -2739,6 +2741,7 @@ CTranslatorDXLToExpr::PexprScalarOp
 										m_pmp,
 										pmdid,
 										pmdidReturnType,
+										oidCollation,
 										GPOS_NEW(m_pmp) CWStringConst(m_pmp, pdxlop->PstrScalarOpName()->Wsz())
 										);
 

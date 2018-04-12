@@ -2506,7 +2506,7 @@ CUtils::PexprAddProjection
 		// generate a computed column with scalar expression type
 		CScalar *popScalar = CScalar::PopConvert(pexprProjected->Pop());
 		const IMDType *pmdtype = pmda->Pmdtype(popScalar->PmdidType());
-		CColRef *pcr = pcf->PcrCreate(pmdtype, popScalar->ITypeModifier(), OidInvalidCollation /* FIXME COLLATION */);
+		CColRef *pcr = pcf->PcrCreate(pmdtype, popScalar->ITypeModifier(), popScalar->OidCollation());
 
 		pexprProjected->AddRef();
 		pdrgpexprPrjElem->Append(PexprScalarProjectElement(pmp, pcr, pexprProjected));

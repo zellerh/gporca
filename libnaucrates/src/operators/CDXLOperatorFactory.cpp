@@ -739,6 +739,8 @@ CDXLOperatorFactory::PdxlopOpExpr
 							EdxltokenScalarOpExpr
 							);
 
+	OID oidCollation = OidValueFromAttrs(pmm, attrs, EdxltokenCollation, EdxltokenScalarOpExpr, true, OidInvalidCollation);
+
 	IMDId *pmdidReturnType = NULL;
 	const XMLCh *xmlszReturnType = attrs.getValue(CDXLTokens::XmlstrToken(EdxltokenOpType));
 
@@ -751,7 +753,7 @@ CDXLOperatorFactory::PdxlopOpExpr
 	CWStringConst *pstrValueCopy = GPOS_NEW(pmp) CWStringConst(pmp, pstrValue->Wsz());
 	GPOS_DELETE(pstrValue);
 
-	return GPOS_NEW(pmp) CDXLScalarOpExpr(pmp, pmdidOpNo, pmdidReturnType, pstrValueCopy);
+	return GPOS_NEW(pmp) CDXLScalarOpExpr(pmp, pmdidOpNo, pmdidReturnType, oidCollation, pstrValueCopy);
 }
 
 

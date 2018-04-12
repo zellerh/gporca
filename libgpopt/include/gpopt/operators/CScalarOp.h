@@ -43,6 +43,8 @@ namespace gpopt
 
 			// return type id or NULL if it can be inferred from the metadata
 			IMDId *m_pmdidReturnType;
+
+			OID m_oidCollation;
 			
 			// scalar operator name
 			const CWStringConst *m_pstrOp;
@@ -60,8 +62,17 @@ namespace gpopt
 			CScalarOp(const CScalarOp &);
 
 		public:
-
 			// ctor
+			CScalarOp
+				(
+				IMemoryPool *pmp,
+				IMDId *pmdidOp,
+				IMDId *pmdidReturnType,
+				OID oidCollation,
+				const CWStringConst *pstrOp
+				);
+
+			// ctor for missing collation oid (for backwards compatibility)
 			CScalarOp
 				(
 				IMemoryPool *pmp,

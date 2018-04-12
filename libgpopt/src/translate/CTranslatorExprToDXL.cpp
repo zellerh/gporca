@@ -5890,7 +5890,8 @@ CTranslatorExprToDXL::PdxlnScOp
 		pmdidReturnType->AddRef();
 	}
 
-	CDXLNode *pdxlnOpExpr = GPOS_NEW(m_pmp) CDXLNode(m_pmp, GPOS_NEW(m_pmp) CDXLScalarOpExpr(m_pmp, pmdidOp, pmdidReturnType, pstrName));
+		CDXLNode *pdxlnOpExpr = GPOS_NEW(m_pmp) CDXLNode(m_pmp, GPOS_NEW(m_pmp) CDXLScalarOpExpr(m_pmp, pmdidOp, pmdidReturnType, OidInvalidCollation, pstrName));
+
 
 	TranslateScalarChildren(pexprOp, pdxlnOpExpr);
 

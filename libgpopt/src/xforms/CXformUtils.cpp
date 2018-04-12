@@ -1744,7 +1744,7 @@ CXformUtils::PexprAssertUpdateCardinality
 
 	CScalar *pop = CScalar::PopConvert(pexprCountStar->Pop());
 	const IMDType *pmdtype = pmda->Pmdtype(pop->PmdidType());
-	CColRef *pcrProjElem = pcf->PcrCreate(pmdtype, pop->ITypeModifier(), OidInvalidCollation /* FIXME COLLATION */);
+	CColRef *pcrProjElem = pcf->PcrCreate(pmdtype, pop->ITypeModifier(), pop->OidCollation());
 	 
 	CExpression *pexprProjElem = GPOS_NEW(pmp) CExpression
 									(
@@ -1935,7 +1935,7 @@ CXformUtils::AddMinAggs
 			CScalar *popMin = CScalar::PopConvert(pexprMinAgg->Pop());
 			
 			const IMDType *pmdtypeMin = pmda->Pmdtype(popMin->PmdidType());
-			pcrNew = pcf->PcrCreate(pmdtypeMin, popMin->ITypeModifier(), OidInvalidCollation /* FIXME COLLATION */);
+			pcrNew = pcf->PcrCreate(pmdtypeMin, popMin->ITypeModifier(), popMin->OidCollation());
 			CExpression *pexprProjElemMin = GPOS_NEW(pmp) CExpression
 											(
 											pmp,

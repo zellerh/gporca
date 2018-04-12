@@ -39,6 +39,8 @@ namespace gpdxl
 			// return type (or invalid if type can be infered from the metadata)
 			IMDId *m_pmdidReturnType;
 
+			OID m_oidCollation;
+
 			// operator name
 			const CWStringConst *m_pstrOpName;
 
@@ -46,12 +48,13 @@ namespace gpdxl
 			CDXLScalarOpExpr(const CDXLScalarOpExpr&);
 
 		public:
-			// ctor/dtor
+			// ctor
 			CDXLScalarOpExpr
 				(
 				IMemoryPool *pmp,
 				IMDId *pmdidOp,
 				IMDId *pmdidReturnType,
+				OID oidCollation,
 				const CWStringConst *pstrOpName
 				);
 
@@ -72,6 +75,8 @@ namespace gpdxl
 			
 			// operator return type
 			IMDId *PmdidReturnType() const;
+
+			OID OidCollation() const;
 
 			// serialize operator in DXL format
 			virtual
