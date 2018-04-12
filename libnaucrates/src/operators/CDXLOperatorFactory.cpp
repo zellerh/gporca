@@ -3204,7 +3204,17 @@ CDXLOperatorFactory::PdxldatumGeneric
 						IDefaultTypeModifier
 						);
 
-	return GPOS_NEW(pmp) CDXLDatumGeneric(pmp, pmdid, iTypeModifier, fConstByVal, fConstNull, pba, ulPbaLength);
+	OID oidCollation = OidValueFromAttrs
+						(
+						pmm,
+						attrs,
+						EdxltokenCollation,
+						EdxltokenScalarCast, /* FIXME COLLATION */ // what goes here?
+						true,
+						OidInvalidCollation
+						);
+
+	return GPOS_NEW(pmp) CDXLDatumGeneric(pmp, pmdid, iTypeModifier, oidCollation, fConstByVal, fConstNull, pba, ulPbaLength);
 }
 
 
@@ -3250,7 +3260,17 @@ CDXLOperatorFactory::PdxldatumStatsLintMappable
 						-1 /* default value */
 						);
 
-	return GPOS_NEW(pmp) CDXLDatumStatsLintMappable(pmp, pmdid, iTypeModifier, fConstByVal, fConstNull, pba, ulPbaLength, lValue);
+	OID oidCollation = OidValueFromAttrs
+			(
+					pmm,
+					attrs,
+					EdxltokenCollation,
+					EdxltokenScalarCast, /* FIXME COLLATION */ // what goes here?
+					true,
+					OidInvalidCollation
+			);
+
+	return GPOS_NEW(pmp) CDXLDatumStatsLintMappable(pmp, pmdid, iTypeModifier, oidCollation, fConstByVal, fConstNull, pba, ulPbaLength, lValue);
 }
 
 //---------------------------------------------------------------------------
@@ -3349,7 +3369,17 @@ CDXLOperatorFactory::PdxldatumStatsDoubleMappable
 						true,
 						-1 /* default value */
 						);
-	return GPOS_NEW(pmp) CDXLDatumStatsDoubleMappable(pmp, pmdid, iTypeModifier, fConstByVal, fConstNull, pba, ulPbaLength, dValue);
+
+	OID oidCollation = OidValueFromAttrs
+			(
+					pmm,
+					attrs,
+					EdxltokenCollation,
+					EdxltokenScalarCast, /* FIXME COLLATION */ // what goes here?
+					true,
+					OidInvalidCollation
+			);
+	return GPOS_NEW(pmp) CDXLDatumStatsDoubleMappable(pmp, pmdid, iTypeModifier, oidCollation, fConstByVal, fConstNull, pba, ulPbaLength, dValue);
 }
 
 //---------------------------------------------------------------------------
