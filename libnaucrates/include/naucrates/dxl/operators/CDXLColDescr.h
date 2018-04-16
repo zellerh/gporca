@@ -84,19 +84,6 @@ namespace gpdxl
 				BOOL fDropped,
 				ULONG ulWidth = ULONG_MAX
 				);
-
-			// ctor for invalid collation oid
-			CDXLColDescr
-					(
-					IMemoryPool *,
-					CMDName *,
-					ULONG ulId,
-					INT iAttno,
-					IMDId *pmdidType,
-					INT iTypeModifier,
-					BOOL fDropped,
-					ULONG ulWidth = ULONG_MAX
-					);
 			
 			//dtor
 			~CDXLColDescr();

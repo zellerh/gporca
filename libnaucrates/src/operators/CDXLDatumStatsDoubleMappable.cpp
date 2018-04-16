@@ -48,23 +48,6 @@ CDXLDatumStatsDoubleMappable::CDXLDatumStatsDoubleMappable
 {
 }
 
-// ctor for missing collation oid (ensure backwards-compatability)
-CDXLDatumStatsDoubleMappable::CDXLDatumStatsDoubleMappable
-		(
-		IMemoryPool *pmp,
-		IMDId *pmdidType,
-		INT iTypeModifier,
-		BOOL fByVal,
-		BOOL fNull,
-		BYTE *pba,
-		ULONG ulLength,
-		CDouble dValue
-		)
-		:
-		CDXLDatumGeneric(pmp, pmdidType, iTypeModifier, fByVal, fNull, pba, ulLength),
-		m_dValue(dValue)
-{
-}
 //---------------------------------------------------------------------------
 //	@function:
 //		CDXLDatumStatsDoubleMappable::Serialize

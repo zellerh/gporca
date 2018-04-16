@@ -51,30 +51,6 @@ CMDColumn::CMDColumn
 {
 }
 
-// ctor for invalid collation
-CMDColumn::CMDColumn
-		(
-		CMDName *pmdname,
-		INT iAttNo,
-		IMDId *pmdidType,
-		INT iTypeModifier,
-		BOOL fNullable,
-		BOOL fDropped,
-		CDXLNode *pdxnlDefaultValue,
-		ULONG ulLength
-		)
-		:
-		m_pmdname(pmdname),
-		m_iAttNo(iAttNo),
-		m_pmdidType(pmdidType),
-		m_iTypeModifier(iTypeModifier),
-		m_fNullable(fNullable),
-		m_fDropped(fDropped),
-		m_ulLength(ulLength),
-		m_pdxlnDefaultValue(pdxnlDefaultValue)
-{
-}
-
 //---------------------------------------------------------------------------
 //	@function:
 //		CMDColumn::~CMDColumn

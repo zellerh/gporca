@@ -66,18 +66,6 @@ namespace gpdxl
 				ULONG ulLength
 				);
 
-			// ctor for missing collation oid (ensure backwards-compatability)
-			CDXLDatumGeneric
-				(
-				IMemoryPool *pmp,
-				IMDId *pmdidType,
-				INT iTypeModifier,
-				BOOL fByVal,
-				BOOL fNull,
-				BYTE *pba,
-				ULONG ulLength
-				);
-
 			// dtor
 			virtual
 			~CDXLDatumGeneric();

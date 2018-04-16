@@ -76,16 +76,6 @@ namespace gpdxl
 				OID oidCollation
 				);
 
-			// ctor for invalid collation
-			CDXLColRef
-				(
-				IMemoryPool *pmp,
-				CMDName *pmdname,
-				ULONG ulId,
-				IMDId *pmdidType,
-				INT iTypeModifier
-				);
-
 			// dtor
 			~CDXLColRef();
 			

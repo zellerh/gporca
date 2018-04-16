@@ -44,25 +44,6 @@ CDXLColRef::CDXLColRef
 	GPOS_ASSERT(m_pmdidType->FValid());
 }
 
-// ctor for invalid collation
-CDXLColRef::CDXLColRef
-		(
-		IMemoryPool *pmp,
-		CMDName *pmdname,
-		ULONG ulId,
-		IMDId *pmdidType,
-		INT iTypeModifier
-		)
-		:
-		m_pmp(pmp),
-		m_pmdname(pmdname),
-		m_ulId(ulId),
-		m_pmdidType(pmdidType),
-		m_iTypeModifer(iTypeModifier)
-{
-	GPOS_ASSERT(m_pmdidType->FValid());
-}
-
 //---------------------------------------------------------------------------
 //	@function:
 //		CDXLColRef::~CDXLColRef

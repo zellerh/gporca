@@ -78,19 +78,6 @@ class CDatumGenericGPDB : public IDatumGeneric
 			CDouble dValue
 			);
 
-		// ctor for missing collation oid (ensure backwards-compatability)
-		CDatumGenericGPDB
-			(
-			IMemoryPool *pmp,
-			IMDId *pmdid,
-			INT iTypeModifier,
-			const void *pv,
-			ULONG ulSize,
-			BOOL fNull,
-			LINT lValue,
-			CDouble dValue
-			);
-
 		// dtor
 		virtual
 		~CDatumGenericGPDB();

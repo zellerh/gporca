@@ -297,21 +297,6 @@ namespace gpmd
 						CDouble dValue
 						);
 
-			// Pdxldatum for missing collation oid (ensure backwards-compatability)
-			static
-			CDXLDatum *Pdxldatum
-						(
-						IMemoryPool *pmp,
-						IMDId *pmdid,
-						INT iTypeModifier,
-						BOOL fByVal,
-						BOOL fNull,
-						BYTE *pba,
-						ULONG ulLength,
-						LINT lValue,
-						CDouble dValue
-						);
-
 			// create a dxl datum of types having double mapping
 			static
 			CDXLDatum *PdxldatumStatsDoubleMappable
@@ -328,22 +313,6 @@ namespace gpmd
 						CDouble dValue
 						);
 
-			// PdxldatumStatsDoubleMappable for missing collation oid (ensure backwards-compatability)
-			static
-			CDXLDatum *PdxldatumStatsDoubleMappable
-					(
-					IMemoryPool *pmp,
-					IMDId *pmdid,
-					INT iTypeModifier,
-					BOOL fByValue,
-					BOOL fNull,
-					BYTE *pba,
-					ULONG ulLength,
-					LINT lValue,
-					CDouble dValue
-					);
-
-
 			// create a dxl datum of types having lint mapping
 			static
 			CDXLDatum *PdxldatumStatsLintMappable
@@ -359,21 +328,6 @@ namespace gpmd
 						LINT lValue,
 						CDouble dValue
 						);
-
-			// PdxldatumStatsLintMappable for missing collation oid (ensure backwards-compatability)
-			static
-			CDXLDatum *PdxldatumStatsLintMappable
-					(
-					IMemoryPool *pmp,
-					IMDId *pmdid,
-					INT iTypeModifier,
-					BOOL fByValue,
-					BOOL fNull,
-					BYTE *pba,
-					ULONG ulLength,
-					LINT lValue,
-					CDouble dValue
-					);
 
 			// does a datum of this type need bytea to Lint mapping for statistics computation
 			static

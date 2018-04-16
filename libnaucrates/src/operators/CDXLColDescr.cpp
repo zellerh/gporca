@@ -53,30 +53,6 @@ CDXLColDescr::CDXLColDescr
 	GPOS_ASSERT_IMP(m_fDropped, 0 == m_pmdname->Pstr()->UlLength());
 }
 
-// ctor for invalid collation oid
-CDXLColDescr::CDXLColDescr
-		(
-		IMemoryPool *pmp,
-		CMDName *pmdname,
-		ULONG ulId,
-		INT iAttno,
-		IMDId *pmdidType,
-		INT iTypeModifier,
-		BOOL fDropped,
-		ULONG ulWidth
-		)
-		:
-		m_pmp(pmp),
-		m_pmdname(pmdname),
-		m_ulId(ulId),
-		m_iAttno(iAttno),
-		m_pmdidType(pmdidType),
-		m_iTypeModifier(iTypeModifier),
-		m_fDropped(fDropped),
-		m_ulWidth(ulWidth)
-{
-	GPOS_ASSERT_IMP(m_fDropped, 0 == m_pmdname->Pstr()->UlLength());
-}
 
 //---------------------------------------------------------------------------
 //	@function:

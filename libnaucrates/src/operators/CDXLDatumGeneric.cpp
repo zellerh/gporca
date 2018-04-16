@@ -49,25 +49,6 @@ CDXLDatumGeneric::CDXLDatumGeneric
 	GPOS_ASSERT_IMP(m_fNull, (m_pba == NULL) && (m_ulLength == 0));
 }
 
-// ctor for missing collation oid (ensure backwards-compatability)
-CDXLDatumGeneric::CDXLDatumGeneric
-		(
-		IMemoryPool *pmp,
-		IMDId *pmdidType,
-		INT iTypeModifier,
-		BOOL fByVal,
-		BOOL fNull,
-		BYTE *pba,
-		ULONG ulLength
-		)
-		:
-		CDXLDatum(pmp, pmdidType, iTypeModifier, fNull, ulLength),
-		m_fByVal(fByVal),
-		m_pba(pba)
-{
-	GPOS_ASSERT_IMP(m_fNull, (m_pba == NULL) && (m_ulLength == 0));
-}
-
 //---------------------------------------------------------------------------
 //	@function:
 //		CDXLDatumGeneric::~CDXLDatumGeneric

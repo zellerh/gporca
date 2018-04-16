@@ -82,19 +82,6 @@ namespace gpmd
 				gpdxl::CDXLNode *pdxnlDefaultValue,
 				ULONG ulLength = ULONG_MAX
 				);
-
-			// ctor for invalid collation
-			CMDColumn
-				(
-				CMDName *pmdname,
-				INT iAttNo,
-				IMDId *pmdidType,
-				INT iTypeModifier,
-				BOOL fNullable,
-				BOOL fDropped,
-				gpdxl::CDXLNode *pdxnlDefaultValue,
-				ULONG ulLength = ULONG_MAX
-				);
 			
 			// dtor
 			virtual
