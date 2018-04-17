@@ -52,32 +52,6 @@ CScalarOp::CScalarOp
 	m_fBoolReturnType = CMDAccessorUtils::FBoolType(pmda, m_pmdidReturnType);
 }
 
-CScalarOp::CScalarOp
-		(
-		IMemoryPool *pmp,
-		IMDId *pmdidOp,
-		IMDId *pmdidReturnType,
-		const CWStringConst *pstrOp
-		)
-		:
-		CScalar(pmp),
-		m_pmdidOp(pmdidOp),
-		m_pmdidReturnType(pmdidReturnType),
-		m_oidCollation(OidInvalidCollation),
-		m_pstrOp(pstrOp),
-		m_fReturnsNullOnNullInput(false),
-		m_fBoolReturnType(false),
-		m_fCommutative(false)
-{
-	GPOS_ASSERT(pmdidOp->FValid());
-
-	CMDAccessor *pmda = COptCtxt::PoctxtFromTLS()->Pmda();
-
-	m_fReturnsNullOnNullInput = CMDAccessorUtils::FScalarOpReturnsNullOnNullInput(pmda, m_pmdidOp);
-	m_fCommutative = CMDAccessorUtils::FCommutativeScalarOp(pmda, m_pmdidOp);
-	m_fBoolReturnType = CMDAccessorUtils::FBoolType(pmda, m_pmdidReturnType);
-}
-
 
 //---------------------------------------------------------------------------
 //	@function:
@@ -181,6 +155,12 @@ CScalarOp::PmdidType() const
 	
 	CMDAccessor *pmda = COptCtxt::PoctxtFromTLS()->Pmda();
 	return pmda->Pmdscop(m_pmdidOp)->PmdidTypeResult();
+}
+
+OID
+CScalarOp::OidCollation() const
+{
+	return m_oidCollation;
 }
 
 //---------------------------------------------------------------------------

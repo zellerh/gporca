@@ -684,7 +684,7 @@ CTranslatorDXLToExprTest::EresUnittest_SelectQueryWithScalarOp()
 		ULONG ulVal = 2;
 		CExpression *pexprScConst = CUtils::PexprScalarConstInt4(pmp, ulVal);
 		CExpression *pexprScOp =
-			CUtils::PexprScalarOp(pmp, pcrLeft, pexprScConst, CWStringConst(GPOS_WSZ_LIT("+")), GPOS_NEW(pmp) CMDIdGPDB(GPDB_INT4_ADD_OP));
+			CUtils::PexprScalarOp(pmp, pcrLeft, pexprScConst, CWStringConst(GPOS_WSZ_LIT("+")), OidInvalidCollation, GPOS_NEW(pmp) CMDIdGPDB(GPDB_INT4_ADD_OP));
 
 		// create a scalar compare for a > b + 2
 		CColRef *pcrRight = (*pdrgpcr)[0];

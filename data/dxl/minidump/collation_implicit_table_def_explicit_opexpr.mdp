@@ -630,7 +630,7 @@ SELECT (a || b) COLLATE "de_DE" FROM tab1;
           <dxl:ProjList>
             <dxl:ProjElem ColId="9" Alias="?column?">
               <dxl:Cast TypeMdid="0.25.1.0" FuncId="0.0.0.0">
-                <dxl:OpExpr OperatorName="||" OperatorMdid="0.654.1.0" OperatorType="0.25.1.0">
+                <dxl:OpExpr OperatorName="||" OperatorMdid="0.654.1.0" OperatorType="0.25.1.0" Collation="11656">
                   <dxl:CoerceViaIO TypeMdid="0.25.1.0" CoercionForm="1" Location="9">
                     <dxl:Ident ColId="0" ColName="a" TypeMdid="0.23.1.0"/>
                   </dxl:CoerceViaIO>

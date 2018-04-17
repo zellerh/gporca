@@ -72,15 +72,6 @@ namespace gpopt
 				const CWStringConst *pstrOp
 				);
 
-			// ctor for missing collation oid (for backwards compatibility)
-			CScalarOp
-				(
-				IMemoryPool *pmp,
-				IMDId *pmdidOp,
-				IMDId *pmdidReturnType,
-				const CWStringConst *pstrOp
-				);
-
 			// dtor
 			virtual
 			~CScalarOp()
@@ -111,6 +102,9 @@ namespace gpopt
 			// the type of the scalar expression
 			virtual 
 			IMDId *PmdidType() const;
+
+			virtual
+			OID OidCollation() const;
 
 			// operator specific hash function
 			ULONG UlHash() const;

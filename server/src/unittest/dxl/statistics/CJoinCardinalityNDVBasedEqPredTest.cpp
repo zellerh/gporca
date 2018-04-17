@@ -127,7 +127,7 @@ namespace gpnaucrates
 		//	|--CScalarIdent "column_0002" (2)
 		//	+--CScalarConst (10)
 		CExpression *pexprScConst = CUtils::PexprScalarConstInt4(pmp, 10 /* iVal */);
-		CExpression *pexprScOp = CUtils::PexprScalarOp(pmp, pcrLeft, pexprScConst, CWStringConst(GPOS_WSZ_LIT("+")),
+		CExpression *pexprScOp = CUtils::PexprScalarOp(pmp, pcrLeft, pexprScConst, CWStringConst(GPOS_WSZ_LIT("+")), OidInvalidCollation,
 													   GPOS_NEW(pmp) CMDIdGPDB(GPDB_INT4_ADD_OP));
 
 		// create a scalar comparision operator
@@ -189,7 +189,7 @@ namespace gpnaucrates
 		//	|--CScalarIdent "column_0002" (2)
 		//	+--CScalarIdent "column_0001" (1)
 		CExpression *pexprScOp = CUtils::PexprScalarOp(pmp, pcrLeft1, pexprScalarIdentLeft2,
-													   CWStringConst(GPOS_WSZ_LIT("+")),
+													   CWStringConst(GPOS_WSZ_LIT("+")), OidInvalidCollation,
 													   GPOS_NEW(pmp) CMDIdGPDB(GPDB_INT4_ADD_OP));
 
 		// create a scalar comparision operator
@@ -250,6 +250,7 @@ namespace gpnaucrates
 		//	+--CScalarConst (10)
 		CExpression *pexprScConst = CUtils::PexprScalarConstInt4(pmp, 10 /* iVal */);
 		CExpression *pexprScOp = CUtils::PexprScalarOp(pmp, pcrLeft, pexprScConst, CWStringConst(GPOS_WSZ_LIT("+")),
+													   OidInvalidCollation,
 													   GPOS_NEW(pmp) CMDIdGPDB(GPDB_INT4_ADD_OP));
 
 		// create a scalar comparision operator
