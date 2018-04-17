@@ -273,7 +273,8 @@ namespace gpdxl
 
 		// CoerceToDomain and CoerceViaIO and ArrayCoerceExpr related tokens
 		EdxltokenTypeMod,
-		EdxltokenCollation,
+		EdxltokenCollation,		 // result collation OID
+		EdxltokenInputCollation, // only for nodes with an input collation OID
 		EdxltokenCoercionForm,
 		EdxltokenLocation,
 		EdxltokenElementFunc,

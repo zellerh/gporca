@@ -68,13 +68,16 @@ namespace gpopt
 			// private copy ctor
 			CScalarFunc(const CScalarFunc &);
 
+			OID m_oidFuncCollation;
+
+			OID m_oidInputCollation;
 
 		public:
 			explicit
 			CScalarFunc(IMemoryPool *pmp);
 
 			// ctor
-			CScalarFunc(IMemoryPool *pmp, IMDId *pmdidFunc, IMDId *pmdidRetType, INT iRetTypeModifier, const CWStringConst *pstrFunc);
+			CScalarFunc(IMemoryPool *pmp, IMDId *pmdidFunc, IMDId *pmdidRetType, INT iRetTypeModifier, OID oidFuncCollation, OID oidInputCollation, const CWStringConst *pstrFunc);
 
 			// dtor
 			virtual 
@@ -170,6 +173,12 @@ namespace gpopt
 			// print
 			virtual 
 			IOstream &OsPrint(IOstream &os) const;
+
+			virtual
+			OID OidCollation() const;
+
+			virtual
+			OID OidInputCollation() const;
 
 
 	}; // class CScalarFunc

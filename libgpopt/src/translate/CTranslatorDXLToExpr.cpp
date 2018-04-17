@@ -2893,6 +2893,9 @@ CTranslatorDXLToExpr::PexprScalarFunc
 	IMDId *pmdidRetType = pdxlopFuncExpr->PmdidRetType();
 	pmdidRetType->AddRef();
 
+	const OID oidFuncCollation = pdxlopFuncExpr->OidFuncCollation();
+	const OID oidInputCollation = pdxlopFuncExpr->OidInputCollation();
+
 	DrgPexpr *pdrgpexprArgs = NULL;
 	IMDId *pmdidInput = NULL;
 	if (0 < ulLen)
@@ -2917,6 +2920,7 @@ CTranslatorDXLToExpr::PexprScalarFunc
 
 		if (pmdcast->EmdPathType() == IMDCast::EmdtArrayCoerce)
 		{
+			/* FIXME COLLATION */
 			CMDArrayCoerceCastGPDB *parrayCoerceCast = (CMDArrayCoerceCastGPDB *) pmdcast;
 			pop = GPOS_NEW(m_pmp) CScalarArrayCoerceExpr
 					(
@@ -2931,6 +2935,7 @@ CTranslatorDXLToExpr::PexprScalarFunc
 		}
 		else
 		{
+			/* FIXME COLLATION */
 			pop = GPOS_NEW(m_pmp) CScalarCast
 					(
 					m_pmp,
@@ -2948,6 +2953,8 @@ CTranslatorDXLToExpr::PexprScalarFunc
 				pmdidFunc,
 				pmdidRetType,
 				pdxlopFuncExpr->ITypeModifier(),
+				oidFuncCollation,
+				oidInputCollation,
 				GPOS_NEW(m_pmp) CWStringConst(m_pmp, (pmdfunc->Mdname().Pstr())->Wsz())
 				);
 	}

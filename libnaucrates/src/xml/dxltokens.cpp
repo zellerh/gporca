@@ -274,6 +274,7 @@ CDXLTokens::Init
 
 			{EdxltokenTypeMod, GPOS_WSZ_LIT("TypeModifier")},
 			{EdxltokenCollation, GPOS_WSZ_LIT("Collation")},
+			{EdxltokenInputCollation, GPOS_WSZ_LIT("InputCollation")},
 			{EdxltokenCoercionForm, GPOS_WSZ_LIT("CoercionForm")},
 			{EdxltokenLocation, GPOS_WSZ_LIT("Location")},
 			{EdxltokenElementFunc, GPOS_WSZ_LIT("ElementFunc")},

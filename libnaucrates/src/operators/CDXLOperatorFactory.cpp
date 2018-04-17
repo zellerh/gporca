@@ -1134,7 +1134,27 @@ CDXLOperatorFactory::PdxlopFuncExpr
 						IDefaultTypeModifier
 						);
 
-	return GPOS_NEW(pmp) CDXLScalarFuncExpr(pmp, pmdidFunc, pmdidRetType, iTypeModifier, fRetset);
+	OID oidFuncCollation = OidValueFromAttrs
+						   (
+						   pmm,
+						   attrs,
+						   EdxltokenCollation,
+						   EdxltokenScalarFuncExpr,
+						   true,
+						   OidInvalidCollation
+						   );
+
+	OID oidInputCollation = OidValueFromAttrs
+							(
+							pmm,
+							attrs,
+							EdxltokenInputCollation,
+							EdxltokenScalarFuncExpr,
+							true,
+							OidInvalidCollation
+							);
+
+	return GPOS_NEW(pmp) CDXLScalarFuncExpr(pmp, pmdidFunc, pmdidRetType, iTypeModifier, oidFuncCollation, oidInputCollation, fRetset);
 }
 
 //---------------------------------------------------------------------------

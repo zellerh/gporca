@@ -46,7 +46,9 @@ CScalarFunc::CScalarFunc
 	m_efda(IMDFunction::EfdaSentinel),
 	m_fReturnsSet(false),
 	m_fReturnsNullOnNullInput(false),
-	m_fBoolReturnType(false)
+	m_fBoolReturnType(false),
+	m_oidFuncCollation(OidInvalidCollation),
+	m_oidInputCollation(OidInvalidCollation)
 {
 }
 
@@ -64,6 +66,8 @@ CScalarFunc::CScalarFunc
 	IMDId *pmdidFunc,
 	IMDId *pmdidRetType,
 	INT iRetTypeModifier,
+	OID oidFuncCollation,
+	OID oidInputCollation,
 	const CWStringConst *pstrFunc
 	)
 	:
@@ -74,7 +78,9 @@ CScalarFunc::CScalarFunc
 	m_pstrFunc(pstrFunc),
 	m_fReturnsSet(false),
 	m_fReturnsNullOnNullInput(false),
-	m_fBoolReturnType(false)
+	m_fBoolReturnType(false),
+	m_oidFuncCollation(oidFuncCollation),
+	m_oidInputCollation(oidInputCollation)
 {
 	GPOS_ASSERT(pmdidFunc->FValid());
 	GPOS_ASSERT(pmdidRetType->FValid());
@@ -213,6 +219,18 @@ INT
 CScalarFunc::ITypeModifier() const
 {
 	return m_iRetTypeModifier;
+}
+
+OID
+CScalarFunc::OidCollation() const
+{
+	return m_oidFuncCollation;
+}
+
+OID
+CScalarFunc::OidInputCollation() const
+{
+	return m_oidInputCollation;
 }
 
 //---------------------------------------------------------------------------

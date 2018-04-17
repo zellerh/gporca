@@ -41,6 +41,9 @@ namespace gpdxl
 
 			const INT m_iRetTypeModifier;
 
+			OID m_oidFuncCollation;
+			OID m_oidInputCollation;
+
 			// does the func return a set
 			BOOL m_fReturnSet;
 
@@ -55,6 +58,8 @@ namespace gpdxl
 				IMDId *pmdidFunc,
 				IMDId *pmdidRetType,
 				INT iRetTypeModifier,
+				OID oidFuncCollation,
+				OID oidInputCollation,
 				BOOL fretset
 				);
 
@@ -75,6 +80,9 @@ namespace gpdxl
 			IMDId *PmdidRetType() const;
 
 			INT ITypeModifier() const;
+
+			OID OidFuncCollation() const;
+			OID OidInputCollation() const;
 
 			// does function return a set
 			BOOL FReturnSet() const;

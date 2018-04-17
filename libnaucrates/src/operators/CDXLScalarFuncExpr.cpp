@@ -34,6 +34,8 @@ CDXLScalarFuncExpr::CDXLScalarFuncExpr
 	IMDId *pmdidFunc,
 	IMDId *pmdidRetType,
 	INT iRetTypeModifier,
+	OID oidFuncCollation,
+	OID oidInputCollation,
 	BOOL fRetSet
 	)
 	:
@@ -41,6 +43,8 @@ CDXLScalarFuncExpr::CDXLScalarFuncExpr
 	m_pmdidFunc(pmdidFunc),
 	m_pmdidRetType(pmdidRetType),
 	m_iRetTypeModifier(iRetTypeModifier),
+	m_oidFuncCollation(oidFuncCollation),
+	m_oidInputCollation(oidInputCollation),
 	m_fReturnSet(fRetSet)
 {
 	GPOS_ASSERT(m_pmdidFunc->FValid());
@@ -124,6 +128,18 @@ CDXLScalarFuncExpr::ITypeModifier() const
 	return m_iRetTypeModifier;
 }
 
+OID
+CDXLScalarFuncExpr::OidFuncCollation() const
+{
+	return m_oidFuncCollation;
+}
+
+OID
+CDXLScalarFuncExpr::OidInputCollation() const
+{
+	return m_oidInputCollation;
+}
+
 //---------------------------------------------------------------------------
 //	@function:
 //		CDXLScalarFuncExpr::FReturnSet
@@ -164,6 +180,16 @@ CDXLScalarFuncExpr::SerializeToDXL
 	if (IDefaultTypeModifier != ITypeModifier())
 	{
 		pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenTypeMod), ITypeModifier());
+	}
+
+	if (OidInvalidCollation != OidFuncCollation())
+	{
+		pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenCollation), m_oidFuncCollation);
+	}
+
+	if (OidInvalidCollation != OidInputCollation())
+	{
+		pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenInputCollation), m_oidInputCollation);
 	}
 
 	pdxln->SerializeChildrenToDXL(pxmlser);
