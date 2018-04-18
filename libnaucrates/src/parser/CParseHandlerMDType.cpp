@@ -164,6 +164,17 @@ CParseHandlerMDType::StartElement
 										EdxltokenMDTypeHashable,
 										EdxltokenMDType
 										);
+			
+			// parse the collation oid
+			m_oidTypeCollation = CDXLOperatorFactory::OidValueFromAttrs
+												(
+												 m_pphm->Pmm(),
+												 attrs,
+												 EdxltokenCollation,
+												 EdxltokenMDType,
+												 true,
+												 OidInvalidCollation
+												 );
 
 			// parse if type is composite
 			const XMLCh *xmlszAttributeVal = attrs.getValue(CDXLTokens::XmlstrToken(EdxltokenMDTypeComposite));
@@ -456,7 +467,8 @@ CParseHandlerMDType::EndElement
 										m_fComposite,
 										m_pmdidBaseRelation,
 										m_pmdidTypeArray,
-										m_iLength
+										m_iLength,
+										m_oidTypeCollation
 										);
 				break;
 		}

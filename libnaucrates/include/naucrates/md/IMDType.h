@@ -114,6 +114,12 @@ namespace gpmd
 			virtual
 			BOOL FRedistributable() const = 0;
 
+			// Type Collation: 0 if type cannot use collations,
+			// otherwise collation oid from provided by host system
+			// for collatable base and array types
+			virtual
+			OID OidTypeCollation() const = 0;
+
 			// id of the array type for the type
 			virtual 
 			IMDId *PmdidTypeArray() const = 0;

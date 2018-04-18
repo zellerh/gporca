@@ -38,7 +38,8 @@ CScalarCast::CScalarCast
 	IMemoryPool *pmp,
 	IMDId *pmdidReturnType,
 	IMDId *pmdidFunc,
-	BOOL fBinaryCoercible
+	BOOL fBinaryCoercible,
+	OID oidResultCollation
 	)
 	:
 	CScalar(pmp),
@@ -46,7 +47,8 @@ CScalarCast::CScalarCast
 	m_pmdidFunc(pmdidFunc),
 	m_fBinaryCoercible(fBinaryCoercible),
 	m_fReturnsNullOnNullInput(false),
-	m_fBoolReturnType(false)
+	m_fBoolReturnType(false),
+	m_oidResultCollation(oidResultCollation)
 {
 	if (NULL != m_pmdidFunc && m_pmdidFunc->FValid())
 	{

@@ -118,6 +118,9 @@ namespace gpmd
 			// a null datum of this type (used for statistics comparison)
 			IDatum *m_pdatumNull;
 
+			// collation id for this type
+			OID m_oidTypeCollation;
+
 			// private copy ctor
 			CMDTypeGenericGPDB(const CMDTypeGenericGPDB &);
 			
@@ -148,7 +151,8 @@ namespace gpmd
 				BOOL fComposite,
 				IMDId *pmdidBaseRelation,
 				IMDId *pmdidTypeArray,
-				INT iLength
+				INT iLength,
+				OID oidTypeCollation
 				);
 			
 			// dtor
@@ -257,6 +261,13 @@ namespace gpmd
 			IDatum *PdatumNull() const
 			{
 				return m_pdatumNull;
+			}
+		
+			// return default collation oid
+			virtual
+			OID OidTypeCollation() const
+			{
+				return m_oidTypeCollation;
 			}
 
 			// generate the DXL datum from IDatum

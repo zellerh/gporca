@@ -46,6 +46,9 @@ namespace gpdxl
 			// catalog MDId of the function implementing the casting
 			IMDId *m_pmdidFunc;
 
+			// catalog Oid of the result collation function
+			OID m_oidCollation;
+
 			// private copy ctor
 			CDXLScalarCast(const CDXLScalarCast&);
 
@@ -55,7 +58,8 @@ namespace gpdxl
 				(
 				IMemoryPool *pmp,
 				IMDId *pmdidType,
-				IMDId *pmdidOpFunc
+				IMDId *pmdidOpFunc,
+				OID m_oidCollation
 				);
 
 			virtual
@@ -66,6 +70,7 @@ namespace gpdxl
 
 			IMDId *PmdidType() const;
 			IMDId *PmdidFunc() const;
+			OID	OidCollation() const;
 
 			// name of the DXL operator name
 			const CWStringConst *PstrOpName() const;

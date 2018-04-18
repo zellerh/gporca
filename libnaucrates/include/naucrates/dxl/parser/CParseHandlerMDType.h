@@ -63,6 +63,9 @@ namespace gpdxl
 			// is type passed by value or by reference
 			BOOL m_fByValue;
 			
+			// collation oid
+			OID m_oidTypeCollation;
+
 			// id of equality operator for type
 			IMDId *m_pmdidOpEq;
 			

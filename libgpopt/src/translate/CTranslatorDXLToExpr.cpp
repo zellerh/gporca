@@ -751,11 +751,12 @@ CTranslatorDXLToExpr::PexprCastPrjElem
 	}
 	else
 	{
+		OID OidTypeCollation = (m_pmda->Pmdtype(pmdidDest))->OidTypeCollation();
 		pexprCast =
 			GPOS_NEW(m_pmp) CExpression
 			(
 				m_pmp,
-				GPOS_NEW(m_pmp) CScalarCast(m_pmp, pmdidDest, pmdcast->PmdidCastFunc(), pmdcast->FBinaryCoercible()),
+				GPOS_NEW(m_pmp) CScalarCast(m_pmp, pmdidDest, pmdcast->PmdidCastFunc(), pmdcast->FBinaryCoercible(), OidTypeCollation),
 				GPOS_NEW(m_pmp) CExpression(m_pmp, GPOS_NEW(m_pmp) CScalarIdent(m_pmp, pcrToCast))
 			);
 	}
@@ -2937,13 +2938,13 @@ CTranslatorDXLToExpr::PexprScalarFunc
 		}
 		else
 		{
-			/* FIXME COLLATION */
 			pop = GPOS_NEW(m_pmp) CScalarCast
 					(
 					m_pmp,
 					pmdidRetType,
 					pmdidFunc,
-					pmdcast->FBinaryCoercible()
+					pmdcast->FBinaryCoercible(),
+					oidFuncCollation
 					);
 		}
 	}
@@ -3615,6 +3616,8 @@ CTranslatorDXLToExpr::PexprScalarCast
 
 	IMDId *pmdidType = pdxlop->PmdidType();
 	IMDId *pmdidFunc = pdxlop->PmdidFunc();
+	OID oidCollation = pdxlop->OidCollation();
+
 	pmdidType->AddRef();
 	pmdidFunc->AddRef();
 	
@@ -3650,7 +3653,7 @@ CTranslatorDXLToExpr::PexprScalarCast
 		pexpr= GPOS_NEW(m_pmp) CExpression
 									(
 									m_pmp,
-									GPOS_NEW(m_pmp) CScalarCast(m_pmp, pmdidType, pmdidFunc, fRelabel),
+									GPOS_NEW(m_pmp) CScalarCast(m_pmp, pmdidType, pmdidFunc, fRelabel, oidCollation),
 									pexprChild
 									);
 	}

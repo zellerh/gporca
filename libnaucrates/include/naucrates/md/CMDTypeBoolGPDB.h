@@ -183,6 +183,14 @@ namespace gpmd
 			return true;
 		}
 		
+		// Default collation oid
+		virtual
+		OID OidTypeCollation() const
+		{
+			// 0 as Boolean type cannot use collations
+			return OidInvalidCollation;
+		}
+
 		// array type id
 		virtual 
 		IMDId *PmdidTypeArray() const

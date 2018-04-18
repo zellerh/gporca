@@ -55,6 +55,7 @@ namespace gpmd
                 }
 
                 pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenMDTypeByValue), pt->FByValue());
+                pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenCollation), pt->OidTypeCollation());
 
                 pt->SerializeMDIdAsElem(pxmlser, CDXLTokens::PstrToken(EdxltokenMDTypeEqOp), pt->PmdidCmp(IMDType::EcmptEq));
                 pt->SerializeMDIdAsElem(pxmlser, CDXLTokens::PstrToken(EdxltokenMDTypeNEqOp), pt->PmdidCmp(IMDType::EcmptNEq));
@@ -109,6 +110,8 @@ namespace gpmd
                 CDXLTokens::PstrToken(EdxltokenFalse);
 
                 os << "Pass by value: " << pstrByValue->Wsz() << std::endl;
+
+                os << "Collation OID: " << pt->OidTypeCollation() << std::endl;
 
                 os << "Equality operator id: ";
                 pt->PmdidCmp(IMDType::EcmptEq)->OsPrint(os);

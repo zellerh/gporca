@@ -4154,8 +4154,8 @@ CUtils::PexprCast
 	}
 	else
 	{
-		
-		CScalarCast *popCast = GPOS_NEW(pmp) CScalarCast(pmp, pmdidDest, pmdcast->PmdidCastFunc(), pmdcast->FBinaryCoercible());
+		OID OidTypeCollation = (pmda->Pmdtype(pmdidDest))->OidTypeCollation();
+		CScalarCast *popCast = GPOS_NEW(pmp) CScalarCast(pmp, pmdidDest, pmdcast->PmdidCastFunc(), pmdcast->FBinaryCoercible(), OidTypeCollation);
 		pexprCast = GPOS_NEW(pmp) CExpression(pmp, popCast, pexpr);
 	}
 	

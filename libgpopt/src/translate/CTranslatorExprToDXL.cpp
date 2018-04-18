@@ -4790,6 +4790,7 @@ CTranslatorExprToDXL::ConstructLevelFilters4PartitionSelector
 								pmdidTypeOther,
 								NULL /*pmdidTypeCastExpr*/,
 								NULL /*pmdidCastFunc*/,
+								(m_pmda->Pmdtype(pmdidTypeOther))->OidTypeCollation(),
 								ulLevel
 								);
 			}
@@ -5083,6 +5084,7 @@ CTranslatorExprToDXL::PdxlnScCmpPartKey
 	IMDId *pmdidTypeOther = CScalar::PopConvert(pexprOther->Pop())->PmdidType();
 	IMDId *pmdidTypeCastExpr = NULL;
 	IMDId *pmdidCastFunc = NULL;
+	OID oidResultCollation = OidInvalidCollation;
 
 	if (fRangePart) // range partition
 	{
@@ -5098,7 +5100,7 @@ CTranslatorExprToDXL::PdxlnScCmpPartKey
 			pexprPartKey->Release();
 		}
 
-		CTranslatorExprToDXLUtils::ExtractCastMdids(pexprNewPartKey->Pop(), &pmdidTypeCastExpr, &pmdidCastFunc);
+		CTranslatorExprToDXLUtils::ExtractCastMdids(pexprNewPartKey->Pop(), &pmdidTypeCastExpr, &pmdidCastFunc, oidResultCollation);
 
 		return CTranslatorExprToDXLUtils::PdxlnRangeFilterScCmp
 								(
@@ -5109,6 +5111,7 @@ CTranslatorExprToDXL::PdxlnScCmpPartKey
 								pmdidTypeOther,
 								pmdidTypeCastExpr,
 								pmdidCastFunc,
+								oidResultCollation,
 								ecmpt,
 								ulPartLevel
 								);
@@ -6496,7 +6499,7 @@ CTranslatorExprToDXL::PdxlnScCast
 	IMDId *pmdidFunc = popScCast->PmdidFunc();
 	pmdidFunc->AddRef();
 
-	CDXLNode *pdxlnCast = GPOS_NEW(m_pmp) CDXLNode(m_pmp, GPOS_NEW(m_pmp) CDXLScalarCast(m_pmp, pmdid, pmdidFunc));
+	CDXLNode *pdxlnCast = GPOS_NEW(m_pmp) CDXLNode(m_pmp, GPOS_NEW(m_pmp) CDXLScalarCast(m_pmp, pmdid, pmdidFunc, popScCast->OidResultCollation()));
 
 	// translate child
 	GPOS_ASSERT(1 == pexprCast->UlArity());

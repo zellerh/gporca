@@ -48,6 +48,9 @@ namespace gpopt
 			// is operator's return type BOOL?
 			BOOL m_fBoolReturnType;
 
+			// collation oid of the result
+			OID m_oidResultCollation;
+
 			// private copy ctor
 			CScalarCast(const CScalarCast &);
 
@@ -59,7 +62,8 @@ namespace gpopt
 				IMemoryPool *pmp,
 				IMDId *pmdidReturnType,
 				IMDId *pmdidFunc,
-				BOOL fBinaryCoercible
+				BOOL fBinaryCoercible,
+				OID oidResultCollation
 				);
 
 			// dtor
@@ -127,7 +131,12 @@ namespace gpopt
 			{
 				return m_fBinaryCoercible;
 			}
-			
+
+			// collation oid of the result
+			OID OidResultCollation() const
+			{
+				return m_oidResultCollation;
+			}
 
 			// boolean expression evaluation
 			virtual

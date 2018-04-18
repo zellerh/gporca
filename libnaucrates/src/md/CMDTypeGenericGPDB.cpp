@@ -69,7 +69,8 @@ CMDTypeGenericGPDB::CMDTypeGenericGPDB
 	BOOL fComposite,
 	IMDId *pmdidBaseRelation,
 	IMDId *pmdidTypeArray,
-	INT iLength
+	INT iLength,
+	OID oidTypeCollation
 	)
 	:
 	m_pmp(pmp),
@@ -96,7 +97,8 @@ CMDTypeGenericGPDB::CMDTypeGenericGPDB
 	m_pmdidBaseRelation(pmdidBaseRelation),
 	m_pmdidTypeArray(pmdidTypeArray),
 	m_iLength(iLength),
-	m_pdatumNull(NULL)
+	m_pdatumNull(NULL),
+	m_oidTypeCollation(oidTypeCollation)
 {
 	GPOS_ASSERT_IMP(m_fFixedLength, 0 < m_ulLength);
 	GPOS_ASSERT_IMP(!m_fFixedLength, 0 > m_iLength);
