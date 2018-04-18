@@ -3881,7 +3881,7 @@ CTranslatorDXLToExpr::PexprScalarProjElem
 	CName name(pdxlopPrEl->PmdnameAlias()->Pstr());
 	
 	// generate a new column reference
-	CColRef *pcr = m_pcf->PcrCreate(pmdtype, popScalar->ITypeModifier(), OidInvalidCollation /* FIXME COLLATION */, name);
+	CColRef *pcr = m_pcf->PcrCreate(pmdtype, popScalar->ITypeModifier(), popScalar->OidCollation(), name);
 	
 	// store colid -> colref mapping
 #ifdef GPOS_DEBUG
