@@ -39,7 +39,8 @@ namespace gpdxl
 			// return type (or invalid if type can be infered from the metadata)
 			IMDId *m_pmdidReturnType;
 
-			OID m_oidCollation;
+			OID m_oidOpCollation;
+			OID m_oidInputCollation;
 
 			// operator name
 			const CWStringConst *m_pstrOpName;
@@ -54,7 +55,8 @@ namespace gpdxl
 				IMemoryPool *pmp,
 				IMDId *pmdidOp,
 				IMDId *pmdidReturnType,
-				OID oidCollation,
+				OID oidOpCollation,
+				OID oidInputCollation,
 				const CWStringConst *pstrOpName
 				);
 
@@ -77,6 +79,8 @@ namespace gpdxl
 			IMDId *PmdidReturnType() const;
 
 			OID OidCollation() const;
+
+			OID OidInputCollation() const;
 
 			// serialize operator in DXL format
 			virtual

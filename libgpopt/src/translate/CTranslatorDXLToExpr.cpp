@@ -2729,7 +2729,8 @@ CTranslatorDXLToExpr::PexprScalarOp
 	IMDId *pmdid = pdxlop->Pmdid();
 	pmdid->AddRef();
 
-	OID oidCollation = pdxlop->OidCollation();
+	OID oidOpCollation = pdxlop->OidCollation();
+	OID oidInputCollation = pdxlop->OidInputCollation();
 	
 	IMDId *pmdidReturnType = pdxlop->PmdidReturnType(); 
 	if (NULL != pmdidReturnType)
@@ -2741,7 +2742,8 @@ CTranslatorDXLToExpr::PexprScalarOp
 										m_pmp,
 										pmdid,
 										pmdidReturnType,
-										oidCollation,
+										oidOpCollation,
+										oidInputCollation,
 										GPOS_NEW(m_pmp) CWStringConst(m_pmp, pdxlop->PstrScalarOpName()->Wsz())
 										);
 

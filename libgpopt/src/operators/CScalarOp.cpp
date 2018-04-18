@@ -30,14 +30,16 @@ CScalarOp::CScalarOp
 		IMemoryPool *pmp,
 		IMDId *pmdidOp,
 		IMDId *pmdidReturnType,
-		OID oidCollation,
+		OID oidOpCollation,
+		OID oidInputCollation,
 		const CWStringConst *pstrOp
 		)
 		:
 		CScalar(pmp),
 		m_pmdidOp(pmdidOp),
 		m_pmdidReturnType(pmdidReturnType),
-		m_oidCollation(oidCollation),
+		m_oidOpCollation(oidOpCollation),
+		m_oidInputCollation(oidInputCollation),
 		m_pstrOp(pstrOp),
 		m_fReturnsNullOnNullInput(false),
 		m_fBoolReturnType(false),
@@ -160,7 +162,13 @@ CScalarOp::PmdidType() const
 OID
 CScalarOp::OidCollation() const
 {
-	return m_oidCollation;
+	return m_oidOpCollation;
+}
+
+OID
+CScalarOp::OidInputCollation() const
+{
+	return m_oidInputCollation;
 }
 
 //---------------------------------------------------------------------------

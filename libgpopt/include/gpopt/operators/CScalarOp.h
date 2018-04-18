@@ -44,7 +44,9 @@ namespace gpopt
 			// return type id or NULL if it can be inferred from the metadata
 			IMDId *m_pmdidReturnType;
 
-			OID m_oidCollation;
+			OID m_oidOpCollation;
+
+			OID m_oidInputCollation;
 			
 			// scalar operator name
 			const CWStringConst *m_pstrOp;
@@ -68,7 +70,8 @@ namespace gpopt
 				IMemoryPool *pmp,
 				IMDId *pmdidOp,
 				IMDId *pmdidReturnType,
-				OID oidCollation,
+				OID oidOpCollation,
+				OID oidInputCollation,
 				const CWStringConst *pstrOp
 				);
 
@@ -105,6 +108,9 @@ namespace gpopt
 
 			virtual
 			OID OidCollation() const;
+
+			virtual
+			OID OidInputCollation() const;
 
 			// operator specific hash function
 			ULONG UlHash() const;

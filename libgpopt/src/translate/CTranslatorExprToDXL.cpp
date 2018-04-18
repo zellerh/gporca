@@ -5890,9 +5890,10 @@ CTranslatorExprToDXL::PdxlnScOp
 		pmdidReturnType->AddRef();
 	}
 
-	OID oidCollation = pscop->OidCollation();
+	OID oidOpCollation = pscop->OidCollation();
+	OID oidInputCollation = pscop->OidInputCollation();
 
-	CDXLNode *pdxlnOpExpr = GPOS_NEW(m_pmp) CDXLNode(m_pmp, GPOS_NEW(m_pmp) CDXLScalarOpExpr(m_pmp, pmdidOp, pmdidReturnType, oidCollation, pstrName));
+	CDXLNode *pdxlnOpExpr = GPOS_NEW(m_pmp) CDXLNode(m_pmp, GPOS_NEW(m_pmp) CDXLScalarOpExpr(m_pmp, pmdidOp, pmdidReturnType, oidOpCollation, oidInputCollation, pstrName));
 
 
 	TranslateScalarChildren(pexprOp, pdxlnOpExpr);

@@ -1782,7 +1782,8 @@ CUtils::PexprScalarOp
 	const CColRef *pcrLeft,
 	CExpression *pexprRight,
 	const CWStringConst strOp,
-	OID oidCollation,
+	OID oidOpCollation,
+	OID oidInputCollation,
 	IMDId *pmdidOp,
 	IMDId *pmdidReturnType
 	)
@@ -1793,7 +1794,7 @@ CUtils::PexprScalarOp
 	return GPOS_NEW(pmp) CExpression
 			(
 			pmp,
-			GPOS_NEW(pmp) CScalarOp(pmp, pmdidOp, pmdidReturnType, oidCollation, GPOS_NEW(pmp) CWStringConst(pmp, strOp.Wsz())),
+			GPOS_NEW(pmp) CScalarOp(pmp, pmdidOp, pmdidReturnType, oidOpCollation, oidInputCollation, GPOS_NEW(pmp) CWStringConst(pmp, strOp.Wsz())),
 			PexprScalarIdent(pmp, pcrLeft),
 			pexprRight
 			);

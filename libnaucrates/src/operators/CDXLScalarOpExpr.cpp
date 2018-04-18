@@ -27,14 +27,16 @@ CDXLScalarOpExpr::CDXLScalarOpExpr
 	IMemoryPool *pmp,
 	IMDId *pmdidOp,
 	IMDId *pmdidReturnType,
-	OID oidCollation,
+	OID oidOpCollation,
+	OID oidInputCollation,
 	const CWStringConst *pstrOpName
 	)
 	:
 	CDXLScalar(pmp),
 	m_pmdid(pmdidOp),
 	m_pmdidReturnType(pmdidReturnType),
-	m_oidCollation(oidCollation),
+	m_oidOpCollation(oidOpCollation),
+	m_oidInputCollation(oidInputCollation),
 	m_pstrOpName(pstrOpName)
 {
 	GPOS_ASSERT(m_pmdid->FValid());
@@ -129,7 +131,13 @@ CDXLScalarOpExpr::PmdidReturnType() const
 OID
 CDXLScalarOpExpr::OidCollation() const
 {
-	return m_oidCollation;
+	return m_oidOpCollation;
+}
+
+OID
+CDXLScalarOpExpr::OidInputCollation() const
+{
+	return m_oidInputCollation;
 }
 
 //---------------------------------------------------------------------------
@@ -185,6 +193,11 @@ CDXLScalarOpExpr::SerializeToDXL
 	if (OidInvalidCollation != OidCollation())
 	{
 		pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenCollation), OidCollation());
+	}
+
+	if (OidInvalidCollation != OidInputCollation())
+	{
+		pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenInputCollation), OidInputCollation());
 	}
 
 	pdxln->SerializeChildrenToDXL(pxmlser);
