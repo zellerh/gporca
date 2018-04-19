@@ -48,13 +48,17 @@ namespace gpdxl
 			// min/max type
 			EdxlMinMaxType m_emmt;
 
+			OID m_oidCollation;
+
+			OID m_oidInputCollation;
+
 			// private copy ctor
 			CDXLScalarMinMax(const CDXLScalarMinMax&);
 
 		public:
 
 			// ctor
-			CDXLScalarMinMax(IMemoryPool *pmp, IMDId *pmdidType, EdxlMinMaxType emmt);
+			CDXLScalarMinMax(IMemoryPool *pmp, IMDId *pmdidType, EdxlMinMaxType emmt, OID oidCollation, OID oidInputCollation);
 
 			//dtor
 			virtual
@@ -79,6 +83,16 @@ namespace gpdxl
 			EdxlMinMaxType Emmt() const
 			{
 				return m_emmt;
+			}
+
+			OID OidCollation() const
+			{
+				return m_oidCollation;
+			}
+
+			OID OidInputCollation() const
+			{
+				return m_oidInputCollation;
 			}
 
 			// serialize operator in DXL format

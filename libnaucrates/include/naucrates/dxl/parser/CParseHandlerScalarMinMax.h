@@ -35,9 +35,6 @@ namespace gpdxl
 	{
 		private:
 
-			// return type
-			IMDId *m_pmdidType;
-
 			// min/max type
 			CDXLScalarMinMax::EdxlMinMaxType m_emmt;
 

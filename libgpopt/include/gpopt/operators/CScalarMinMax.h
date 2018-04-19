@@ -55,13 +55,17 @@ namespace gpopt
 			// is operator return type BOOL?
 			BOOL m_fBoolReturnType;
 
+			OID m_oidCollation;
+
+			OID m_oidInputCollation;
+
 			// private copy ctor
 			CScalarMinMax(const CScalarMinMax &);
 
 		public:
 
 			// ctor
-			CScalarMinMax(IMemoryPool *pmp, IMDId *pmdidType, EScalarMinMaxType esmmt);
+			CScalarMinMax(IMemoryPool *pmp, IMDId *pmdidType, EScalarMinMaxType esmmt, OID oidCollation, OID oidInputCollation);
 
 			// dtor
 			virtual
@@ -92,6 +96,17 @@ namespace gpopt
 			EScalarMinMaxType Esmmt() const
 			{
 				return m_esmmt;
+			}
+
+			virtual
+			OID OidCollation() const
+			{
+				return m_oidCollation;
+			}
+
+			OID OidInputCollation() const
+			{
+				return m_oidInputCollation;
 			}
 
 			// operator specific hash function

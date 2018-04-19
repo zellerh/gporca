@@ -3111,7 +3111,7 @@ CTranslatorDXLToExpr::PexprScalarMinMax
 	IMDId *pmdid = pdxlop->PmdidType();
 	pmdid->AddRef();
 
-	return GPOS_NEW(m_pmp) CExpression(m_pmp, GPOS_NEW(m_pmp) CScalarMinMax(m_pmp, pmdid, esmmt), pdrgpexprChildren);
+	return GPOS_NEW(m_pmp) CExpression(m_pmp, GPOS_NEW(m_pmp) CScalarMinMax(m_pmp, pmdid, esmmt, pdxlop->OidCollation(), pdxlop->OidInputCollation()), pdrgpexprChildren);
 }
 
 //---------------------------------------------------------------------------

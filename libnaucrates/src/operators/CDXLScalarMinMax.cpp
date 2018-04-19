@@ -31,12 +31,16 @@ CDXLScalarMinMax::CDXLScalarMinMax
 	(
 	IMemoryPool *pmp,
 	IMDId *pmdidType,
-	EdxlMinMaxType emmt
+	EdxlMinMaxType emmt,
+	OID oidCollation,
+	OID oidInputCollation
 	)
 	:
 	CDXLScalar(pmp),
 	m_pmdidType(pmdidType),
-	m_emmt(emmt)
+	m_emmt(emmt),
+	m_oidCollation(oidCollation),
+	m_oidInputCollation(oidInputCollation)
 {
 	GPOS_ASSERT(m_pmdidType->FValid());
 	GPOS_ASSERT(EmmtSentinel > emmt);
@@ -111,6 +115,17 @@ CDXLScalarMinMax::SerializeToDXL
 
 	pxmlser->OpenElement(CDXLTokens::PstrToken(EdxltokenNamespacePrefix), pstrElemName);
 	m_pmdidType->Serialize(pxmlser, CDXLTokens::PstrToken(EdxltokenTypeId));
+
+	if (OidInvalidCollation != OidCollation())
+	{
+		pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenCollation), OidCollation());
+	}
+
+	if (OidInvalidCollation != OidInputCollation())
+	{
+		pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenInputCollation), OidInputCollation());
+	}
+
 	pdxln->SerializeChildrenToDXL(pxmlser);
 	pxmlser->CloseElement(CDXLTokens::PstrToken(EdxltokenNamespacePrefix), pstrElemName);
 }

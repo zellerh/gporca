@@ -6445,7 +6445,7 @@ CTranslatorExprToDXL::PdxlnScMinMax
 	IMDId *pmdidType = popScMinMax->PmdidType();
 	pmdidType->AddRef();
 
-	CDXLNode *pdxln = GPOS_NEW(m_pmp) CDXLNode(m_pmp, GPOS_NEW(m_pmp) CDXLScalarMinMax(m_pmp, pmdidType, emmt));
+	CDXLNode *pdxln = GPOS_NEW(m_pmp) CDXLNode(m_pmp, GPOS_NEW(m_pmp) CDXLScalarMinMax(m_pmp, pmdidType, emmt, popScMinMax->OidCollation(), popScMinMax->OidInputCollation()));
 	TranslateScalarChildren(pexprMinMax, pdxln);
 
 	return pdxln;

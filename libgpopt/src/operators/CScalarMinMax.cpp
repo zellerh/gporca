@@ -37,13 +37,17 @@ CScalarMinMax::CScalarMinMax
 	(
 	IMemoryPool *pmp,
 	IMDId *pmdidType,
-	EScalarMinMaxType esmmt
+	EScalarMinMaxType esmmt,
+	OID oidCollation,
+	OID oidInputCollation
 	)
 	:
 	CScalar(pmp),
 	m_pmdidType(pmdidType),
 	m_esmmt(esmmt),
-	m_fBoolReturnType(false)
+	m_fBoolReturnType(false),
+	m_oidCollation(oidCollation),
+	m_oidInputCollation(oidInputCollation)
 {
 	GPOS_ASSERT(pmdidType->FValid());
 	GPOS_ASSERT(EsmmtSentinel > esmmt);

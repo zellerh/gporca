@@ -37,7 +37,6 @@ CParseHandlerScalarMinMax::CParseHandlerScalarMinMax
 	)
 	:
 	CParseHandlerScalarOp(pmp, pphm, pphRoot),
-	m_pmdidType(NULL),
 	m_emmt(CDXLScalarMinMax::EmmtSentinel)
 {
 }
@@ -72,8 +71,32 @@ CParseHandlerScalarMinMax::StartElement
 			edxltoken = EdxltokenScalarMax;
 		}
 
+		OID oidCollation = CDXLOperatorFactory::OidValueFromAttrs
+						(
+						m_pphm->Pmm(),
+						attrs,
+						EdxltokenCollation,
+						edxltoken,
+						true,
+						OidInvalidCollation
+						);
+
+
+		OID oidInputCollation = CDXLOperatorFactory::OidValueFromAttrs
+						(
+						m_pphm->Pmm(),
+						attrs,
+						EdxltokenInputCollation,
+						edxltoken,
+						true,
+						OidInvalidCollation
+						);
+
 		// parse type id
-		m_pmdidType = CDXLOperatorFactory::PmdidFromAttrs(m_pphm->Pmm(), attrs, EdxltokenTypeId, edxltoken);
+		IMDId *pmdidType = CDXLOperatorFactory::PmdidFromAttrs(m_pphm->Pmm(), attrs, EdxltokenTypeId, edxltoken);
+
+		// construct node
+		m_pdxln = GPOS_NEW(m_pmp) CDXLNode(m_pmp, GPOS_NEW(m_pmp) CDXLScalarMinMax(m_pmp, pmdidType, m_emmt, oidCollation, oidInputCollation));
 	}
 	else
 	{
@@ -111,9 +134,6 @@ CParseHandlerScalarMinMax::EndElement
 		CWStringDynamic *pstr = CDXLUtils::PstrFromXMLCh(m_pphm->Pmm(), xmlszLocalname);
 		GPOS_RAISE(gpdxl::ExmaDXL, gpdxl::ExmiDXLUnexpectedTag, pstr->Wsz());
 	}
-
-	// construct node
-	m_pdxln = GPOS_NEW(m_pmp) CDXLNode(m_pmp, GPOS_NEW(m_pmp) CDXLScalarMinMax(m_pmp, m_pmdidType, m_emmt));
 
 	// loop over children and add them to this parsehandler
 	const ULONG ulChildren = this->UlLength();
