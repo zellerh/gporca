@@ -6409,7 +6409,7 @@ CTranslatorExprToDXL::PdxlnScCoalesce
 	IMDId *pmdidType = popScCoalesce->PmdidType();
 	pmdidType->AddRef();
 
-	CDXLNode *pdxln = GPOS_NEW(m_pmp) CDXLNode(m_pmp, GPOS_NEW(m_pmp) CDXLScalarCoalesce(m_pmp, pmdidType));
+	CDXLNode *pdxln = GPOS_NEW(m_pmp) CDXLNode(m_pmp, GPOS_NEW(m_pmp) CDXLScalarCoalesce(m_pmp, pmdidType, popScCoalesce->OidCollation()));
 	TranslateScalarChildren(pexprCoalesce, pdxln);
 
 	return pdxln;

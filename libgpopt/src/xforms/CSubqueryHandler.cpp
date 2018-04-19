@@ -640,7 +640,7 @@ CSubqueryHandler::FCreateOuterApplyForScalarSubquery
 				GPOS_NEW(pmp) CExpression
 					(
 					pmp,
-					GPOS_NEW(pmp) CScalarCoalesce(pmp, pmdidInt8),
+					GPOS_NEW(pmp) CScalarCoalesce(pmp, pmdidInt8, OidInvalidCollation /* FIXME COLLATION */ /* should a subquery have a collation? */),
 					CUtils::PexprScalarIdent(pmp, pcrComputed),
 					CUtils::PexprScalarConstInt8(pmp, 0 /*iVal*/)
 					);

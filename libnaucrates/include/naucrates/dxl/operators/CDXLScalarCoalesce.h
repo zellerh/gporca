@@ -35,13 +35,15 @@ namespace gpdxl
 			// return type
 			IMDId *m_pmdidType;
 
+			OID m_oidCollation;
+
 			// private copy ctor
 			CDXLScalarCoalesce(const CDXLScalarCoalesce&);
 
 		public:
 
 			// ctor
-			CDXLScalarCoalesce(IMemoryPool *pmp, IMDId *pmdidType);
+			CDXLScalarCoalesce(IMemoryPool *pmp, IMDId *pmdidType, OID oidCollation);
 
 			//dtor
 			virtual
@@ -50,6 +52,11 @@ namespace gpdxl
 			// name of the operator
 			virtual
 			const CWStringConst *PstrOpName() const;
+
+			OID OidCollation() const
+			{
+				return m_oidCollation;
+			}
 
 			// return type
 			virtual

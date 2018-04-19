@@ -3075,7 +3075,7 @@ CTranslatorDXLToExpr::PexprScalarCoalesce
 	IMDId *pmdid = pdxlop->PmdidType();
 	pmdid->AddRef();
 
-	return GPOS_NEW(m_pmp) CExpression(m_pmp, GPOS_NEW(m_pmp) CScalarCoalesce(m_pmp, pmdid), pdrgpexprChildren);
+	return GPOS_NEW(m_pmp) CExpression(m_pmp, GPOS_NEW(m_pmp) CScalarCoalesce(m_pmp, pmdid, pdxlop->OidCollation()), pdrgpexprChildren);
 }
 
 //---------------------------------------------------------------------------

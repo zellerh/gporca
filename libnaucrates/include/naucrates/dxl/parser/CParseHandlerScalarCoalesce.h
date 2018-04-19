@@ -34,10 +34,6 @@ namespace gpdxl
 	class CParseHandlerScalarCoalesce : public CParseHandlerScalarOp
 	{
 		private:
-
-			// return type
-			IMDId *m_pmdidType;
-
 			// private copy ctor
 			CParseHandlerScalarCoalesce(const CParseHandlerScalarCoalesce &);
 

@@ -36,12 +36,14 @@ using namespace gpmd;
 CScalarCoalesce::CScalarCoalesce
 	(
 	IMemoryPool *pmp,
-	IMDId *pmdidType
+	IMDId *pmdidType,
+	OID oidCollation
 	)
 	:
 	CScalar(pmp),
 	m_pmdidType(pmdidType),
-	m_fBoolReturnType(false)
+	m_fBoolReturnType(false),
+	m_oidCollation(oidCollation)
 {
 	GPOS_ASSERT(pmdidType->FValid());
 
@@ -97,6 +99,7 @@ CScalarCoalesce::FMatch
 		CScalarCoalesce *popScCoalesce = CScalarCoalesce::PopConvert(pop);
 
 		// match if return types are identical
+		/* FIXME COLLATION */ // should this be checked here also
 		return popScCoalesce->PmdidType()->FEquals(m_pmdidType);
 	}
 

@@ -36,8 +36,7 @@ CParseHandlerScalarCoalesce::CParseHandlerScalarCoalesce
 	CParseHandlerBase *pphRoot
 	)
 	:
-	CParseHandlerScalarOp(pmp, pphm, pphRoot),
-	m_pmdidType(NULL)
+	CParseHandlerScalarOp(pmp, pphm, pphRoot)
 {
 }
 
@@ -58,10 +57,20 @@ CParseHandlerScalarCoalesce::StartElement
 	const Attributes& attrs
 	)
 {
-	if (0 == XMLString::compareString(CDXLTokens::XmlstrToken(EdxltokenScalarCoalesce), xmlszLocalname) && NULL == m_pmdidType)
+	if (0 == XMLString::compareString(CDXLTokens::XmlstrToken(EdxltokenScalarCoalesce), xmlszLocalname) && NULL == m_pdxln)
 	{
-		// parse type id
-		m_pmdidType = CDXLOperatorFactory::PmdidFromAttrs(m_pphm->Pmm(), attrs, EdxltokenTypeId, EdxltokenScalarCoalesce);
+		OID oidCollation = CDXLOperatorFactory::OidValueFromAttrs
+						(
+						m_pphm->Pmm(),
+						attrs,
+						EdxltokenCollation,
+						EdxltokenScalarCoalesce,
+						true,
+						OidInvalidCollation
+						);
+		IMDId *pmdidType = CDXLOperatorFactory::PmdidFromAttrs(m_pphm->Pmm(), attrs, EdxltokenTypeId, EdxltokenScalarCoalesce);
+
+		m_pdxln = GPOS_NEW(m_pmp) CDXLNode(m_pmp, GPOS_NEW(m_pmp) CDXLScalarCoalesce(m_pmp, pmdidType, oidCollation));
 	}
 	else
 	{
@@ -97,10 +106,6 @@ CParseHandlerScalarCoalesce::EndElement
 		CWStringDynamic *pstr = CDXLUtils::PstrFromXMLCh(m_pphm->Pmm(), xmlszLocalname);
 		GPOS_RAISE(gpdxl::ExmaDXL, gpdxl::ExmiDXLUnexpectedTag, pstr->Wsz());
 	}
-
-	// construct node
-	m_pdxln = GPOS_NEW(m_pmp) CDXLNode(m_pmp, GPOS_NEW(m_pmp) CDXLScalarCoalesce(m_pmp, m_pmdidType));
-
 	// loop over children and add them to this parsehandler
 	const ULONG ulChildren = this->UlLength();
 	for (ULONG ul = 0; ul < ulChildren; ul++)
