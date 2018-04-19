@@ -49,6 +49,9 @@ namespace gpopt
 			// location of token to be coerced
 			INT m_iLoc;
 
+			// catalog collation Oid of the result
+			OID m_oidResultCollation;
+	
 			// private copy ctor
 			CScalarCoerceBase(const CScalarCoerceBase &);
 
@@ -61,7 +64,8 @@ namespace gpopt
 				IMDId *pmdidType,
 				INT iTypeModifier,
 				ECoercionForm edxlcf,
-				INT iLoc
+				INT iLoc,
+				OID oidResultCollation
 				);
 
 			// dtor
@@ -80,6 +84,9 @@ namespace gpopt
 
 			// return token location
 			INT ILoc() const;
+
+			// catalog collation Oid of the result
+			OID OidResultCollation() const;
 
 			// return a copy of the operator with remapped columns
 			virtual

@@ -164,6 +164,21 @@ explain select * from L where b::numeric < 3::numeric;
         <dxl:SumAgg Mdid="0.2114.1.0"/>
         <dxl:CountAgg Mdid="0.2147.1.0"/>
       </dxl:Type>
+      <dxl:Type Mdid="0.1231.1.0" Name="_numeric" IsRedistributable="true" IsHashable="false" IsComposite="false" IsFixedLength="false" PassByValue="false" Collation="0">
+        <dxl:EqualityOp Mdid="0.1070.1.0"/>
+        <dxl:InequalityOp Mdid="0.1071.1.0"/>
+        <dxl:LessThanOp Mdid="0.1072.1.0"/>
+        <dxl:LessThanEqualsOp Mdid="0.1074.1.0"/>
+        <dxl:GreaterThanOp Mdid="0.1073.1.0"/>
+        <dxl:GreaterThanEqualsOp Mdid="0.1075.1.0"/>
+        <dxl:ComparisonOp Mdid="0.382.1.0"/>
+        <dxl:ArrayType Mdid="0.0.0.0"/>
+        <dxl:MinAgg Mdid="0.0.0.0"/>
+        <dxl:MaxAgg Mdid="0.0.0.0"/>
+        <dxl:AvgAgg Mdid="0.0.0.0"/>
+        <dxl:SumAgg Mdid="0.0.0.0"/>
+        <dxl:CountAgg Mdid="0.2147.1.0"/>
+      </dxl:Type>
       <dxl:ColumnStatistics Mdid="1.311296.1.0.1" Name="b" Width="4.000000" NullFreq="0.000000" NdvRemain="0.000000" FreqRemain="0.000000" ColStatsMissing="true"/>
       <dxl:ColumnStatistics Mdid="1.311296.1.0.0" Name="a" Width="4.000000" NullFreq="0.000000" NdvRemain="0.000000" FreqRemain="0.000000" ColStatsMissing="true"/>
       <dxl:GPDBFunc Mdid="0.1740.1.0" Name="numeric" ReturnsSet="false" Stability="Immutable" DataAccess="NoSQL" IsStrict="true">

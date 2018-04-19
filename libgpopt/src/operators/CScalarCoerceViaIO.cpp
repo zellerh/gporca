@@ -36,10 +36,11 @@ CScalarCoerceViaIO::CScalarCoerceViaIO
 	IMDId *pmdidType,
 	INT iTypeModifier,
 	ECoercionForm ecf,
-	INT iLoc
+	INT iLoc,
+	OID oidResultCollation
 	)
 	:
-	CScalarCoerceBase(pmp, pmdidType, iTypeModifier, ecf, iLoc)
+	CScalarCoerceBase(pmp, pmdidType, iTypeModifier, ecf, iLoc, oidResultCollation)
 {
 }
 
@@ -66,7 +67,8 @@ CScalarCoerceViaIO::FMatch
 		return popCoerce->PmdidType()->FEquals(PmdidType()) &&
 				popCoerce->ITypeModifier() == ITypeModifier() &&
 				popCoerce->Ecf() == Ecf() &&
-				popCoerce->ILoc() == ILoc();
+				popCoerce->ILoc() == ILoc() &&
+				popCoerce->OidResultCollation() == OidResultCollation();
 	}
 
 	return false;

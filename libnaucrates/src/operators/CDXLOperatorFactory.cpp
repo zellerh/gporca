@@ -983,8 +983,16 @@ CDXLOperatorFactory::PdxlopCoerceToDomain
 	INT iTypeModifier = IValueFromAttrs(pmm, attrs, EdxltokenTypeMod, EdxltokenScalarCoerceToDomain, true, IDefaultTypeModifier);
 	ULONG ulCoercionForm = UlValueFromAttrs(pmm, attrs, EdxltokenCoercionForm, EdxltokenScalarCoerceToDomain);
 	INT iLoc = IValueFromAttrs(pmm, attrs, EdxltokenLocation, EdxltokenScalarCoerceToDomain);
-
-	return GPOS_NEW(pmp) CDXLScalarCoerceToDomain(pmp, pmdidType, iTypeModifier, (EdxlCoercionForm) ulCoercionForm, iLoc);
+	OID oidResultCollation = OidValueFromAttrs
+									(
+									 pmm,
+									 attrs,
+									 EdxltokenCollation,
+									 EdxltokenScalarCoerceToDomain,
+									 true,
+									 OidInvalidCollation
+									 );
+	return GPOS_NEW(pmp) CDXLScalarCoerceToDomain(pmp, pmdidType, iTypeModifier, (EdxlCoercionForm) ulCoercionForm, iLoc, oidResultCollation);
 }
 
 //---------------------------------------------------------------------------
@@ -1010,8 +1018,17 @@ CDXLOperatorFactory::PdxlopCoerceViaIO
 	INT iTypeModifier = IValueFromAttrs(pmm, attrs, EdxltokenTypeMod, EdxltokenScalarCoerceViaIO, true, IDefaultTypeModifier);
 	ULONG ulCoercionForm = UlValueFromAttrs(pmm, attrs, EdxltokenCoercionForm, EdxltokenScalarCoerceViaIO);
 	INT iLoc = IValueFromAttrs(pmm, attrs, EdxltokenLocation, EdxltokenScalarCoerceViaIO);
+	OID oidResultCollation = OidValueFromAttrs
+									(
+									pmm,
+									attrs,
+									EdxltokenCollation,
+									EdxltokenScalarCoerceViaIO,
+									true,
+									OidInvalidCollation
+									 );
 
-	return GPOS_NEW(pmp) CDXLScalarCoerceViaIO(pmp, pmdidType, iTypeModifier, (EdxlCoercionForm) ulCoercionForm, iLoc);
+	return GPOS_NEW(pmp) CDXLScalarCoerceViaIO(pmp, pmdidType, iTypeModifier, (EdxlCoercionForm) ulCoercionForm, iLoc, oidResultCollation);
 }
 
 //---------------------------------------------------------------------------
@@ -1037,8 +1054,16 @@ CDXLOperatorFactory::PdxlopArrayCoerceExpr
 	BOOL fIsExplicit = FValueFromAttrs(pmm, attrs, EdxltokenIsExplicit, EdxltokenScalarArrayCoerceExpr);
 	ULONG ulCoercionForm = UlValueFromAttrs(pmm, attrs, EdxltokenCoercionForm, EdxltokenScalarArrayCoerceExpr);
 	INT iLoc = IValueFromAttrs(pmm, attrs, EdxltokenLocation, EdxltokenScalarArrayCoerceExpr);
-
-	return GPOS_NEW(pmp) CDXLScalarArrayCoerceExpr(pmp, pmdidElementFunc, pmdidType, iTypeModifier, fIsExplicit, (EdxlCoercionForm) ulCoercionForm, iLoc);
+	OID oidResultCollation = OidValueFromAttrs
+									(
+									 pmm,
+									 attrs,
+									 EdxltokenCollation,
+									 EdxltokenScalarArrayCoerceExpr,
+									 true,
+									 OidInvalidCollation
+									 );
+	return GPOS_NEW(pmp) CDXLScalarArrayCoerceExpr(pmp, pmdidElementFunc, pmdidType, iTypeModifier, fIsExplicit, (EdxlCoercionForm) ulCoercionForm, iLoc, oidResultCollation);
 }
 
 //---------------------------------------------------------------------------

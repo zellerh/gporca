@@ -40,14 +40,16 @@ CDXLScalarCoerceBase::CDXLScalarCoerceBase
 	IMDId *pmdidType,
 	INT iTypeModifier,
 	EdxlCoercionForm edxlcf,
-	INT iLoc
+	INT iLoc,
+	OID oidResultCollation
 	)
 	:
 	CDXLScalar(pmp),
 	m_pmdidResultType(pmdidType),
 	m_iTypeModifier(iTypeModifier),
 	m_edxlcf(edxlcf),
-	m_iLoc(iLoc)
+	m_iLoc(iLoc),
+	m_oidResultCollation(oidResultCollation)
 {
 	GPOS_ASSERT(NULL != pmdidType);
 	GPOS_ASSERT(pmdidType->FValid());
@@ -95,6 +97,10 @@ CDXLScalarCoerceBase::SerializeToDXL
 	}
 	pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenCoercionForm), (ULONG) m_edxlcf);
 	pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenLocation), m_iLoc);
+	if (OidInvalidCollation != m_oidResultCollation)
+	{
+		pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenCollation), m_oidResultCollation);
+	}
 
 	pdxln->SerializeChildrenToDXL(pxmlser);
 	pxmlser->CloseElement(CDXLTokens::PstrToken(EdxltokenNamespacePrefix), pstrElemName);

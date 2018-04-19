@@ -4132,7 +4132,8 @@ CUtils::PexprCast
 	pmdidDest->AddRef();
 	pmdcast->PmdidCastFunc()->AddRef();
 	CExpression *pexprCast;
-	
+	OID oidTypeCollation = (pmda->Pmdtype(pmdidDest))->OidTypeCollation();
+
 	if(pmdcast->EmdPathType() == IMDCast::EmdtArrayCoerce)
 	{
 		CMDArrayCoerceCastGPDB *parrayCoerceCast = (CMDArrayCoerceCastGPDB *) pmdcast;
@@ -4147,15 +4148,15 @@ CUtils::PexprCast
 		  parrayCoerceCast->ITypeModifier(),
 		  parrayCoerceCast->FIsExplicit(),
 		  (COperator::ECoercionForm) parrayCoerceCast->Ecf(),
-		  parrayCoerceCast->ILoc()
+		  parrayCoerceCast->ILoc(),
+		  oidTypeCollation
 		  ),
 		 pexpr
 		 );
 	}
 	else
 	{
-		OID OidTypeCollation = (pmda->Pmdtype(pmdidDest))->OidTypeCollation();
-		CScalarCast *popCast = GPOS_NEW(pmp) CScalarCast(pmp, pmdidDest, pmdcast->PmdidCastFunc(), pmdcast->FBinaryCoercible(), OidTypeCollation);
+		CScalarCast *popCast = GPOS_NEW(pmp) CScalarCast(pmp, pmdidDest, pmdcast->PmdidCastFunc(), pmdcast->FBinaryCoercible(), oidTypeCollation);
 		pexprCast = GPOS_NEW(pmp) CExpression(pmp, popCast, pexpr);
 	}
 	

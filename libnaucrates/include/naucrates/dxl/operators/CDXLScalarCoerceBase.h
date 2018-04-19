@@ -51,6 +51,9 @@ namespace gpdxl
 			// location of token to be coerced
 			INT m_iLoc;
 
+			// catalog collation Oid of the result
+			OID m_oidResultCollation;
+
 			// private copy ctor
 			CDXLScalarCoerceBase(const CDXLScalarCoerceBase&);
 
@@ -62,7 +65,8 @@ namespace gpdxl
 				IMDId *pmdidType,
 				INT iTypeModifier,
 				EdxlCoercionForm edxlcf,
-				INT iLoc
+				INT iLoc,
+				OID oidResultCollation
 				);
 
 			virtual
@@ -90,6 +94,12 @@ namespace gpdxl
 			INT ILoc() const
 			{
 				return m_iLoc;
+			}
+
+			// catalog collation Oid of the result
+			OID OidResultCollation() const
+			{
+				return m_oidResultCollation;
 			}
 
 			// does the operator return a boolean result

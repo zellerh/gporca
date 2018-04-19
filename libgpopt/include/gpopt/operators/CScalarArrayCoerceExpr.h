@@ -58,7 +58,8 @@ namespace gpopt
 				INT iTypeModifier,
 				BOOL fIsExplicit,
 				ECoercionForm edxlcf,
-				INT iLoc
+				INT iLoc,
+				OID oidResultCollation
 				);
 
 			// dtor

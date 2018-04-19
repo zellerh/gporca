@@ -52,7 +52,8 @@ namespace gpopt
 				IMDId *pmdidType,
 				INT iTypeModifier,
 				ECoercionForm edxlcf,
-				INT iLoc
+				INT iLoc,
+				OID oidResultCollation
 				);
 
 			// dtor

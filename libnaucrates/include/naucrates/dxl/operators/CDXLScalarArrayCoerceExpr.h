@@ -55,7 +55,8 @@ namespace gpdxl
 				INT iTypeModifier,
 				BOOL fIsExplicit,
 				EdxlCoercionForm edxlcf,
-				INT iLoc
+				INT iLoc,
+				OID oidResultCollation
 				);
 
 			virtual

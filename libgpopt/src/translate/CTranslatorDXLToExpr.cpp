@@ -728,6 +728,7 @@ CTranslatorDXLToExpr::PexprCastPrjElem
 	pmdidDest->AddRef();
 	pmdcast->PmdidCastFunc()->AddRef();
 	CExpression *pexprCast;
+	OID oidTypeCollation = (m_pmda->Pmdtype(pmdidDest))->OidTypeCollation();
 
 	if (pmdcast->EmdPathType() == IMDCast::EmdtArrayCoerce)
 	{
@@ -744,19 +745,19 @@ CTranslatorDXLToExpr::PexprCastPrjElem
 							parrayCoerceCast->ITypeModifier(),
 							parrayCoerceCast->FIsExplicit(),
 							(COperator::ECoercionForm) parrayCoerceCast->Ecf(),
-							parrayCoerceCast->ILoc()
+							parrayCoerceCast->ILoc(),
+							oidTypeCollation
 							),
 			GPOS_NEW(m_pmp) CExpression(m_pmp, GPOS_NEW(m_pmp) CScalarIdent(m_pmp, pcrToCast))
 		);
 	}
 	else
 	{
-		OID OidTypeCollation = (m_pmda->Pmdtype(pmdidDest))->OidTypeCollation();
 		pexprCast =
 			GPOS_NEW(m_pmp) CExpression
 			(
 				m_pmp,
-				GPOS_NEW(m_pmp) CScalarCast(m_pmp, pmdidDest, pmdcast->PmdidCastFunc(), pmdcast->FBinaryCoercible(), OidTypeCollation),
+				GPOS_NEW(m_pmp) CScalarCast(m_pmp, pmdidDest, pmdcast->PmdidCastFunc(), pmdcast->FBinaryCoercible(), oidTypeCollation),
 				GPOS_NEW(m_pmp) CExpression(m_pmp, GPOS_NEW(m_pmp) CScalarIdent(m_pmp, pcrToCast))
 			);
 	}
@@ -2923,7 +2924,6 @@ CTranslatorDXLToExpr::PexprScalarFunc
 
 		if (pmdcast->EmdPathType() == IMDCast::EmdtArrayCoerce)
 		{
-			/* FIXME COLLATION */
 			CMDArrayCoerceCastGPDB *parrayCoerceCast = (CMDArrayCoerceCastGPDB *) pmdcast;
 			pop = GPOS_NEW(m_pmp) CScalarArrayCoerceExpr
 					(
@@ -2933,7 +2933,8 @@ CTranslatorDXLToExpr::PexprScalarFunc
 					parrayCoerceCast->ITypeModifier(),
 					parrayCoerceCast->FIsExplicit(),
 					(COperator::ECoercionForm) parrayCoerceCast->Ecf(),
-					parrayCoerceCast->ILoc()
+					parrayCoerceCast->ILoc(),
+					oidFuncCollation
 					);
 		}
 		else
@@ -3642,7 +3643,8 @@ CTranslatorDXLToExpr::PexprScalarCast
 														parrayCoerceCast->ITypeModifier(),
 														parrayCoerceCast->FIsExplicit(),
 														(COperator::ECoercionForm) parrayCoerceCast->Ecf(),
-														parrayCoerceCast->ILoc()
+														parrayCoerceCast->ILoc(),
+														oidCollation
 														),
 									pexprChild
 									);
@@ -3699,7 +3701,8 @@ CTranslatorDXLToExpr::PexprScalarCoerceToDomain
 						pmdidType,
 						pdxlop->ITypeModifier(),
 						(COperator::ECoercionForm) edxlcf, // map Coercion Form directly based on position in enum
-						pdxlop->ILoc()
+						pdxlop->ILoc(),
+						pdxlop->OidResultCollation()
 						),
 				pexprChild
 				);
@@ -3743,7 +3746,8 @@ CTranslatorDXLToExpr::PexprScalarCoerceViaIO
 						pmdidType,
 						pdxlop->ITypeModifier(),
 						(COperator::ECoercionForm) edxlcf, // map Coercion Form directly based on position in enum
-						pdxlop->ILoc()
+						pdxlop->ILoc(),
+						pdxlop->OidResultCollation()
 						),
 				pexprChild
 				);
@@ -3790,7 +3794,8 @@ CTranslatorDXLToExpr::PexprScalarArrayCoerceExpr
 						pdxlop->ITypeModifier(),
 						pdxlop->FIsExplicit(),
 						(COperator::ECoercionForm) edxlcf, // map Coercion Form directly based on position in enum
-						pdxlop->ILoc()
+						pdxlop->ILoc(),
+						pdxlop->OidResultCollation()
 						),
 				pexprChild
 				);

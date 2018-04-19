@@ -36,10 +36,11 @@ CDXLScalarCoerceViaIO::CDXLScalarCoerceViaIO
 	IMDId *pmdidType,
 	INT iTypeModifier,
 	EdxlCoercionForm edxlcf,
-	INT iLoc
+	INT iLoc,
+	OID oidResultCollation
 	)
 	:
-	CDXLScalarCoerceBase(pmp, pmdidType, iTypeModifier, edxlcf, iLoc)
+	CDXLScalarCoerceBase(pmp, pmdidType, iTypeModifier, edxlcf, iLoc, oidResultCollation)
 {
 }
 

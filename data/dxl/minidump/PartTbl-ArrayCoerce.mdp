@@ -57,6 +57,21 @@ select * from pt where gender in ( 'F', 'FM');
         <dxl:SumAgg Mdid="0.0.0.0"/>
         <dxl:CountAgg Mdid="0.2147.1.0"/>
       </dxl:Type>
+      <dxl:Type Mdid="0.1009.1.0" Name="_text" IsRedistributable="true" IsHashable="false" IsComposite="false" IsFixedLength="false" PassByValue="false" Collation="100">
+        <dxl:EqualityOp Mdid="0.1070.1.0"/>
+        <dxl:InequalityOp Mdid="0.1071.1.0"/>
+        <dxl:LessThanOp Mdid="0.1072.1.0"/>
+        <dxl:LessThanEqualsOp Mdid="0.1074.1.0"/>
+        <dxl:GreaterThanOp Mdid="0.1073.1.0"/>
+        <dxl:GreaterThanEqualsOp Mdid="0.1075.1.0"/>
+        <dxl:ComparisonOp Mdid="0.382.1.0"/>
+        <dxl:ArrayType Mdid="0.0.0.0"/>
+        <dxl:MinAgg Mdid="0.0.0.0"/>
+        <dxl:MaxAgg Mdid="0.0.0.0"/>
+        <dxl:AvgAgg Mdid="0.0.0.0"/>
+        <dxl:SumAgg Mdid="0.0.0.0"/>
+        <dxl:CountAgg Mdid="0.2147.1.0"/>
+      </dxl:Type>
       <dxl:RelationStatistics Mdid="2.33297.1.1" Name="pt" Rows="0.000000" EmptyRelation="true"/>
       <dxl:Relation Mdid="0.33297.1.1" Name="pt" IsTemporary="false" HasOids="false" StorageType="Heap" DistributionPolicy="Hash" DistributionColumns="0" Keys="7,8,2" PartitionColumns="1" PartitionTypes="l" NumberLeafPartitions="3">
         <dxl:Columns>
@@ -218,7 +233,7 @@ select * from pt where gender in ( 'F', 'FM');
           <dxl:Cast TypeMdid="0.25.1.0" FuncId="0.0.0.0">
             <dxl:Ident ColId="2" ColName="gender" TypeMdid="0.1043.1.0"/>
           </dxl:Cast>
-          <dxl:ArrayCoerceExpr ElementFunc="0.0.0.0" TypeMdid="0.1009.1.0" IsExplicit="false" CoercionForm="2" Location="0">
+          <dxl:ArrayCoerceExpr ElementFunc="0.0.0.0" TypeMdid="0.1009.1.0" IsExplicit="false" CoercionForm="2" Location="0" Collation="100">
             <dxl:Array ArrayType="0.1015.1.0" ElementType="0.1043.1.0" MultiDimensional="false">
               <dxl:ConstValue TypeMdid="0.1043.1.0" IsNull="false" IsByValue="false" Value="AAAABUY=" LintValue="160743980"/>
               <dxl:ConstValue TypeMdid="0.1043.1.0" IsNull="false" IsByValue="false" Value="AAAABkZN" LintValue="689808164"/>
@@ -284,7 +299,7 @@ select * from pt where gender in ( 'F', 'FM');
                     <dxl:Cast TypeMdid="0.25.1.0" FuncId="0.0.0.0">
                       <dxl:ConstValue TypeMdid="0.1043.1.0" IsNull="false" IsByValue="false" Value="AAAABUY=" LintValue="160743980"/>
                     </dxl:Cast>
-                    <dxl:ArrayCoerceExpr ElementFunc="0.0.0.0" TypeMdid="0.1009.1.0" IsExplicit="true" CoercionForm="3" Location="-1">
+                    <dxl:ArrayCoerceExpr ElementFunc="0.0.0.0" TypeMdid="0.1009.1.0" IsExplicit="true" CoercionForm="3" Location="-1" Collation="100">
                       <dxl:PartListValues Level="0" ResultType="0.1015.1.0" ElementType="0.1043.1.0"/>
                     </dxl:ArrayCoerceExpr>
                   </dxl:ArrayComp>
@@ -295,7 +310,7 @@ select * from pt where gender in ( 'F', 'FM');
                     <dxl:Cast TypeMdid="0.25.1.0" FuncId="0.0.0.0">
                       <dxl:ConstValue TypeMdid="0.1043.1.0" IsNull="false" IsByValue="false" Value="AAAABkZN" LintValue="689808164"/>
                     </dxl:Cast>
-                    <dxl:ArrayCoerceExpr ElementFunc="0.0.0.0" TypeMdid="0.1009.1.0" IsExplicit="true" CoercionForm="3" Location="-1">
+                    <dxl:ArrayCoerceExpr ElementFunc="0.0.0.0" TypeMdid="0.1009.1.0" IsExplicit="true" CoercionForm="3" Location="-1" Collation="100">
                       <dxl:PartListValues Level="0" ResultType="0.1015.1.0" ElementType="0.1043.1.0"/>
                     </dxl:ArrayCoerceExpr>
                   </dxl:ArrayComp>
@@ -347,7 +362,7 @@ select * from pt where gender in ( 'F', 'FM');
                 <dxl:Cast TypeMdid="0.25.1.0" FuncId="0.0.0.0">
                   <dxl:Ident ColId="1" ColName="gender" TypeMdid="0.1043.1.0"/>
                 </dxl:Cast>
-                <dxl:ArrayCoerceExpr ElementFunc="0.0.0.0" TypeMdid="0.1009.1.0" IsExplicit="false" CoercionForm="2" Location="0">
+                <dxl:ArrayCoerceExpr ElementFunc="0.0.0.0" TypeMdid="0.1009.1.0" IsExplicit="false" CoercionForm="2" Location="0" Collation="100">
                   <dxl:Array ArrayType="0.1015.1.0" ElementType="0.1043.1.0" MultiDimensional="false">
                     <dxl:ConstValue TypeMdid="0.1043.1.0" IsNull="false" IsByValue="false" Value="AAAABUY=" LintValue="160743980"/>
                     <dxl:ConstValue TypeMdid="0.1043.1.0" IsNull="false" IsByValue="false" Value="AAAABkZN" LintValue="689808164"/>

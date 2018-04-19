@@ -38,10 +38,11 @@ CScalarArrayCoerceExpr::CScalarArrayCoerceExpr
 	INT iTypeModifier,
 	BOOL fIsExplicit,
 	ECoercionForm ecf,
-	INT iLoc
+	INT iLoc,
+	OID oidResultCollation
 	)
 	:
-	CScalarCoerceBase(pmp, pmdidResultType, iTypeModifier, ecf, iLoc),
+	CScalarCoerceBase(pmp, pmdidResultType, iTypeModifier, ecf, iLoc, oidResultCollation),
 	m_pmdidElementFunc(pmdidElementFunc),
 	m_fIsExplicit(fIsExplicit)
 {
@@ -149,7 +150,8 @@ CScalarArrayCoerceExpr::FMatch
 			popCoerce->ITypeModifier() == ITypeModifier() &&
 			popCoerce->FIsExplicit() == m_fIsExplicit &&
 			popCoerce->Ecf() == Ecf() &&
-			popCoerce->ILoc() == ILoc();
+			popCoerce->ILoc() == ILoc() &&
+			popCoerce->OidResultCollation() == OidResultCollation();
 }
 
 

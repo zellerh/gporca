@@ -56,7 +56,8 @@ namespace gpdxl
 				IMDId *pmdidType,
 				INT iTypeModifier,
 				EdxlCoercionForm edxlcf,
-				INT iLoc
+				INT iLoc,
+				OID oidResultCollation
 				);
 
 			virtual

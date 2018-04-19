@@ -39,10 +39,11 @@ CDXLScalarArrayCoerceExpr::CDXLScalarArrayCoerceExpr
 	INT iTypeModifier,
 	BOOL fIsExplicit,
 	EdxlCoercionForm edxlcf,
-	INT iLoc
+	INT iLoc,
+	OID oidResultCollation
 	)
 	:
-	CDXLScalarCoerceBase(pmp, pmdidResultType, iTypeModifier, edxlcf, iLoc),
+	CDXLScalarCoerceBase(pmp, pmdidResultType, iTypeModifier, edxlcf, iLoc, oidResultCollation),
 	m_pmdidElementFunc(pmdidElementFunc),
 	m_fIsExplicit(fIsExplicit)
 {
@@ -93,6 +94,10 @@ CDXLScalarArrayCoerceExpr::SerializeToDXL
 	pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenIsExplicit), m_fIsExplicit);
 	pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenCoercionForm), (ULONG) Edxlcf());
 	pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenLocation), ILoc());
+	if (OidInvalidCollation != OidResultCollation())
+	{
+		pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenCollation), OidResultCollation());
+	}
 
 	pdxln->SerializeChildrenToDXL(pxmlser);
 	pxmlser->CloseElement(CDXLTokens::PstrToken(EdxltokenNamespacePrefix), pstrElemName);

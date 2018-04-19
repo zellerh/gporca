@@ -119,6 +119,7 @@ CCastUtils::PexprCast
     pmdidDest->AddRef();
 	pmdcast->PmdidCastFunc()->AddRef();
 	CExpression *pexpr;
+	OID oidTypeCollation = (pmda->Pmdtype(pmdidDest))->OidTypeCollation();
 
 	if(pmdcast->EmdPathType() == IMDCast::EmdtArrayCoerce)
 	{
@@ -134,15 +135,15 @@ CCastUtils::PexprCast
 		  parrayCoerceCast->ITypeModifier(),
 		  parrayCoerceCast->FIsExplicit(),
 		  (COperator::ECoercionForm) parrayCoerceCast->Ecf(),
-		  parrayCoerceCast->ILoc()
+		  parrayCoerceCast->ILoc(),
+		  oidTypeCollation
 		  ),
 		 CUtils::PexprScalarIdent(pmp, pcr)
 		 );
 	}
 	else
 	{
-		OID OidTypeCollation = (pmda->Pmdtype(pmdidDest))->OidTypeCollation();
-		CScalarCast *popCast = GPOS_NEW(pmp) CScalarCast(pmp, pmdidDest, pmdcast->PmdidCastFunc(), pmdcast->FBinaryCoercible(), OidTypeCollation);
+		CScalarCast *popCast = GPOS_NEW(pmp) CScalarCast(pmp, pmdidDest, pmdcast->PmdidCastFunc(), pmdcast->FBinaryCoercible(), oidTypeCollation);
 		pexpr = GPOS_NEW(pmp) CExpression(pmp, popCast, CUtils::PexprScalarIdent(pmp, pcr));
 	}
 	return pexpr;
@@ -318,6 +319,7 @@ CCastUtils::PexprCast
     pmdidDest->AddRef();
     pmdcast->PmdidCastFunc()->AddRef();
     CExpression *pexprCast;
+    OID oidTypeCollation = (pmda->Pmdtype(pmdidDest))->OidTypeCollation();
 
     if (pmdcast->EmdPathType() == IMDCast::EmdtArrayCoerce)
     {
@@ -325,14 +327,13 @@ CCastUtils::PexprCast
         pexprCast = GPOS_NEW(pmp) CExpression
         (
          pmp,
-         GPOS_NEW(pmp) CScalarArrayCoerceExpr(pmp, parrayCoerceCast->PmdidCastFunc(), pmdidDest, parrayCoerceCast->ITypeModifier(), parrayCoerceCast->FIsExplicit(), (COperator::ECoercionForm) parrayCoerceCast->Ecf(), parrayCoerceCast->ILoc()),
+         GPOS_NEW(pmp) CScalarArrayCoerceExpr(pmp, parrayCoerceCast->PmdidCastFunc(), pmdidDest, parrayCoerceCast->ITypeModifier(), parrayCoerceCast->FIsExplicit(), (COperator::ECoercionForm) parrayCoerceCast->Ecf(), parrayCoerceCast->ILoc(), oidTypeCollation),
          pexpr
          );
     }
     else
     {
-        OID OidTypeCollation = (pmda->Pmdtype(pmdidDest))->OidTypeCollation();
-        CScalarCast *popCast = GPOS_NEW(pmp) CScalarCast(pmp, pmdidDest, pmdcast->PmdidCastFunc(), pmdcast->FBinaryCoercible(), OidTypeCollation);
+        CScalarCast *popCast = GPOS_NEW(pmp) CScalarCast(pmp, pmdidDest, pmdcast->PmdidCastFunc(), pmdcast->FBinaryCoercible(), oidTypeCollation);
         pexprCast = GPOS_NEW(pmp) CExpression(pmp, popCast, pexpr);
     }
 

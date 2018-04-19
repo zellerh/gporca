@@ -868,7 +868,8 @@ CTranslatorExprToDXLUtils::PdxlnListFilterPartKey
 									IDefaultTypeModifier,
 									true, /* fIsExplicit */
 									EdxlcfDontCare,
-									-1 /* iLoc */
+									-1, /* iLoc */
+									(pmda->Pmdtype(pmdidDestArray))->OidTypeCollation()
 									),
 					pdxlnPartKeyIdent
 					);

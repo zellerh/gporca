@@ -62,6 +62,21 @@
         <dxl:SumAgg Mdid="0.0.0.0"/>
         <dxl:CountAgg Mdid="0.2147.1.0"/>
       </dxl:Type>
+      <dxl:Type Mdid="0.1009.1.0" Name="_text" IsRedistributable="true" IsHashable="false" IsComposite="false" IsFixedLength="false" PassByValue="false" Collation="100">
+        <dxl:EqualityOp Mdid="0.1070.1.0"/>
+        <dxl:InequalityOp Mdid="0.1071.1.0"/>
+        <dxl:LessThanOp Mdid="0.1072.1.0"/>
+        <dxl:LessThanEqualsOp Mdid="0.1074.1.0"/>
+        <dxl:GreaterThanOp Mdid="0.1073.1.0"/>
+        <dxl:GreaterThanEqualsOp Mdid="0.1075.1.0"/>
+        <dxl:ComparisonOp Mdid="0.382.1.0"/>
+        <dxl:ArrayType Mdid="0.0.0.0"/>
+        <dxl:MinAgg Mdid="0.0.0.0"/>
+        <dxl:MaxAgg Mdid="0.0.0.0"/>
+        <dxl:AvgAgg Mdid="0.0.0.0"/>
+        <dxl:SumAgg Mdid="0.0.0.0"/>
+        <dxl:CountAgg Mdid="0.2147.1.0"/>
+      </dxl:Type>
       <dxl:GPDBScalarOp Mdid="0.666.1.0" Name="&gt;" ComparisonType="GT">
         <dxl:LeftType Mdid="0.25.1.0"/>
         <dxl:RightType Mdid="0.25.1.0"/>
@@ -342,7 +357,7 @@
                 <dxl:Or>
                   <dxl:ArrayComp OperatorName="&gt;" OperatorMdid="0.666.1.0" OperatorType="Any">
                     <dxl:ConstValue TypeMdid="0.25.1.0" IsNull="false" IsByValue="false" Value="AAAACjIwMDgwMg==" LintValue="249971508"/>
-                    <dxl:ArrayCoerceExpr ElementFunc="0.0.0.0" TypeMdid="0.1009.1.0" IsExplicit="true" CoercionForm="3" Location="-1">
+                    <dxl:ArrayCoerceExpr ElementFunc="0.0.0.0" TypeMdid="0.1009.1.0" IsExplicit="true" CoercionForm="3" Location="-1" Collation="100">
                       <dxl:PartListValues Level="0" ResultType="0.1015.1.0" ElementType="0.1043.1.0"/>
                     </dxl:ArrayCoerceExpr>
                   </dxl:ArrayComp>
@@ -351,7 +366,7 @@
                 <dxl:Or>
                   <dxl:ArrayComp OperatorName="&lt;=" OperatorMdid="0.665.1.0" OperatorType="Any">
                     <dxl:ConstValue TypeMdid="0.25.1.0" IsNull="false" IsByValue="false" Value="AAAACjIwMDgwMA==" LintValue="249955124"/>
-                    <dxl:ArrayCoerceExpr ElementFunc="0.0.0.0" TypeMdid="0.1009.1.0" IsExplicit="true" CoercionForm="3" Location="-1">
+                    <dxl:ArrayCoerceExpr ElementFunc="0.0.0.0" TypeMdid="0.1009.1.0" IsExplicit="true" CoercionForm="3" Location="-1" Collation="100">
                       <dxl:PartListValues Level="0" ResultType="0.1015.1.0" ElementType="0.1043.1.0"/>
                     </dxl:ArrayCoerceExpr>
                   </dxl:ArrayComp>

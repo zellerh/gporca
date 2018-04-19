@@ -1647,6 +1647,21 @@
         <dxl:SumAgg Mdid="0.2108.1.0"/>
         <dxl:CountAgg Mdid="0.2147.1.0"/>
       </dxl:Type>
+      <dxl:Type Mdid="0.1009.1.0" Name="_text" IsRedistributable="true" IsHashable="false" IsComposite="false" IsFixedLength="false" PassByValue="false" Collation="100">
+        <dxl:EqualityOp Mdid="0.1070.1.0"/>
+        <dxl:InequalityOp Mdid="0.1071.1.0"/>
+        <dxl:LessThanOp Mdid="0.1072.1.0"/>
+        <dxl:LessThanEqualsOp Mdid="0.1074.1.0"/>
+        <dxl:GreaterThanOp Mdid="0.1073.1.0"/>
+        <dxl:GreaterThanEqualsOp Mdid="0.1075.1.0"/>
+        <dxl:ComparisonOp Mdid="0.382.1.0"/>
+        <dxl:ArrayType Mdid="0.0.0.0"/>
+        <dxl:MinAgg Mdid="0.0.0.0"/>
+        <dxl:MaxAgg Mdid="0.0.0.0"/>
+        <dxl:AvgAgg Mdid="0.0.0.0"/>
+        <dxl:SumAgg Mdid="0.0.0.0"/>
+        <dxl:CountAgg Mdid="0.2147.1.0"/>
+      </dxl:Type>
       <dxl:Relation Mdid="0.18453.1.0" Name="fact" IsTemporary="false" HasOids="false" StorageType="AppendOnly, Column-oriented" DistributionPolicy="Hash" DistributionColumns="20,26" Keys="36,37,35" PartitionColumns="1,12" PartitionTypes="r,l" NumberLeafPartitions="45">
         <dxl:Columns>
           <dxl:Column Name="ld_unit_code" Attno="1" Mdid="0.1043.1.0" TypeModifier="54" Nullable="true" ColWidth="9">
@@ -14465,7 +14480,7 @@
                                               <dxl:Or>
                                                 <dxl:ArrayComp OperatorName="=" OperatorMdid="0.98.1.0" OperatorType="Any">
                                                   <dxl:ConstValue TypeMdid="0.25.1.0" IsNull="false" IsByValue="false" Value="AAAAC0FjdHVhbHM=" LintValue="135160806"/>
-                                                  <dxl:ArrayCoerceExpr ElementFunc="0.0.0.0" TypeMdid="0.1009.1.0" IsExplicit="true" CoercionForm="3" Location="-1">
+                                                  <dxl:ArrayCoerceExpr ElementFunc="0.0.0.0" TypeMdid="0.1009.1.0" IsExplicit="true" CoercionForm="3" Location="-1" Collation="100">
                                                     <dxl:PartListValues Level="1" ResultType="0.1015.1.0" ElementType="0.1043.1.0"/>
                                                   </dxl:ArrayCoerceExpr>
                                                 </dxl:ArrayComp>
@@ -14474,7 +14489,7 @@
                                               <dxl:Or>
                                                 <dxl:ArrayComp OperatorName="=" OperatorMdid="0.98.1.0" OperatorType="Any">
                                                   <dxl:ConstValue TypeMdid="0.25.1.0" IsNull="false" IsByValue="false" Value="AAAABnRn" LintValue="630776612"/>
-                                                  <dxl:ArrayCoerceExpr ElementFunc="0.0.0.0" TypeMdid="0.1009.1.0" IsExplicit="true" CoercionForm="3" Location="-1">
+                                                  <dxl:ArrayCoerceExpr ElementFunc="0.0.0.0" TypeMdid="0.1009.1.0" IsExplicit="true" CoercionForm="3" Location="-1" Collation="100">
                                                     <dxl:PartListValues Level="1" ResultType="0.1015.1.0" ElementType="0.1043.1.0"/>
                                                   </dxl:ArrayCoerceExpr>
                                                 </dxl:ArrayComp>
@@ -14484,7 +14499,7 @@
                                             <dxl:Or>
                                               <dxl:ArrayComp OperatorName="=" OperatorMdid="0.98.1.0" OperatorType="Any">
                                                 <dxl:ConstValue TypeMdid="0.25.1.0" IsNull="false" IsByValue="false" Value="AAAAEEN1cnJlbnQgUGxhbg==" LintValue="311804716"/>
-                                                <dxl:ArrayCoerceExpr ElementFunc="0.0.0.0" TypeMdid="0.1009.1.0" IsExplicit="true" CoercionForm="3" Location="-1">
+                                                <dxl:ArrayCoerceExpr ElementFunc="0.0.0.0" TypeMdid="0.1009.1.0" IsExplicit="true" CoercionForm="3" Location="-1" Collation="100">
                                                   <dxl:PartListValues Level="1" ResultType="0.1015.1.0" ElementType="0.1043.1.0"/>
                                                 </dxl:ArrayCoerceExpr>
                                               </dxl:ArrayComp>

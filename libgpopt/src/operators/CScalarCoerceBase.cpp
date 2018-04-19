@@ -36,14 +36,16 @@ CScalarCoerceBase::CScalarCoerceBase
 	IMDId *pmdidType,
 	INT iTypeModifier,
 	ECoercionForm ecf,
-	INT iLoc
+	INT iLoc,
+	OID oidResultCollation
 	)
 	:
 	CScalar(pmp),
 	m_pmdidResultType(pmdidType),
 	m_iTypeModifier(iTypeModifier),
 	m_ecf(ecf),
-	m_iLoc(iLoc)
+	m_iLoc(iLoc),
+	m_oidResultCollation(oidResultCollation)
 {
 	GPOS_ASSERT(NULL != pmdidType);
 	GPOS_ASSERT(pmdidType->FValid());
@@ -123,6 +125,12 @@ CScalarCoerceBase::ILoc() const
 	return m_iLoc;
 }
 
+// Return collation of the result
+OID
+CScalarCoerceBase::OidResultCollation() const
+{
+	return m_oidResultCollation;
+}
 
 //---------------------------------------------------------------------------
 //	@function:
