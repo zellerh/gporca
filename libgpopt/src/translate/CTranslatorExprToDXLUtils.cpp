@@ -869,7 +869,8 @@ CTranslatorExprToDXLUtils::PdxlnListFilterPartKey
 									true, /* fIsExplicit */
 									EdxlcfDontCare,
 									-1, /* iLoc */
-									(pmda->Pmdtype(pmdidDestArray))->OidTypeCollation()
+									(pmda->Pmdtype(pmdidDestArray))->OidTypeCollation(),
+									OidInvalidCollation /* input collation is only needed when a cast is created from a function expression */
 									),
 					pdxlnPartKeyIdent
 					);
@@ -1237,7 +1238,19 @@ CTranslatorExprToDXLUtils::PdxlnCmp
 		pmdidTypeCastExpr->AddRef();
 		pmdidCastFunc->AddRef();
 
-		pdxlnPartBound = GPOS_NEW(pmp) CDXLNode(pmp, GPOS_NEW(pmp) CDXLScalarCast(pmp, pmdidTypeCastExpr, pmdidCastFunc, oidResultCollation), pdxlnPartBound);
+		pdxlnPartBound = GPOS_NEW(pmp) CDXLNode
+										(
+										pmp,
+										GPOS_NEW(pmp) CDXLScalarCast
+															(
+															pmp,
+															pmdidTypeCastExpr,
+															pmdidCastFunc,
+															oidResultCollation,
+															OidInvalidCollation /* input collation is only needed when a cast is created from a function expression*/
+															),
+										 pdxlnPartBound
+										 );
 	}
 	pdxlnScCmp->AddChild(pdxlnPartBound);
 	pdxlnScCmp->AddChild(pdxlnScalar);

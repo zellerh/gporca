@@ -44,6 +44,15 @@ namespace gpopt
 			// conversion semantics flag to pass to func
 			BOOL m_fIsExplicit;
 
+			// OID of collation that function should use
+			// In some scenarios, ORCA creates an ArrayCoerce
+			// object from DXL Function expression and later it is
+			// translated back as a function expression. A function
+			// requires both input and result collation
+			// information, hence maintain input collation
+			// information needed in such cases.
+			OID m_oidInputCollation;
+		
 			// private copy ctor
 			CScalarArrayCoerceExpr(const CScalarArrayCoerceExpr &);
 
@@ -59,7 +68,8 @@ namespace gpopt
 				BOOL fIsExplicit,
 				ECoercionForm edxlcf,
 				INT iLoc,
-				OID oidResultCollation
+				OID oidResultCollation,
+				OID oidInputCollation
 				);
 
 			// dtor
@@ -70,6 +80,8 @@ namespace gpopt
 			IMDId *PmdidElementFunc() const;
 
 			BOOL FIsExplicit() const;
+
+			OID OidInputCollation() const;
 
 			virtual
 			EOperatorId Eopid() const;

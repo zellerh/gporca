@@ -51,6 +51,15 @@ namespace gpopt
 			// collation oid of the result
 			OID m_oidResultCollation;
 
+			// OID of collation that function should use
+			// In some scenarios, ORCA creates a cast object from
+			// DXL Function expression and later it is translated
+			// back as a function expression A function requires
+			// both input and result collation information.  hence
+			// maintain input collation information needed in such
+			// cases.
+			OID m_oidInputCollation;
+
 			// private copy ctor
 			CScalarCast(const CScalarCast &);
 
@@ -63,7 +72,8 @@ namespace gpopt
 				IMDId *pmdidReturnType,
 				IMDId *pmdidFunc,
 				BOOL fBinaryCoercible,
-				OID oidResultCollation
+				OID oidResultCollation,
+				OID oidInputCollation
 				);
 
 			// dtor
@@ -136,6 +146,12 @@ namespace gpopt
 			OID OidResultCollation() const
 			{
 				return m_oidResultCollation;
+			}
+
+			// collation oid of the input
+			OID OidInputCollation() const
+			{
+				return m_oidInputCollation;
 			}
 
 			// boolean expression evaluation

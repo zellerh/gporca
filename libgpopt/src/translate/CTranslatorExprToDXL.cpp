@@ -6499,7 +6499,7 @@ CTranslatorExprToDXL::PdxlnScCast
 	IMDId *pmdidFunc = popScCast->PmdidFunc();
 	pmdidFunc->AddRef();
 
-	CDXLNode *pdxlnCast = GPOS_NEW(m_pmp) CDXLNode(m_pmp, GPOS_NEW(m_pmp) CDXLScalarCast(m_pmp, pmdid, pmdidFunc, popScCast->OidResultCollation()));
+	CDXLNode *pdxlnCast = GPOS_NEW(m_pmp) CDXLNode(m_pmp, GPOS_NEW(m_pmp) CDXLScalarCast(m_pmp, pmdid, pmdidFunc, popScCast->OidResultCollation(), popScCast->OidInputCollation()));
 
 	// translate child
 	GPOS_ASSERT(1 == pexprCast->UlArity());
@@ -6637,7 +6637,8 @@ CTranslatorExprToDXL::PdxlnScArrayCoerceExpr
 					popScArrayCoerceExpr->FIsExplicit(),
 					(EdxlCoercionForm) popScArrayCoerceExpr->Ecf(), // map Coercion Form directly based on position in enum
 					popScArrayCoerceExpr->ILoc(),
-					popScArrayCoerceExpr->OidResultCollation()
+					popScArrayCoerceExpr->OidResultCollation(),
+					popScArrayCoerceExpr->OidInputCollation()
 					)
 			);
 

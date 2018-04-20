@@ -946,7 +946,7 @@ CDXLOperatorFactory::PdxlopCast
 							EdxltokenScalarCast
 							);
 
-	OID oidCollation = OidValueFromAttrs
+	OID oidResultCollation = OidValueFromAttrs
 							(
 							pmm,
 							attrs,
@@ -956,7 +956,18 @@ CDXLOperatorFactory::PdxlopCast
 							OidInvalidCollation
 							 );
 
-	return GPOS_NEW(pmp) CDXLScalarCast(pmp, pmdidType, pmdidFunc, oidCollation);
+	OID oidInputCollation = OidValueFromAttrs
+							(
+							 pmm,
+							 attrs,
+							 EdxltokenInputCollation,
+							 EdxltokenScalarCast,
+							 true,
+							 OidInvalidCollation
+							 );
+							
+
+	return GPOS_NEW(pmp) CDXLScalarCast(pmp, pmdidType, pmdidFunc, oidResultCollation, oidInputCollation);
 }
 
 
@@ -1063,7 +1074,17 @@ CDXLOperatorFactory::PdxlopArrayCoerceExpr
 									 true,
 									 OidInvalidCollation
 									 );
-	return GPOS_NEW(pmp) CDXLScalarArrayCoerceExpr(pmp, pmdidElementFunc, pmdidType, iTypeModifier, fIsExplicit, (EdxlCoercionForm) ulCoercionForm, iLoc, oidResultCollation);
+	OID oidInputCollation = OidValueFromAttrs
+									(
+									 pmm,
+									 attrs,
+									 EdxltokenInputCollation,
+									 EdxltokenScalarArrayCoerceExpr,
+									 true,
+									 OidInvalidCollation
+									 );
+
+	return GPOS_NEW(pmp) CDXLScalarArrayCoerceExpr(pmp, pmdidElementFunc, pmdidType, iTypeModifier, fIsExplicit, (EdxlCoercionForm) ulCoercionForm, iLoc, oidResultCollation, oidInputCollation);
 }
 
 //---------------------------------------------------------------------------

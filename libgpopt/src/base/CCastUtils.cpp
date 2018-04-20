@@ -136,14 +136,23 @@ CCastUtils::PexprCast
 		  parrayCoerceCast->FIsExplicit(),
 		  (COperator::ECoercionForm) parrayCoerceCast->Ecf(),
 		  parrayCoerceCast->ILoc(),
-		  oidTypeCollation
+		  oidTypeCollation,
+		  OidInvalidCollation /* input collation is only needed when a cast is created from a function expression */
 		  ),
 		 CUtils::PexprScalarIdent(pmp, pcr)
 		 );
 	}
 	else
 	{
-		CScalarCast *popCast = GPOS_NEW(pmp) CScalarCast(pmp, pmdidDest, pmdcast->PmdidCastFunc(), pmdcast->FBinaryCoercible(), oidTypeCollation);
+		CScalarCast *popCast = GPOS_NEW(pmp) CScalarCast
+												(
+												pmp,
+												pmdidDest,
+												pmdcast->PmdidCastFunc(),
+												pmdcast->FBinaryCoercible(),
+												oidTypeCollation,
+												OidInvalidCollation /* input collation is only needed when a cast is created from a function expression */
+												);
 		pexpr = GPOS_NEW(pmp) CExpression(pmp, popCast, CUtils::PexprScalarIdent(pmp, pcr));
 	}
 	return pexpr;
@@ -327,13 +336,32 @@ CCastUtils::PexprCast
         pexprCast = GPOS_NEW(pmp) CExpression
         (
          pmp,
-         GPOS_NEW(pmp) CScalarArrayCoerceExpr(pmp, parrayCoerceCast->PmdidCastFunc(), pmdidDest, parrayCoerceCast->ITypeModifier(), parrayCoerceCast->FIsExplicit(), (COperator::ECoercionForm) parrayCoerceCast->Ecf(), parrayCoerceCast->ILoc(), oidTypeCollation),
+         GPOS_NEW(pmp) CScalarArrayCoerceExpr
+								(
+								pmp,
+								parrayCoerceCast->PmdidCastFunc(),
+								pmdidDest,
+								parrayCoerceCast->ITypeModifier(),
+								parrayCoerceCast->FIsExplicit(),
+								(COperator::ECoercionForm) parrayCoerceCast->Ecf(),
+								parrayCoerceCast->ILoc(),
+								oidTypeCollation,
+								OidInvalidCollation /* input collation is only needed when a cast is created from a function expression */
+								),
          pexpr
          );
     }
     else
     {
-        CScalarCast *popCast = GPOS_NEW(pmp) CScalarCast(pmp, pmdidDest, pmdcast->PmdidCastFunc(), pmdcast->FBinaryCoercible(), oidTypeCollation);
+        CScalarCast *popCast = GPOS_NEW(pmp) CScalarCast
+												(
+												pmp,
+												pmdidDest,
+												pmdcast->PmdidCastFunc(),
+												pmdcast->FBinaryCoercible(),
+												oidTypeCollation,
+												OidInvalidCollation /* input collation is only needed when a cast is created from a function expression */
+												);
         pexprCast = GPOS_NEW(pmp) CExpression(pmp, popCast, pexpr);
     }
 

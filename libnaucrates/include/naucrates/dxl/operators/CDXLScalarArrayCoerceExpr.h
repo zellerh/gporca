@@ -43,6 +43,9 @@ namespace gpdxl
 			// conversion semantics flag to pass to func
 			BOOL m_fIsExplicit;
 
+			// collation oid of input
+			OID m_oidInputCollation;
+
 			// private copy ctor
 			CDXLScalarArrayCoerceExpr(const CDXLScalarArrayCoerceExpr&);
 
@@ -56,7 +59,8 @@ namespace gpdxl
 				BOOL fIsExplicit,
 				EdxlCoercionForm edxlcf,
 				INT iLoc,
-				OID oidResultCollation
+				OID oidResultCollation,
+				OID oidInputCollation
 				);
 
 			virtual
@@ -81,6 +85,11 @@ namespace gpdxl
 			BOOL FIsExplicit() const
 			{
 				return m_fIsExplicit;
+			}
+
+			BOOL OidInputCollation() const
+			{
+				return m_oidInputCollation;
 			}
 
 			// name of the DXL operator name

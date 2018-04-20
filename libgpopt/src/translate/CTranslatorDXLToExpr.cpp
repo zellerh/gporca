@@ -746,7 +746,8 @@ CTranslatorDXLToExpr::PexprCastPrjElem
 							parrayCoerceCast->FIsExplicit(),
 							(COperator::ECoercionForm) parrayCoerceCast->Ecf(),
 							parrayCoerceCast->ILoc(),
-							oidTypeCollation
+							oidTypeCollation,
+							OidInvalidCollation /* input collation is only needed when a cast is created from a function expression */
 							),
 			GPOS_NEW(m_pmp) CExpression(m_pmp, GPOS_NEW(m_pmp) CScalarIdent(m_pmp, pcrToCast))
 		);
@@ -757,7 +758,15 @@ CTranslatorDXLToExpr::PexprCastPrjElem
 			GPOS_NEW(m_pmp) CExpression
 			(
 				m_pmp,
-				GPOS_NEW(m_pmp) CScalarCast(m_pmp, pmdidDest, pmdcast->PmdidCastFunc(), pmdcast->FBinaryCoercible(), oidTypeCollation),
+				GPOS_NEW(m_pmp) CScalarCast
+									(
+									m_pmp,
+									pmdidDest,
+									pmdcast->PmdidCastFunc(),
+									pmdcast->FBinaryCoercible(),
+									oidTypeCollation,
+									OidInvalidCollation /* input collation is only needed when a cast is created from a function expression */
+									),
 				GPOS_NEW(m_pmp) CExpression(m_pmp, GPOS_NEW(m_pmp) CScalarIdent(m_pmp, pcrToCast))
 			);
 	}
@@ -2934,7 +2943,8 @@ CTranslatorDXLToExpr::PexprScalarFunc
 					parrayCoerceCast->FIsExplicit(),
 					(COperator::ECoercionForm) parrayCoerceCast->Ecf(),
 					parrayCoerceCast->ILoc(),
-					oidFuncCollation
+					oidFuncCollation,
+					oidInputCollation
 					);
 		}
 		else
@@ -2945,7 +2955,8 @@ CTranslatorDXLToExpr::PexprScalarFunc
 					pmdidRetType,
 					pmdidFunc,
 					pmdcast->FBinaryCoercible(),
-					oidFuncCollation
+					oidFuncCollation,
+					oidInputCollation
 					);
 		}
 	}
@@ -3617,7 +3628,8 @@ CTranslatorDXLToExpr::PexprScalarCast
 
 	IMDId *pmdidType = pdxlop->PmdidType();
 	IMDId *pmdidFunc = pdxlop->PmdidFunc();
-	OID oidCollation = pdxlop->OidCollation();
+	OID oidResultCollation = pdxlop->OidResultCollation();
+	OID oidInputCollation = pdxlop->OidInputCollation();
 
 	pmdidType->AddRef();
 	pmdidFunc->AddRef();
@@ -3644,7 +3656,8 @@ CTranslatorDXLToExpr::PexprScalarCast
 														parrayCoerceCast->FIsExplicit(),
 														(COperator::ECoercionForm) parrayCoerceCast->Ecf(),
 														parrayCoerceCast->ILoc(),
-														oidCollation
+														oidResultCollation,
+														oidInputCollation
 														),
 									pexprChild
 									);
@@ -3655,7 +3668,7 @@ CTranslatorDXLToExpr::PexprScalarCast
 		pexpr= GPOS_NEW(m_pmp) CExpression
 									(
 									m_pmp,
-									GPOS_NEW(m_pmp) CScalarCast(m_pmp, pmdidType, pmdidFunc, fRelabel, oidCollation),
+									GPOS_NEW(m_pmp) CScalarCast(m_pmp, pmdidType, pmdidFunc, fRelabel, oidResultCollation, oidInputCollation),
 									pexprChild
 									);
 	}
@@ -3795,7 +3808,8 @@ CTranslatorDXLToExpr::PexprScalarArrayCoerceExpr
 						pdxlop->FIsExplicit(),
 						(COperator::ECoercionForm) edxlcf, // map Coercion Form directly based on position in enum
 						pdxlop->ILoc(),
-						pdxlop->OidResultCollation()
+						pdxlop->OidResultCollation(),
+						pdxlop->OidInputCollation()
 						),
 				pexprChild
 				);

@@ -39,12 +39,14 @@ CScalarArrayCoerceExpr::CScalarArrayCoerceExpr
 	BOOL fIsExplicit,
 	ECoercionForm ecf,
 	INT iLoc,
-	OID oidResultCollation
+	OID oidResultCollation,
+	OID oidInputCollation
 	)
 	:
 	CScalarCoerceBase(pmp, pmdidResultType, iTypeModifier, ecf, iLoc, oidResultCollation),
 	m_pmdidElementFunc(pmdidElementFunc),
-	m_fIsExplicit(fIsExplicit)
+	m_fIsExplicit(fIsExplicit),
+	m_oidInputCollation(oidInputCollation)
 {
 	GPOS_ASSERT(NULL != pmdidElementFunc);
 }
@@ -92,6 +94,11 @@ CScalarArrayCoerceExpr::FIsExplicit() const
 	return m_fIsExplicit;
 }
 
+OID
+CScalarArrayCoerceExpr::OidInputCollation() const
+{
+	return m_oidInputCollation;
+}
 
 //---------------------------------------------------------------------------
 //	@function:
@@ -151,7 +158,8 @@ CScalarArrayCoerceExpr::FMatch
 			popCoerce->FIsExplicit() == m_fIsExplicit &&
 			popCoerce->Ecf() == Ecf() &&
 			popCoerce->ILoc() == ILoc() &&
-			popCoerce->OidResultCollation() == OidResultCollation();
+			popCoerce->OidResultCollation() == OidResultCollation() &&
+			popCoerce->OidInputCollation() == OidInputCollation();
 }
 
 

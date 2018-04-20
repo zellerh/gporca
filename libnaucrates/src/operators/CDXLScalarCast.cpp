@@ -33,13 +33,15 @@ CDXLScalarCast::CDXLScalarCast
 	IMemoryPool *pmp,
 	IMDId *pmdidType,
 	IMDId *pmdidFunc,
-	OID oidCollation
+	OID oidResultCollation,
+	OID oidInputCollation
 	)
 	:
 	CDXLScalar(pmp),
 	m_pmdidType(pmdidType),
 	m_pmdidFunc(pmdidFunc),
-	m_oidCollation(oidCollation)
+	m_oidResultCollation(oidResultCollation),
+	m_oidInputCollation(oidInputCollation)
 {
 	GPOS_ASSERT(NULL != m_pmdidFunc);
 	GPOS_ASSERT(m_pmdidType->FValid());
@@ -118,9 +120,16 @@ CDXLScalarCast::PmdidFunc() const
 
 // Collation oid of the result
 OID
-CDXLScalarCast::OidCollation() const
+CDXLScalarCast::OidResultCollation() const
 {
-	return m_oidCollation;
+	return m_oidResultCollation;
+}
+
+// Collation oid of the input
+OID
+CDXLScalarCast::OidInputCollation() const
+{
+	return m_oidInputCollation;
 }
 
 //---------------------------------------------------------------------------
@@ -146,9 +155,14 @@ CDXLScalarCast::SerializeToDXL
 	m_pmdidType->Serialize(pxmlser, CDXLTokens::PstrToken(EdxltokenTypeId));
 	m_pmdidFunc->Serialize(pxmlser, CDXLTokens::PstrToken(EdxltokenFuncId));
 
-	if (OidInvalidCollation != OidCollation())
+	if (OidInvalidCollation != OidResultCollation())
 	{
-		pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenCollation), m_oidCollation);
+		pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenCollation), m_oidResultCollation);
+	}
+
+	if (OidInvalidCollation != OidInputCollation())
+	{
+		pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenInputCollation), m_oidInputCollation);
 	}
 
 	pdxln->SerializeChildrenToDXL(pxmlser);
