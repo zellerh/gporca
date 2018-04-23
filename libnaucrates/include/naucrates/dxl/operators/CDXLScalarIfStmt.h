@@ -36,6 +36,8 @@ namespace gpdxl
 			// catalog MDId of the return type
 			IMDId *m_pmdidResultType;
 
+			OID m_oidCollation;
+
 			// private copy ctor
 			CDXLScalarIfStmt(const CDXLScalarIfStmt&);
 
@@ -45,7 +47,8 @@ namespace gpdxl
 			CDXLScalarIfStmt
 				(
 				IMemoryPool *pmp,
-				IMDId *pmdidType
+				IMDId *pmdidType,
+				OID oidCollation
 				);
 
 			//dtor
@@ -56,6 +59,8 @@ namespace gpdxl
 			const CWStringConst *PstrOpName() const;
 
 			IMDId *PmdidResultType() const;
+
+			OID OidCollation() const;
 
 			// DXL Operator ID
 			Edxlopid Edxlop() const;

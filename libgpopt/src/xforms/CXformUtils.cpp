@@ -875,13 +875,13 @@ CXformUtils::SubqueryAnyToAgg
 			GPOS_NEW(pmp) CExpression
 				(
 				pmp,
-				GPOS_NEW(pmp) CScalarIf(pmp, pmdidInt8),
+				GPOS_NEW(pmp) CScalarIf(pmp, pmdidInt8, OidInvalidCollation), // assuming type is Int8, there is no valid collation
 				pexprCountEqZero,
 				CUtils::PexprScalarConstInt8(pmp, 0 /*iVal*/),
 				GPOS_NEW(pmp) CExpression
 					(
 					pmp,
-					GPOS_NEW(pmp) CScalarIf(pmp, pmdidInt8),
+					GPOS_NEW(pmp) CScalarIf(pmp, pmdidInt8, OidInvalidCollation), // assuming type is Int8, there is no valid collation
 					pexprCountEqSum,
 					CUtils::PexprScalarConstInt8(pmp, -1 /*iVal*/),
 					CUtils::PexprScalarIdent(pmp, pcrCount)
@@ -957,7 +957,7 @@ CXformUtils::SubqueryAllToAgg
 			GPOS_NEW(pmp) CExpression
 				(
 				pmp,
-				GPOS_NEW(pmp) CScalarIf(pmp, pmdidInt4),
+				GPOS_NEW(pmp) CScalarIf(pmp, pmdidInt4, OidInvalidCollation), // assuming type is Int4, there is no valid collation
 				pexprSubqPred,
 				CUtils::PexprScalarConstInt4(pmp, 1 /*iVal*/),
 				CUtils::PexprScalarConstInt4(pmp, 0 /*iVal*/)
@@ -1009,25 +1009,25 @@ CXformUtils::SubqueryAllToAgg
 		GPOS_NEW(pmp) CExpression
 			(
 			pmp,
-			GPOS_NEW(pmp) CScalarIf(pmp, pmdidBool),
+			GPOS_NEW(pmp) CScalarIf(pmp, pmdidBool, OidInvalidCollation), // assuming type is bool, there is no valid collation
 			pexprIsInnerEmpty,
 			CUtils::PexprScalarConstBool(pmp, true /*fVal*/), // if inner is empty, return true
 			GPOS_NEW(pmp) CExpression
 					(
 					pmp,
-					GPOS_NEW(pmp) CScalarIf(pmp, pmdidBool),
+					GPOS_NEW(pmp) CScalarIf(pmp, pmdidBool, OidInvalidCollation), // assuming type is bool, there is no valid collation
 					pexprInnerHasNulls,
 					CUtils::PexprScalarConstBool(pmp, false /*fVal*/, true /*fNull*/),	// if inner produced null values, return null
 					GPOS_NEW(pmp) CExpression
 						(
 						pmp,
-						GPOS_NEW(pmp) CScalarIf(pmp, pmdidBool),
+						GPOS_NEW(pmp) CScalarIf(pmp, pmdidBool, OidInvalidCollation), // assuming type is bool, there is no valid collation
 						pexprIsOuterNull,
 						CUtils::PexprScalarConstBool(pmp, false /*fVal*/, true /*fNull*/), // if outer value is null, return null
 						GPOS_NEW(pmp) CExpression
 							(
 							pmp,
-							GPOS_NEW(pmp) CScalarIf(pmp, pmdidBool),
+							GPOS_NEW(pmp) CScalarIf(pmp, pmdidBool, OidInvalidCollation), // assuming type is bool, there is no valid collation
 							pexprSumTest,   // otherwise, test number of inner values that match outer value
 							CUtils::PexprScalarConstBool(pmp, true /*fVal*/),  // no matches
 							CUtils::PexprScalarConstBool(pmp, false /*fVal*/)  // at least one match
@@ -1180,7 +1180,7 @@ CXformUtils::PexprNullIndicator
 	return GPOS_NEW(pmp) CExpression
 			(
 			pmp,
-			GPOS_NEW(pmp) CScalarIf(pmp, pmdid),
+			GPOS_NEW(pmp) CScalarIf(pmp, pmdid, OidInvalidCollation), // assuming type is Int4, no collation will be valid
 			pexprIsNull,
 			CUtils::PexprScalarConstInt4(pmp, 1 /*iVal*/),
 			CUtils::PexprScalarConstInt4(pmp, 0 /*iVal*/)

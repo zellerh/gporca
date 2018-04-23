@@ -3441,7 +3441,7 @@ CTranslatorDXLToExpr::PexprScalarIf
 
 	IMDId *pmdid = pdxlop->PmdidResultType();
 	pmdid->AddRef();
-	CScalarIf *popScIf = GPOS_NEW(m_pmp) CScalarIf(m_pmp, pmdid);
+	CScalarIf *popScIf = GPOS_NEW(m_pmp) CScalarIf(m_pmp, pmdid, pdxlop->OidCollation());
 	CExpression *pexpr = GPOS_NEW(m_pmp) CExpression(m_pmp, popScIf, pdrgpexprChildren);
 
 	return pexpr;

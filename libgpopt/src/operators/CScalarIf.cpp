@@ -36,11 +36,13 @@ using namespace gpmd;
 CScalarIf::CScalarIf
 	(
 	IMemoryPool *pmp,
-	IMDId *pmdid
+	IMDId *pmdid,
+	OID oidCollation
 	)
 	:
 	CScalar(pmp),
 	m_pmdidType(pmdid),
+	m_oidCollation(oidCollation),
 	m_fBoolReturnType(false)
 {
 	GPOS_ASSERT(pmdid->FValid());

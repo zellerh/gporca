@@ -6207,7 +6207,7 @@ CTranslatorExprToDXL::PdxlnScIfStmt
 	IMDId *pmdidType = popScIf->PmdidType();
 	pmdidType->AddRef();
 
-	CDXLNode *pdxlnIfStmt = GPOS_NEW(m_pmp) CDXLNode(m_pmp, GPOS_NEW(m_pmp) CDXLScalarIfStmt(m_pmp, pmdidType));
+	CDXLNode *pdxlnIfStmt = GPOS_NEW(m_pmp) CDXLNode(m_pmp, GPOS_NEW(m_pmp) CDXLScalarIfStmt(m_pmp, pmdidType, popScIf->OidCollation()));
 	TranslateScalarChildren(pexprIfStmt, pdxlnIfStmt);
 
 	return pdxlnIfStmt;

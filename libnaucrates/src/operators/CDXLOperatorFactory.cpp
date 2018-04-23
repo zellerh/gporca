@@ -1136,7 +1136,17 @@ CDXLOperatorFactory::PdxlopIfStmt
 							EdxltokenScalarIfStmt
 							);
 
-	return GPOS_NEW(pmp) CDXLScalarIfStmt(pmp, pmdidType);
+	OID oidCollation = OidValueFromAttrs
+							(
+							pmm,
+							attrs,
+							EdxltokenCollation,
+							EdxltokenScalarIfStmt,
+							true,
+							OidInvalidCollation
+							);
+
+	return GPOS_NEW(pmp) CDXLScalarIfStmt(pmp, pmdidType, oidCollation);
 }
 
 //---------------------------------------------------------------------------

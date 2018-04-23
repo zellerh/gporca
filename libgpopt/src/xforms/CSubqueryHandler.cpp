@@ -640,7 +640,7 @@ CSubqueryHandler::FCreateOuterApplyForScalarSubquery
 				GPOS_NEW(pmp) CExpression
 					(
 					pmp,
-					GPOS_NEW(pmp) CScalarCoalesce(pmp, pmdidInt8, OidInvalidCollation /* FIXME COLLATION */ /* should a subquery have a collation? */),
+					GPOS_NEW(pmp) CScalarCoalesce(pmp, pmdidInt8, OidInvalidCollation), // assuming return type of Int8, there is no valid collation
 					CUtils::PexprScalarIdent(pmp, pcrComputed),
 					CUtils::PexprScalarConstInt8(pmp, 0 /*iVal*/)
 					);
@@ -651,11 +651,12 @@ CSubqueryHandler::FCreateOuterApplyForScalarSubquery
 			// this case can only occur when transforming quantified subquery to
 			// count(*) subquery using CXformSimplifySubquery
 			pmdidInt8->AddRef();
+			/* FIXME COLLATION */ /* not sure if we should be putting something other than default invalid value here */
 			*ppexprResidualScalar =
 				GPOS_NEW(pmp) CExpression
 					(
 					pmp,
-					GPOS_NEW(pmp) CScalarIf(pmp, pmdidInt8),
+					GPOS_NEW(pmp) CScalarIf(pmp, pmdidInt8, OidInvalidCollation), // assuming return type of Int8, there is no valid collation
 					CUtils::PexprScalarEqCmp(pmp, pcrComputed, CUtils::PexprScalarConstInt8(pmp, -1 /*fVal*/)),
 					CUtils::PexprScalarConstInt8(pmp, 0 /*fVal*/, true /*fNull*/),
 					pexprCoalesce
@@ -1472,7 +1473,7 @@ CSubqueryHandler::PexprScalarIf
 		return GPOS_NEW(pmp) CExpression
 						(
 						pmp,
-						GPOS_NEW(pmp) CScalarIf(pmp, pmdid),
+						GPOS_NEW(pmp) CScalarIf(pmp, pmdid, OidInvalidCollation), // assuming return type of bool, there is no valid collation
 						pexprIsNotNull,
 						CUtils::PexprScalarConstBool(pmp, fVal),
 						CUtils::PexprScalarConstBool(pmp, !fVal)
@@ -1493,13 +1494,13 @@ CSubqueryHandler::PexprScalarIf
 		GPOS_NEW(pmp) CExpression
 			(
 			pmp,
-			GPOS_NEW(pmp) CScalarIf(pmp, pmdid),
+			GPOS_NEW(pmp) CScalarIf(pmp, pmdid, OidInvalidCollation),
 			pexprEquality,
 			CUtils::PexprScalarConstBool(pmp, false /*fVal*/, true /*fNull*/),
 			GPOS_NEW(pmp) CExpression
 				(
 				pmp,
-				GPOS_NEW(pmp) CScalarIf(pmp, pmdid),
+				GPOS_NEW(pmp) CScalarIf(pmp, pmdid, OidInvalidCollation),
 				pexprSumIsNotNull,
 				CUtils::PexprScalarConstBool(pmp, fVal),
 				CUtils::PexprScalarConstBool(pmp, !fVal)
@@ -1513,7 +1514,7 @@ CSubqueryHandler::PexprScalarIf
 	return GPOS_NEW(pmp) CExpression
 					(
 					pmp,
-					GPOS_NEW(pmp) CScalarIf(pmp, pmdid),
+					GPOS_NEW(pmp) CScalarIf(pmp, pmdid, OidInvalidCollation),
 					CUtils::PexprIsNotNull(pmp, pexprScalar),
 					pexprScalarIf,
 					CUtils::PexprScalarConstBool(pmp, false /*fVal*/, true /*fNull*/)

@@ -361,7 +361,8 @@ CTranslatorExprToDXLUtils::PdxlnPropagationExpressionForPartConstraints
 		CDXLNode *pdxlnScalarIf = GPOS_NEW(pmp) CDXLNode
 										(
 										pmp, 
-										GPOS_NEW(pmp) CDXLScalarIfStmt(pmp, pmdidRetType),
+										// because the result type is known to be an int, collation is disabled
+										GPOS_NEW(pmp) CDXLScalarIfStmt(pmp, pmdidRetType, OidInvalidCollation),
 										pdxlnTest, 
 										pdxlnPropagate
 										);

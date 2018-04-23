@@ -46,6 +46,8 @@ namespace gpopt
 			// metadata id in the catalog
 			IMDId *m_pmdidType;
 
+			OID m_oidCollation;
+
 			// is operator return type BOOL?
 			BOOL m_fBoolReturnType;
 
@@ -58,7 +60,8 @@ namespace gpopt
 			CScalarIf
 				(
 				IMemoryPool *pmp,
-				IMDId *pmdid
+				IMDId *pmdid,
+				OID oidCollation
 				);
 
 			// dtor
@@ -88,6 +91,12 @@ namespace gpopt
 			IMDId *PmdidType() const
 			{
 				return m_pmdidType;
+			}
+
+			virtual
+			OID OidCollation() const
+			{
+				return m_oidCollation;
 			}
 
 			// operator specific hash function
