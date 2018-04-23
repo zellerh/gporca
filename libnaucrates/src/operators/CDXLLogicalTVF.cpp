@@ -32,13 +32,17 @@ CDXLLogicalTVF::CDXLLogicalTVF
 	IMDId *pmdidFunc,
 	IMDId *pmdidRetType,
 	CMDName *pmdname,
-	DrgPdxlcd *pdrgdxlcd
+	DrgPdxlcd *pdrgdxlcd,
+	OID oidResultCollation,
+	OID oidInputCollation
 	)
 	:CDXLLogical(pmp),
 	m_pmdidFunc(pmdidFunc),
 	m_pmdidRetType(pmdidRetType),
 	m_pmdname(pmdname),
-	m_pdrgdxlcd(pdrgdxlcd)
+	m_pdrgdxlcd(pdrgdxlcd),
+	m_oidResultCollation(oidResultCollation),
+	m_oidInputCollation(oidInputCollation)
 {
 	GPOS_ASSERT(m_pmdidFunc->FValid());
 	GPOS_ASSERT(m_pmdidRetType->FValid());
@@ -169,6 +173,8 @@ CDXLLogicalTVF::SerializeToDXL
 	m_pmdidFunc->Serialize(pxmlser, CDXLTokens::PstrToken(EdxltokenFuncId));
 	pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenName), m_pmdname->Pstr());
 	m_pmdidRetType->Serialize(pxmlser, CDXLTokens::PstrToken(EdxltokenTypeId));
+	pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenCollation), m_oidResultCollation);
+	pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenInputCollation), m_oidInputCollation);
 	
 	// serialize columns
 	pxmlser->OpenElement(CDXLTokens::PstrToken(EdxltokenNamespacePrefix), CDXLTokens::PstrToken(EdxltokenColumns));

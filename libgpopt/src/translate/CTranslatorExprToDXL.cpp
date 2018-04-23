@@ -2031,7 +2031,15 @@ CTranslatorExprToDXL::PdxlnTVF
 
 	CWStringConst *pstrFunc = GPOS_NEW(m_pmp) CWStringConst(m_pmp, popTVF->Pstr()->Wsz());
 
-	CDXLPhysicalTVF *pdxlop = GPOS_NEW(m_pmp) CDXLPhysicalTVF(m_pmp, pmdidFunc, pmdidRetType, pstrFunc);
+	CDXLPhysicalTVF *pdxlop = GPOS_NEW(m_pmp) CDXLPhysicalTVF
+													(
+													m_pmp,
+													pmdidFunc,
+													pmdidRetType,
+													pstrFunc,
+													popTVF->OidResultCollation(),
+													popTVF->OidInputCollation()
+													);
 
 	CDXLPhysicalProperties *pdxlprop = Pdxlprop(pexprTVF);
 	CDXLNode *pdxlnTVF = GPOS_NEW(m_pmp) CDXLNode(m_pmp, pdxlop);

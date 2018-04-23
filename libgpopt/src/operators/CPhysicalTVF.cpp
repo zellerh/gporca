@@ -38,7 +38,9 @@ CPhysicalTVF::CPhysicalTVF
 	IMDId *pmdidRetType,
 	CWStringConst *pstr,
 	DrgPcoldesc *pdrgpcoldesc,
-	CColRefSet *pcrsOutput
+	CColRefSet *pcrsOutput,
+	OID oidResultCollation,
+	OID oidInputCollation
 	)
 	:
 	CPhysical(pmp),
@@ -46,7 +48,9 @@ CPhysicalTVF::CPhysicalTVF
 	m_pmdidRetType(pmdidRetType),
 	m_pstr(pstr),
 	m_pdrgpcoldesc(pdrgpcoldesc),
-	m_pcrsOutput(pcrsOutput)
+	m_pcrsOutput(pcrsOutput),
+	m_oidResultCollation(oidResultCollation),
+	m_oidInputCollation(oidInputCollation)
 {
 	GPOS_ASSERT(m_pmdidFunc->FValid());
 	GPOS_ASSERT(m_pmdidRetType->FValid());

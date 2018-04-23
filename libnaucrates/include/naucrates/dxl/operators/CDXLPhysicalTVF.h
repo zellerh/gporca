@@ -39,6 +39,12 @@ namespace gpdxl
 			// function name
 			CWStringConst *m_pstr;
 
+			// catalog oid of the result collation function
+			OID m_oidResultCollation;
+
+			// catalog oid of input collation
+			OID m_oidInputCollation;
+
 			// private copy ctor
 			CDXLPhysicalTVF(const CDXLPhysicalTVF &);
 
@@ -49,7 +55,9 @@ namespace gpdxl
 					IMemoryPool *pmp,
 					IMDId *pmdidFunc,
 					IMDId *pmdidRetType,
-					CWStringConst *pstr
+					CWStringConst *pstr,
+					OID oidResultCollation,
+					OID oidInputCollation
 				);
 
 			// dtor
@@ -78,6 +86,18 @@ namespace gpdxl
 			IMDId *PmdidRetType() const
 			{
 				return m_pmdidRetType;
+			}
+
+			//get input collation id
+			OID OidResultCollation() const
+			{
+				return m_oidResultCollation;
+			}
+
+		    //get input collation id
+		    OID OidInputCollation() const
+			{
+				return m_oidInputCollation;
 			}
 
 			// serialize operator in DXL format

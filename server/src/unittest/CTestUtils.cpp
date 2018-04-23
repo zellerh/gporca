@@ -2248,7 +2248,9 @@ CTestUtils::PexprLogicalTVF
 										pmdid,
 										pmdidRetType,
 										pstrFuncName,
-										pdrgpcoldesc
+										pdrgpcoldesc,
+										OidInvalidCollation,
+										OidInvalidCollation
 										);
 
 	if (0 == ulArgs)

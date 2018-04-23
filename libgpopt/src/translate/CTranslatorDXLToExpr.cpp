@@ -494,7 +494,9 @@ CTranslatorDXLToExpr::PexprLogicalTVF
 										pmdidFunc,
 										pmdidRetType,
 										GPOS_NEW(m_pmp) CWStringConst(m_pmp, pdxlop->Pmdname()->Pstr()->Wsz()),
-										pdrgpcoldesc
+										pdrgpcoldesc,
+										pdxlop->OidResultCollation(),
+										pdxlop->OidInputCollation()
 										);
 
 	// create expression containing the logical TVF operator

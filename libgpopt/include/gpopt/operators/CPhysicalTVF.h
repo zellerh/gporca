@@ -47,6 +47,12 @@ namespace gpopt
 			// output columns
 			CColRefSet *m_pcrsOutput;
 
+			// catalog oid of the result collation function
+			OID m_oidResultCollation;
+
+			// catalog oid of input collation
+			OID m_oidInputCollation;
+
 			// private copy ctor
 			CPhysicalTVF(const CPhysicalTVF &);
 
@@ -60,7 +66,9 @@ namespace gpopt
 				IMDId *pmdidRetType,
 				CWStringConst *pstr,
 				DrgPcoldesc *pdrgpcoldesc,
-				CColRefSet *pcrsOutput
+				CColRefSet *pcrsOutput,
+				OID oidResultCollation,
+				OID oidInputCollation
 				);
 
 			// dtor
@@ -109,6 +117,18 @@ namespace gpopt
 			CColRefSet *PcrsOutput() const
 			{
 				return m_pcrsOutput;
+			}
+
+			//get input collation id
+			OID OidResultCollation() const
+			{
+				return m_oidResultCollation;
+			}
+
+			//get input collation id
+			OID OidInputCollation() const
+			{
+				return m_oidInputCollation;
 			}
 
 			// sensitivity to order of inputs

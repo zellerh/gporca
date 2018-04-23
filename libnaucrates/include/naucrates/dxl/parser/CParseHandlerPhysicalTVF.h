@@ -43,6 +43,12 @@ namespace gpdxl
 			// function name
 			CWStringConst *m_pstr;
 
+			// catalog oid of the result collation function
+			OID m_oidResultCollation;
+
+			// catalog oid of input collation
+			OID m_oidInputCollation;
+
 			// private copy ctor
 			CParseHandlerPhysicalTVF(const CParseHandlerPhysicalTVF &);
 

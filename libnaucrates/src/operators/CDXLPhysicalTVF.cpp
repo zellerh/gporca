@@ -31,13 +31,17 @@ CDXLPhysicalTVF::CDXLPhysicalTVF
 	IMemoryPool *pmp,
 	IMDId *pmdidFunc,
 	IMDId *pmdidRetType,
-	CWStringConst *pstr
+	CWStringConst *pstr,
+	OID oidResultCollation,
+	OID oidInputCollation
 	)
 	:
 	CDXLPhysical(pmp),
 	m_pmdidFunc(pmdidFunc),
 	m_pmdidRetType(pmdidRetType),
-	m_pstr(pstr)
+	m_pstr(pstr),
+	m_oidResultCollation(oidResultCollation),
+	m_oidInputCollation(oidInputCollation)
 {
 	GPOS_ASSERT(NULL != m_pmdidFunc);
 	GPOS_ASSERT(m_pmdidFunc->FValid());
@@ -110,6 +114,8 @@ CDXLPhysicalTVF::SerializeToDXL
 	m_pmdidFunc->Serialize(pxmlser, CDXLTokens::PstrToken(EdxltokenFuncId));
 	pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenName), m_pstr);
 	m_pmdidRetType->Serialize(pxmlser, CDXLTokens::PstrToken(EdxltokenTypeId));
+	pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenCollation), m_oidResultCollation);
+	pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenInputCollation), m_oidInputCollation);
 
 	// serialize properties
 	pdxln->SerializePropertiesToDXL(pxmlser);

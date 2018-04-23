@@ -43,7 +43,13 @@ namespace gpdxl
 
 			// list of column descriptors		
 			DrgPdxlcd *m_pdrgdxlcd;
-			
+
+			// catalog Oid of the result collation function
+			OID m_oidResultCollation;
+
+			// catalog oid of input collation
+			OID m_oidInputCollation;
+
 			// private copy ctor
 			CDXLLogicalTVF(const CDXLLogicalTVF &);
 			
@@ -55,7 +61,9 @@ namespace gpdxl
 				IMDId *pmdidFunc,
 				IMDId *pmdidRetType,
 				CMDName *pmdname,
-				DrgPdxlcd *pdrgdxlcd
+				DrgPdxlcd *pdrgdxlcd,
+				OID oidResultCollation,
+				OID oidInputCollation
 				);
 						
 			virtual
@@ -92,6 +100,18 @@ namespace gpdxl
 			const DrgPdxlcd *Pdrgpdxlcd() const
 			{
 				return m_pdrgdxlcd;
+			}
+
+			//get result collation id
+			OID OidResultCollation() const
+			{
+				return m_oidResultCollation;
+			}
+
+			//get input collation id
+			OID OidInputCollation() const
+			{
+				return m_oidInputCollation;
 			}
 
 			// get the column descriptor at the given position

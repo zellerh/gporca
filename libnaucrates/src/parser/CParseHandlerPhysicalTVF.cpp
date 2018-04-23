@@ -84,6 +84,24 @@ CParseHandlerPhysicalTVF::StartElement
 
 		// parse return type
 		m_pmdidRetType = CDXLOperatorFactory::PmdidFromAttrs(m_pphm->Pmm(), attrs, EdxltokenTypeId, EdxltokenPhysicalTVF);
+		m_oidResultCollation = CDXLOperatorFactory::OidValueFromAttrs
+														(
+														m_pphm->Pmm(),
+														attrs,
+														EdxltokenCollation,
+														EdxltokenLogicalTVF,
+														true,
+														OidInvalidCollation
+														);
+		m_oidInputCollation = CDXLOperatorFactory::OidValueFromAttrs
+														(
+														m_pphm->Pmm(),
+														attrs,
+														EdxltokenInputCollation,
+														EdxltokenLogicalTVF,
+														true,
+														OidInvalidCollation
+														);
 
 		// parse handler for the proj list
 		CParseHandlerBase *pphPrL = CParseHandlerFactory::Pph(m_pmp, CDXLTokens::XmlstrToken(EdxltokenScalarProjList), m_pphm, this);
@@ -132,7 +150,7 @@ CParseHandlerPhysicalTVF::EndElement
 		GPOS_RAISE(gpdxl::ExmaDXL, gpdxl::ExmiDXLUnexpectedTag, pstr->Wsz());
 	}
 
-	CDXLPhysicalTVF *pdxlop = GPOS_NEW(m_pmp) CDXLPhysicalTVF(m_pmp, m_pmdidFunc, m_pmdidRetType, m_pstr);
+	CDXLPhysicalTVF *pdxlop = GPOS_NEW(m_pmp) CDXLPhysicalTVF(m_pmp, m_pmdidFunc, m_pmdidRetType, m_pstr, m_oidResultCollation, m_oidInputCollation);
 	m_pdxln = GPOS_NEW(m_pmp) CDXLNode(m_pmp, pdxlop);
 
 	CParseHandlerProperties *pphProp = dynamic_cast<CParseHandlerProperties *>((*this)[0]);

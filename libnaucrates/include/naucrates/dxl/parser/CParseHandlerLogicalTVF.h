@@ -43,6 +43,12 @@ namespace gpdxl
 			// function name
 			CMDName *m_pmdname;
 
+			// catalog oid of the result collation function
+			OID m_oidResultCollation;
+
+			// catalog oid of input collation
+			OID m_oidInputCollation;
+
 			// private copy ctor
 			CParseHandlerLogicalTVF(const CParseHandlerLogicalTVF &);
 

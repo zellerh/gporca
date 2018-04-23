@@ -130,7 +130,7 @@ CXformImplementTVF::Transform
 
 	DrgPexpr *pdrgpexpr = pexpr->PdrgPexpr();
 
-	CPhysicalTVF *pphTVF = GPOS_NEW(pmp) CPhysicalTVF(pmp, pmdidFunc, pmdidRetType, pstr, pdrgpcoldesc, pcrs);
+	CPhysicalTVF *pphTVF = GPOS_NEW(pmp) CPhysicalTVF(pmp, pmdidFunc, pmdidRetType, pstr, pdrgpcoldesc, pcrs, popTVF->OidResultCollation(), popTVF->OidInputCollation());
 
 	CExpression *pexprAlt = NULL;
 	// create alternative expression

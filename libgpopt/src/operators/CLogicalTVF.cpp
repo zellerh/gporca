@@ -42,7 +42,9 @@ CLogicalTVF::CLogicalTVF
 	m_pdrgpcrOutput(NULL),
 	m_efs(IMDFunction::EfsImmutable),
 	m_efda(IMDFunction::EfdaNoSQL),
-	m_fReturnsSet(true)
+	m_fReturnsSet(true),
+	m_oidResultCollation(OidInvalidCollation),
+	m_oidInputCollation(OidInvalidCollation)
 {
 	m_fPattern = true;
 }
@@ -62,7 +64,9 @@ CLogicalTVF::CLogicalTVF
 	IMDId *pmdidFunc,
 	IMDId *pmdidRetType,
 	CWStringConst *pstr,
-	DrgPcoldesc *pdrgpcoldesc
+	DrgPcoldesc *pdrgpcoldesc,
+	OID oidResultCollation,
+	OID oidInputCollation
 	)
 	:
 	CLogical(pmp),
@@ -70,7 +74,9 @@ CLogicalTVF::CLogicalTVF
 	m_pmdidRetType(pmdidRetType),
 	m_pstr(pstr),
 	m_pdrgpcoldesc(pdrgpcoldesc),
-	m_pdrgpcrOutput(NULL)
+	m_pdrgpcrOutput(NULL),
+	m_oidResultCollation(oidResultCollation),
+	m_oidInputCollation(oidInputCollation)
 {
 	GPOS_ASSERT(pmdidFunc->FValid());
 	GPOS_ASSERT(pmdidRetType->FValid());
@@ -103,7 +109,9 @@ CLogicalTVF::CLogicalTVF
 	IMDId *pmdidRetType,
 	CWStringConst *pstr,
 	DrgPcoldesc *pdrgpcoldesc,
-	DrgPcr *pdrgpcrOutput
+	DrgPcr *pdrgpcrOutput,
+	OID oidResultCollation,
+	OID oidInputCollation
 	)
 	:
 	CLogical(pmp),
@@ -111,7 +119,9 @@ CLogicalTVF::CLogicalTVF
 	m_pmdidRetType(pmdidRetType),
 	m_pstr(pstr),
 	m_pdrgpcoldesc(pdrgpcoldesc),
-	m_pdrgpcrOutput(pdrgpcrOutput)
+	m_pdrgpcrOutput(pdrgpcrOutput),
+	m_oidResultCollation(oidResultCollation),
+	m_oidInputCollation(oidInputCollation)
 {
 	GPOS_ASSERT(pmdidFunc->FValid());
 	GPOS_ASSERT(pmdidRetType->FValid());
@@ -225,7 +235,7 @@ CLogicalTVF::PopCopyWithRemappedColumns
 	m_pmdidRetType->AddRef();
 	m_pdrgpcoldesc->AddRef();
 
-	return GPOS_NEW(pmp) CLogicalTVF(pmp, m_pmdidFunc, m_pmdidRetType, pstr, m_pdrgpcoldesc, pdrgpcrOutput);
+	return GPOS_NEW(pmp) CLogicalTVF(pmp, m_pmdidFunc, m_pmdidRetType, pstr, m_pdrgpcoldesc, pdrgpcrOutput, m_oidResultCollation, m_oidInputCollation);
 }
 
 //---------------------------------------------------------------------------

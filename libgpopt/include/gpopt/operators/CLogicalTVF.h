@@ -55,6 +55,12 @@ namespace gpopt
 			// does this function return a set of rows
 			BOOL m_fReturnsSet;
 
+			// catalog oid of the result collation function
+			OID m_oidResultCollation;
+
+			// catalog oid of input collation
+			OID m_oidInputCollation;
+
 			// private copy ctor
 			CLogicalTVF(const CLogicalTVF &);
 			
@@ -70,7 +76,9 @@ namespace gpopt
 				IMDId *pmdidFunc,
 				IMDId *pmdidRetType,
 				CWStringConst *pstr,
-				DrgPcoldesc *pdrgpcoldesc
+				DrgPcoldesc *pdrgpcoldesc,
+				OID oidResultCollation,
+				OID oidInputCollation
 				);
 
 			CLogicalTVF
@@ -80,7 +88,9 @@ namespace gpopt
 				IMDId *pmdidRetType,
 				CWStringConst *pstr,
 				DrgPcoldesc *pdrgpcoldesc,
-				DrgPcr *pdrgpcrOutput
+				DrgPcr *pdrgpcrOutput,
+				OID oidResultCollation,
+				OID oidInputCollation
 				);
 
 			// dtor
@@ -129,6 +139,18 @@ namespace gpopt
 			DrgPcr *PdrgpcrOutput() const
 			{
 				return m_pdrgpcrOutput;
+			}
+
+			//get input collation id
+			OID OidResultCollation() const
+			{
+				return m_oidResultCollation;
+			}
+
+			//get input collation id
+			OID OidInputCollation() const
+			{
+				return m_oidInputCollation;
 			}
 
 			// sensitivity to order of inputs

@@ -81,6 +81,24 @@ CParseHandlerLogicalTVF::StartElement
 
 		// parse function return type
 		m_pmdidRetType = CDXLOperatorFactory::PmdidFromAttrs(m_pphm->Pmm(), attrs, EdxltokenTypeId, EdxltokenLogicalTVF);
+		m_oidResultCollation = CDXLOperatorFactory::OidValueFromAttrs
+														(
+														m_pphm->Pmm(),
+														attrs,
+														EdxltokenCollation,
+														EdxltokenLogicalTVF,
+														true,
+														OidInvalidCollation
+														);
+		m_oidInputCollation = CDXLOperatorFactory::OidValueFromAttrs
+														(
+														m_pphm->Pmm(),
+														attrs,
+														EdxltokenInputCollation,
+														EdxltokenLogicalTVF,
+														true,
+														OidInvalidCollation
+														);
 
 	}
 	else if (0 == XMLString::compareString(CDXLTokens::XmlstrToken(EdxltokenColumns), xmlszLocalname))
@@ -138,7 +156,16 @@ CParseHandlerLogicalTVF::EndElement
 	GPOS_ASSERT(NULL != pdrgpdxlcd);
 
 	pdrgpdxlcd->AddRef();
-	CDXLLogicalTVF *pdxlopTVF = GPOS_NEW(m_pmp) CDXLLogicalTVF(m_pmp, m_pmdidFunc, m_pmdidRetType, m_pmdname, pdrgpdxlcd);
+	CDXLLogicalTVF *pdxlopTVF = GPOS_NEW(m_pmp) CDXLLogicalTVF
+													(
+													m_pmp,
+													m_pmdidFunc,
+													m_pmdidRetType,
+													m_pmdname,
+													pdrgpdxlcd,
+													m_oidResultCollation,
+													m_oidInputCollation
+													);
 
 	m_pdxln = GPOS_NEW(m_pmp) CDXLNode(m_pmp, pdxlopTVF);
 
