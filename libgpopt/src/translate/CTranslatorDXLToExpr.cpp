@@ -2821,7 +2821,7 @@ CTranslatorDXLToExpr::PexprScalarNullIf
 	IMDId *pmdidType = pdxlop->PmdidType();
 	pmdidType->AddRef();
 
-	return GPOS_NEW(m_pmp) CExpression(m_pmp, GPOS_NEW(m_pmp) CScalarNullIf(m_pmp, pmdidOp, pmdidType), pexprLeft, pexprRight);
+	return GPOS_NEW(m_pmp) CExpression(m_pmp, GPOS_NEW(m_pmp) CScalarNullIf(m_pmp, pmdidOp, pmdidType, pdxlop->OidCollation(), pdxlop->OidInputCollation()), pexprLeft, pexprRight);
 }
 
 //---------------------------------------------------------------------------

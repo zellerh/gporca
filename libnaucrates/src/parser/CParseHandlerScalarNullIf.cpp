@@ -64,8 +64,10 @@ CParseHandlerScalarNullIf::StartElement
 
 	IMDId *pmdidOp = CDXLOperatorFactory::PmdidFromAttrs(m_pphm->Pmm(), attrs, EdxltokenOpNo, EdxltokenScalarNullIf);
 	IMDId *pmdidRetType = CDXLOperatorFactory::PmdidFromAttrs(m_pphm->Pmm(), attrs, EdxltokenTypeId, EdxltokenScalarNullIf);
+	OID oidCollation = CDXLOperatorFactory::OidValueFromAttrs(m_pphm->Pmm(), attrs, EdxltokenCollation, EdxltokenScalarNullIf, true, OidInvalidCollation);
+	OID oidInputCollation = CDXLOperatorFactory::OidValueFromAttrs(m_pphm->Pmm(), attrs, EdxltokenInputCollation, EdxltokenScalarNullIf, true, OidInvalidCollation);
 
-	m_pdxln = GPOS_NEW(m_pmp) CDXLNode(m_pmp, GPOS_NEW(m_pmp) CDXLScalarNullIf(m_pmp, pmdidOp, pmdidRetType));
+	m_pdxln = GPOS_NEW(m_pmp) CDXLNode(m_pmp, GPOS_NEW(m_pmp) CDXLScalarNullIf(m_pmp, pmdidOp, pmdidRetType, oidCollation, oidInputCollation));
 
 	// create and activate the parse handler for the children nodes in reverse
 	// order of their expected appearance

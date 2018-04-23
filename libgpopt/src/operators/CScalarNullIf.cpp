@@ -37,12 +37,16 @@ CScalarNullIf::CScalarNullIf
 	(
 	IMemoryPool *pmp,
 	IMDId *pmdidOp,
-	IMDId *pmdidType
+	IMDId *pmdidType,
+	OID oidCollation,
+	OID oidInputCollation
 	)
 	:
 	CScalar(pmp),
 	m_pmdidOp(pmdidOp),
 	m_pmdidType(pmdidType),
+	m_oidCollation(oidCollation),
+	m_oidInputCollation(oidInputCollation),
 	m_fReturnsNullOnNullInput(false),
 	m_fBoolReturnType(false)
 {

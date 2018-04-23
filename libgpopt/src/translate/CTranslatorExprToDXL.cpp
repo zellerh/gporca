@@ -6281,7 +6281,7 @@ CTranslatorExprToDXL::PdxlnScNullIf
 	IMDId *pmdidType = pop->PmdidType();
 	pmdidType->AddRef();
 
-	CDXLScalarNullIf *pdxlop = GPOS_NEW(m_pmp) CDXLScalarNullIf(m_pmp, pmdid, pmdidType);
+	CDXLScalarNullIf *pdxlop = GPOS_NEW(m_pmp) CDXLScalarNullIf(m_pmp, pmdid, pmdidType, pop->OidCollation(), pop->OidInputCollation());
 	CDXLNode *pdxln = GPOS_NEW(m_pmp) CDXLNode(m_pmp, pdxlop);
 	TranslateScalarChildren(pexprScNullIf, pdxln);
 

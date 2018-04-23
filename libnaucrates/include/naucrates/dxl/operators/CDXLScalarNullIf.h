@@ -39,6 +39,9 @@ namespace gpdxl
 			// return type
 			IMDId *m_pmdidType;
 
+			OID m_oidCollation;
+			OID m_oidInputCollation;
+
 			// private copy ctor
 			CDXLScalarNullIf(CDXLScalarNullIf&);
 
@@ -48,7 +51,9 @@ namespace gpdxl
 				(
 				IMemoryPool *pmp,
 				IMDId *pmdidOp,
-				IMDId *pmdidType
+				IMDId *pmdidType,
+				OID oidCollation,
+				OID oidInputCollation
 				);
 
 			// dtor
@@ -69,6 +74,9 @@ namespace gpdxl
 			// return type
 			virtual
 			IMDId *PmdidType() const;
+
+			OID OidCollation() const;
+			OID OidInputCollation() const;
 
 			// serialize operator in DXL format
 			virtual

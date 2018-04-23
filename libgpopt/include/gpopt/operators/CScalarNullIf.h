@@ -38,6 +38,9 @@ namespace gpopt
 			// return type
 			IMDId *m_pmdidType;
 
+			OID m_oidCollation;
+			OID m_oidInputCollation;
+
 			// does operator return NULL on NULL input?
 			BOOL m_fReturnsNullOnNullInput;
 
@@ -50,7 +53,7 @@ namespace gpopt
 		public:
 
 			// ctor
-			CScalarNullIf(IMemoryPool *pmp, IMDId *pmdidOp, IMDId *pmdidType);
+			CScalarNullIf(IMemoryPool *pmp, IMDId *pmdidOp, IMDId *pmdidType, OID oidCollation, OID oidInputCollation);
 
 			// dtor
 			virtual
@@ -75,6 +78,18 @@ namespace gpopt
 			IMDId *PmdidType() const
 			{
 				return m_pmdidType;
+			}
+
+			virtual
+			OID OidCollation() const
+			{
+				return m_oidCollation;
+			}
+
+			virtual
+			OID OidInputCollation() const
+			{
+				return m_oidInputCollation;
 			}
 
 			// return a string for operator name
