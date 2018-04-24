@@ -3470,7 +3470,7 @@ CTranslatorDXLToExpr::PexprScalarSwitch
 
 	IMDId *pmdid = pdxlop->PmdidType();
 	pmdid->AddRef();
-	CScalarSwitch *pop = GPOS_NEW(m_pmp) CScalarSwitch(m_pmp, pmdid);
+	CScalarSwitch *pop = GPOS_NEW(m_pmp) CScalarSwitch(m_pmp, pmdid, pdxlop->OidCollation());
 
 	return GPOS_NEW(m_pmp) CExpression(m_pmp, pop, pdrgpexprChildren);
 }
@@ -3520,7 +3520,7 @@ CTranslatorDXLToExpr::PexprScalarCaseTest
 
 	IMDId *pmdid = pdxlop->PmdidType();
 	pmdid->AddRef();
-	CScalarCaseTest *pop = GPOS_NEW(m_pmp) CScalarCaseTest(m_pmp, pmdid);
+	CScalarCaseTest *pop = GPOS_NEW(m_pmp) CScalarCaseTest(m_pmp, pmdid, pdxlop->OidCollation());
 
 	return GPOS_NEW(m_pmp) CExpression(m_pmp, pop);
 }

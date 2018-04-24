@@ -34,8 +34,7 @@ CParseHandlerScalarCaseTest::CParseHandlerScalarCaseTest
 	CParseHandlerBase *pphRoot
 	)
 	:
-	CParseHandlerScalarOp(pmp, pphm, pphRoot),
-	m_pmdidType(NULL)
+	CParseHandlerScalarOp(pmp, pphm, pphRoot)
 {
 }
 
@@ -62,8 +61,10 @@ CParseHandlerScalarCaseTest::StartElement
 		GPOS_RAISE(gpdxl::ExmaDXL, gpdxl::ExmiDXLUnexpectedTag, pstr->Wsz());
 	}
 
-	// parse type id
-	m_pmdidType = CDXLOperatorFactory::PmdidFromAttrs(m_pphm->Pmm(), attrs, EdxltokenTypeId, EdxltokenScalarCaseTest);
+	IMDId *pmdidType = CDXLOperatorFactory::PmdidFromAttrs(m_pphm->Pmm(), attrs, EdxltokenTypeId, EdxltokenScalarCaseTest);
+	OID oidCollation = CDXLOperatorFactory::OidValueFromAttrs(m_pphm->Pmm(), attrs, EdxltokenCollation, EdxltokenScalarCaseTest, true, OidInvalidCollation);
+	m_pdxln = GPOS_NEW(m_pmp) CDXLNode(m_pmp, GPOS_NEW(m_pmp) CDXLScalarCaseTest(m_pmp, pmdidType, oidCollation));
+
 }
 
 //---------------------------------------------------------------------------
@@ -87,9 +88,6 @@ CParseHandlerScalarCaseTest::EndElement
 		CWStringDynamic *pstr = CDXLUtils::PstrFromXMLCh(m_pphm->Pmm(), xmlszLocalname);
 		GPOS_RAISE(gpdxl::ExmaDXL, gpdxl::ExmiDXLUnexpectedTag, pstr->Wsz());
 	}
-
-	// construct node
-	m_pdxln = GPOS_NEW(m_pmp) CDXLNode(m_pmp, GPOS_NEW(m_pmp) CDXLScalarCaseTest(m_pmp, m_pmdidType));
 
 	// deactivate handler
 	m_pphm->DeactivateHandler();

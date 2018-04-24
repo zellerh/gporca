@@ -30,11 +30,13 @@ using namespace gpdxl;
 CDXLScalarSwitch::CDXLScalarSwitch
 	(
 	IMemoryPool *pmp,
-	IMDId *pmdidType
+	IMDId *pmdidType,
+	OID oidCollation
 	)
 	:
 	CDXLScalar(pmp),
-	m_pmdidType(pmdidType)
+	m_pmdidType(pmdidType),
+	m_oidCollation(oidCollation)
 {
 	GPOS_ASSERT(m_pmdidType->FValid());
 }
@@ -94,6 +96,12 @@ CDXLScalarSwitch::PmdidType() const
 	return m_pmdidType;
 }
 
+OID
+CDXLScalarSwitch::OidCollation() const
+{
+	return m_oidCollation;
+}
+
 //---------------------------------------------------------------------------
 //	@function:
 //		CDXLScalarSwitch::SerializeToDXL
@@ -114,6 +122,10 @@ CDXLScalarSwitch::SerializeToDXL
 
 	pxmlser->OpenElement(CDXLTokens::PstrToken(EdxltokenNamespacePrefix), pstrElemName);
 	m_pmdidType->Serialize(pxmlser, CDXLTokens::PstrToken(EdxltokenTypeId));
+	if (OidInvalidCollation != OidCollation())
+	{
+		pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenCollation), OidCollation());
+	}
 	pdxln->SerializeChildrenToDXL(pxmlser);
 	pxmlser->CloseElement(CDXLTokens::PstrToken(EdxltokenNamespacePrefix), pstrElemName);
 }

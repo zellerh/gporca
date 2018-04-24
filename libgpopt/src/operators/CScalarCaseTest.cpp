@@ -27,11 +27,13 @@ using namespace gpmd;
 CScalarCaseTest::CScalarCaseTest
 	(
 	IMemoryPool *pmp,
-	IMDId *pmdidType
+	IMDId *pmdidType,
+	OID oidCollation
 	)
 	:
 	CScalar(pmp),
-	m_pmdidType(pmdidType)
+	m_pmdidType(pmdidType),
+	m_oidCollation(oidCollation)
 {
 	GPOS_ASSERT(pmdidType->FValid());
 }

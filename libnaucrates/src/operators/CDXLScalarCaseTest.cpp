@@ -30,11 +30,13 @@ using namespace gpdxl;
 CDXLScalarCaseTest::CDXLScalarCaseTest
 	(
 	IMemoryPool *pmp,
-	IMDId *pmdidType
+	IMDId *pmdidType,
+	OID oidCollation
 	)
 	:
 	CDXLScalar(pmp),
-	m_pmdidType(pmdidType)
+	m_pmdidType(pmdidType),
+	m_oidCollation(oidCollation)
 {
 	GPOS_ASSERT(m_pmdidType->FValid());
 }
@@ -64,6 +66,12 @@ Edxlopid
 CDXLScalarCaseTest::Edxlop() const
 {
 	return EdxlopScalarCaseTest;
+}
+
+OID
+CDXLScalarCaseTest::OidCollation() const
+{
+	return m_oidCollation;
 }
 
 //---------------------------------------------------------------------------
@@ -114,6 +122,10 @@ CDXLScalarCaseTest::SerializeToDXL
 
 	pxmlser->OpenElement(CDXLTokens::PstrToken(EdxltokenNamespacePrefix), pstrElemName);
 	m_pmdidType->Serialize(pxmlser, CDXLTokens::PstrToken(EdxltokenTypeId));
+	if (OidInvalidCollation != OidCollation())
+	{
+		pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenCollation), OidCollation());
+	}
 	pxmlser->CloseElement(CDXLTokens::PstrToken(EdxltokenNamespacePrefix), pstrElemName);
 }
 

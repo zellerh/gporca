@@ -35,9 +35,6 @@ namespace gpdxl
 	{
 		private:
 
-			// return type
-			IMDId *m_pmdidType;
-
 			// private copy ctor
 			CParseHandlerScalarCaseTest(const CParseHandlerScalarCaseTest &);
 

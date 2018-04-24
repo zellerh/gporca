@@ -36,13 +36,15 @@ namespace gpdxl
 			// return type
 			IMDId *m_pmdidType;
 
+			OID m_oidCollation;
+
 			// private copy ctor
 			CDXLScalarSwitch(const CDXLScalarSwitch&);
 
 		public:
 
 			// ctor
-			CDXLScalarSwitch(IMemoryPool *pmp, IMDId *pmdidType);
+			CDXLScalarSwitch(IMemoryPool *pmp, IMDId *pmdidType, OID oidCollation);
 
 			//dtor
 			virtual
@@ -55,6 +57,9 @@ namespace gpdxl
 			// return type
 			virtual
 			IMDId *PmdidType() const;
+
+			virtual
+			OID OidCollation() const;
 
 			// DXL Operator ID
 			virtual

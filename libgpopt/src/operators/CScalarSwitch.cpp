@@ -30,12 +30,14 @@ using namespace gpmd;
 CScalarSwitch::CScalarSwitch
 	(
 	IMemoryPool *pmp,
-	IMDId *pmdidType
+	IMDId *pmdidType,
+	OID oidCollation
 	)
 	:
 	CScalar(pmp),
 	m_pmdidType(pmdidType),
-	m_fBoolReturnType(false)
+	m_fBoolReturnType(false),
+	m_oidCollation(oidCollation)
 {
 	GPOS_ASSERT(pmdidType->FValid());
 

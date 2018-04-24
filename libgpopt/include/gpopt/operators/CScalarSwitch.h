@@ -51,13 +51,15 @@ namespace gpopt
 			// is operator return type BOOL?
 			BOOL m_fBoolReturnType;
 
+			OID m_oidCollation;
+
 			// private copy ctor
 			CScalarSwitch(const CScalarSwitch &);
 
 		public:
 
 			// ctor
-			CScalarSwitch(IMemoryPool *pmp, IMDId *pmdidType);
+			CScalarSwitch(IMemoryPool *pmp, IMDId *pmdidType, OID oidCollation);
 
 			// dtor
 			virtual
@@ -82,6 +84,12 @@ namespace gpopt
 			IMDId *PmdidType() const
 			{
 				return m_pmdidType;
+			}
+
+			virtual
+			OID OidCollation() const
+			{
+				return m_oidCollation;
 			}
 
 			// operator specific hash function

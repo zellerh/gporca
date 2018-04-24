@@ -35,13 +35,15 @@ namespace gpopt
 			// type id
 			IMDId *m_pmdidType;
 
+			OID m_oidCollation;
+
 			// private copy ctor
 			CScalarCaseTest(const CScalarCaseTest &);
 
 		public:
 
 			// ctor
-			CScalarCaseTest(IMemoryPool *pmp, IMDId *pmdidType);
+			CScalarCaseTest(IMemoryPool *pmp, IMDId *pmdidType, OID oidCollation);
 
 			// dtor
 			virtual
@@ -66,6 +68,12 @@ namespace gpopt
 			IMDId *PmdidType() const
 			{
 				return m_pmdidType;
+			}
+
+			virtual
+			OID OidCollation() const
+			{
+				return m_oidCollation;
 			}
 
 			// operator specific hash function

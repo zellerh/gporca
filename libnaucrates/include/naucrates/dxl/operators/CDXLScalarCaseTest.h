@@ -37,13 +37,15 @@ namespace gpdxl
 			// expression type
 			IMDId *m_pmdidType;
 
+			OID m_oidCollation;
+
 			// private copy ctor
 			CDXLScalarCaseTest(const CDXLScalarCaseTest&);
 
 		public:
 
 			// ctor
-			CDXLScalarCaseTest(IMemoryPool *pmp, IMDId *pmdidType);
+			CDXLScalarCaseTest(IMemoryPool *pmp, IMDId *pmdidType, OID oidCollation);
 
 			// dtor
 			virtual
@@ -56,6 +58,9 @@ namespace gpdxl
 			// expression type
 			virtual
 			IMDId *PmdidType() const;
+
+			virtual
+			OID OidCollation() const;
 
 			// DXL Operator ID
 			virtual

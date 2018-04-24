@@ -61,13 +61,14 @@ CParseHandlerScalarSwitch::StartElement
 	const Attributes& attrs
 	)
 {
-	if (0 == XMLString::compareString(CDXLTokens::XmlstrToken(EdxltokenScalarSwitch), xmlszLocalname) && NULL == m_pmdidType)
+	if (0 == XMLString::compareString(CDXLTokens::XmlstrToken(EdxltokenScalarSwitch), xmlszLocalname))
 	{
 		// parse type id
-		m_pmdidType = CDXLOperatorFactory::PmdidFromAttrs(m_pphm->Pmm(), attrs, EdxltokenTypeId, EdxltokenScalarSwitch);
+		IMDId *pmdidType = CDXLOperatorFactory::PmdidFromAttrs(m_pphm->Pmm(), attrs, EdxltokenTypeId, EdxltokenScalarSwitch);
+		OID oidCollation = CDXLOperatorFactory::OidValueFromAttrs(m_pphm->Pmm(), attrs, EdxltokenCollation, EdxltokenScalarSwitch, true, OidInvalidCollation);
 
 		// construct node
-		CDXLScalarSwitch *pdxlop =  GPOS_NEW(m_pmp) CDXLScalarSwitch(m_pmp, m_pmdidType);
+		CDXLScalarSwitch *pdxlop = GPOS_NEW(m_pmp) CDXLScalarSwitch(m_pmp, pmdidType, oidCollation);
 		m_pdxln = GPOS_NEW(m_pmp) CDXLNode(m_pmp, pdxlop);
 	}
 	else if (0 == XMLString::compareString(CDXLTokens::XmlstrToken(EdxltokenScalarSwitchCase), xmlszLocalname))
