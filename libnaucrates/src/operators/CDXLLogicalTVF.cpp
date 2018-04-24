@@ -173,9 +173,17 @@ CDXLLogicalTVF::SerializeToDXL
 	m_pmdidFunc->Serialize(pxmlser, CDXLTokens::PstrToken(EdxltokenFuncId));
 	pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenName), m_pmdname->Pstr());
 	m_pmdidRetType->Serialize(pxmlser, CDXLTokens::PstrToken(EdxltokenTypeId));
-	pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenCollation), m_oidResultCollation);
-	pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenInputCollation), m_oidInputCollation);
-	
+
+	if (OidInvalidCollation != m_oidResultCollation)
+	{
+		pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenCollation), m_oidResultCollation);
+	}
+
+	if (OidInvalidCollation != m_oidInputCollation)
+	{
+		pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenInputCollation), m_oidInputCollation);
+	}
+
 	// serialize columns
 	pxmlser->OpenElement(CDXLTokens::PstrToken(EdxltokenNamespacePrefix), CDXLTokens::PstrToken(EdxltokenColumns));
 	GPOS_ASSERT(NULL != m_pdrgdxlcd);

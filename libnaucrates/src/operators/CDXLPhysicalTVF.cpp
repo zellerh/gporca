@@ -114,8 +114,16 @@ CDXLPhysicalTVF::SerializeToDXL
 	m_pmdidFunc->Serialize(pxmlser, CDXLTokens::PstrToken(EdxltokenFuncId));
 	pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenName), m_pstr);
 	m_pmdidRetType->Serialize(pxmlser, CDXLTokens::PstrToken(EdxltokenTypeId));
-	pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenCollation), m_oidResultCollation);
-	pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenInputCollation), m_oidInputCollation);
+
+	if (OidInvalidCollation != m_oidResultCollation)
+	{
+		pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenCollation), m_oidResultCollation);
+	}
+
+	if (OidInvalidCollation != m_oidInputCollation)
+	{
+		pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenInputCollation), m_oidInputCollation);
+	}
 
 	// serialize properties
 	pdxln->SerializePropertiesToDXL(pxmlser);
