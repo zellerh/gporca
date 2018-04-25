@@ -158,7 +158,7 @@ CScalarArrayCoerceExpr::FMatch
 			popCoerce->FIsExplicit() == m_fIsExplicit &&
 			popCoerce->Ecf() == Ecf() &&
 			popCoerce->ILoc() == ILoc() &&
-			popCoerce->OidResultCollation() == OidResultCollation() &&
+			popCoerce->OidCollation() == OidCollation() &&
 			popCoerce->OidInputCollation() == OidInputCollation();
 }
 

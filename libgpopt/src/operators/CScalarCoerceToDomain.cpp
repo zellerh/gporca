@@ -63,7 +63,7 @@ CScalarCoerceToDomain::FMatch
 				popCoerce->ITypeModifier() == ITypeModifier() &&
 				popCoerce->Ecf() == Ecf() &&
 				popCoerce->ILoc() == ILoc() &&
-				popCoerce->OidResultCollation() == OidResultCollation();
+				popCoerce->OidCollation() == OidCollation();
 	}
 
 	return false;

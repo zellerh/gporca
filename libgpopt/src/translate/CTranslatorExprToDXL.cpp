@@ -6553,7 +6553,7 @@ CTranslatorExprToDXL::PdxlnScCoerceToDomain
 					popScCoerce->ITypeModifier(),
 					(EdxlCoercionForm) popScCoerce->Ecf(), // map Coercion Form directly based on position in enum
 					popScCoerce->ILoc(),
-					popScCoerce->OidResultCollation()
+					popScCoerce->OidCollation()
 					)
 			);
 
@@ -6599,7 +6599,7 @@ CTranslatorExprToDXL::PdxlnScCoerceViaIO
 					popScCerce->ITypeModifier(),
 					(EdxlCoercionForm) popScCerce->Ecf(), // map Coercion Form directly based on position in enum
 					popScCerce->ILoc(),
-					popScCerce->OidResultCollation()
+					popScCerce->OidCollation()
 					)
 			);
 
@@ -6647,7 +6647,7 @@ CTranslatorExprToDXL::PdxlnScArrayCoerceExpr
 					popScArrayCoerceExpr->FIsExplicit(),
 					(EdxlCoercionForm) popScArrayCoerceExpr->Ecf(), // map Coercion Form directly based on position in enum
 					popScArrayCoerceExpr->ILoc(),
-					popScArrayCoerceExpr->OidResultCollation(),
+					popScArrayCoerceExpr->OidCollation(),
 					popScArrayCoerceExpr->OidInputCollation()
 					)
 			);

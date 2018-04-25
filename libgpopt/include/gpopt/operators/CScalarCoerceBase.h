@@ -50,7 +50,7 @@ namespace gpopt
 			INT m_iLoc;
 
 			// catalog collation Oid of the result
-			OID m_oidResultCollation;
+			OID m_oidCollation;
 	
 			// private copy ctor
 			CScalarCoerceBase(const CScalarCoerceBase &);
@@ -86,7 +86,8 @@ namespace gpopt
 			INT ILoc() const;
 
 			// catalog collation Oid of the result
-			OID OidResultCollation() const;
+			virtual
+			OID OidCollation() const;
 
 			// return a copy of the operator with remapped columns
 			virtual
