@@ -278,7 +278,9 @@ CXformSplitDQA::PexprSplitIntoLocalDQAGlobalAgg
 												GPOS_NEW(pmp) CWStringConst(pmp, popScAggFunc->PstrAggFunc()->Wsz()),
 												true /* fDistinct */,
 												EaggfuncstageLocal /*eaggfuncstage*/,
-												true /* fSplit */
+												true, /* fSplit */
+												popScAggFunc->OidCollation(),
+												popScAggFunc->OidInputCollation()
 												);
 
 			GPOS_ASSERT(1 == pexprAggFunc->UlArity());
@@ -310,7 +312,9 @@ CXformSplitDQA::PexprSplitIntoLocalDQAGlobalAgg
 													GPOS_NEW(pmp) CWStringConst(pmp, popScAggFunc->PstrAggFunc()->Wsz()),
 													false /* fDistinct */,
 													EaggfuncstageGlobal /*eaggfuncstage*/,
-													true /* fSplit */
+													true, /* fSplit */
+													popScAggFunc->OidCollation(),
+													popScAggFunc->OidInputCollation()
 													);
 
 			DrgPexpr *pdrgpexprArgsGlobal = GPOS_NEW(pmp) DrgPexpr(pmp);
@@ -420,7 +424,9 @@ CXformSplitDQA::PexprSplitHelper
 												GPOS_NEW(pmp) CWStringConst(pmp, popScAggFunc->PstrAggFunc()->Wsz()),
 												false /* fDistinct */,
 												EaggfuncstageGlobal /*eaggfuncstage*/,
-												false /* fSplit */
+												false, /* fSplit */
+												popScAggFunc->OidCollation(),
+												popScAggFunc->OidInputCollation()
 												);
 
 			GPOS_ASSERT(1 == pexprAggFunc->UlArity());
@@ -527,7 +533,9 @@ CXformSplitDQA::PexprPrElAgg
 												GPOS_NEW(pmp) CWStringConst(pmp, popScAggFunc->PstrAggFunc()->Wsz()),
 												false, /*fdistinct */
 												eaggfuncstage,
-												true /* fSplit */
+												true, /* fSplit */
+												popScAggFunc->OidCollation(),
+												popScAggFunc->OidInputCollation()
 												);
 
 	return CUtils::PexprScalarProjectElement

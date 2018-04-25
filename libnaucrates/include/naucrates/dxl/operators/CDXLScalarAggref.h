@@ -57,6 +57,12 @@ namespace gpdxl
 			// Denotes the MPP Stage
 			EdxlAggrefStage m_edxlaggstage;
 
+			// catalog oid of the result collation
+			OID m_oidCollation;
+
+			// catalog oid of input collation
+			OID m_oidInputCollation;
+
 			// private copy ctor
 			CDXLScalarAggref(const CDXLScalarAggref&);
 
@@ -68,7 +74,9 @@ namespace gpdxl
 				IMDId *pmdidAgg,
 				IMDId *pmdidResolvedRetType,
 				BOOL fDistinct,
-				EdxlAggrefStage edxlaggstage
+				EdxlAggrefStage edxlaggstage,
+				OID oidCollation,
+				OID oidInputCollation
 				);
 
 			virtual
@@ -88,6 +96,10 @@ namespace gpdxl
 			EdxlAggrefStage Edxlaggstage() const;
 
 			BOOL FDistinct() const;
+
+			OID OidCollation() const;
+
+			OID OidInputCollation() const;
 
 			// serialize operator in DXL format
 			virtual

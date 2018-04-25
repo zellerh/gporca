@@ -1931,7 +1931,7 @@ CXformUtils::AddMinAggs
 		if (NULL == pcrNew)
 		{
 			// construct min(col) aggregate
-			CExpression *pexprMinAgg = CUtils::PexprMin(pmp, pmda, pcr);
+			CExpression *pexprMinAgg = CUtils::PexprMin(pmp, pmda, pcr, pcr->OidCollation());
 			CScalar *popMin = CScalar::PopConvert(pexprMinAgg->Pop());
 			
 			const IMDType *pmdtypeMin = pmda->Pmdtype(popMin->PmdidType());
@@ -4453,6 +4453,8 @@ CXformUtils::PexprWinFuncAgg2ScalarAgg
 	IMDId *pmdidFunc = popScWinFunc->PmdidFunc();
 
 	pmdidFunc->AddRef();
+
+	// collation FIX_ME, use WindowFunc collation ids
 	return
 		GPOS_NEW(pmp) CExpression
 			(
@@ -4464,7 +4466,9 @@ CXformUtils::PexprWinFuncAgg2ScalarAgg
 				GPOS_NEW(pmp) CWStringConst(pmp, popScWinFunc->PstrFunc()->Wsz()),
 				popScWinFunc->FDistinct(),
 				EaggfuncstageGlobal,
-				false // fSplit
+				false, // fSplit
+				OidInvalidCollation,
+				OidInvalidCollation
 				),
 			pdrgpexprWinFuncArgs
 		);

@@ -6175,7 +6175,9 @@ CTranslatorExprToDXL::PdxlnScAggref
 												pmdidAggFunc,
 												pmdidResolvedRetType,
 												popScAggFunc->FDistinct(),
-												edxlaggrefstage
+												edxlaggrefstage,
+												popScAggFunc->OidCollation(),
+												popScAggFunc->OidInputCollation()
 												);
 
 	CDXLNode *pdxlnAggref = GPOS_NEW(m_pmp) CDXLNode(m_pmp, pdxlopAggRef);

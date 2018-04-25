@@ -41,7 +41,9 @@ CScalarAggFunc::CScalarAggFunc
 	const CWStringConst *pstrAggFunc,
 	BOOL fDistinct,
 	EAggfuncStage eaggfuncstage,
-	BOOL fSplit
+	BOOL fSplit,
+	OID oidCollation,
+	OID oidInputCollation
 	)
 	:
 	CScalar(pmp),
@@ -51,7 +53,9 @@ CScalarAggFunc::CScalarAggFunc
 	m_pstrAggFunc(pstrAggFunc),
 	m_fDistinct(fDistinct),
 	m_eaggfuncstage(eaggfuncstage),
-	m_fSplit(fSplit)
+	m_fSplit(fSplit),
+	m_oidCollation(oidCollation),
+	m_oidInputCollation(oidInputCollation)
 {
 	GPOS_ASSERT(NULL != pmdidAggFunc);
 	GPOS_ASSERT(NULL != pstrAggFunc);

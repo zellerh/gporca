@@ -1922,6 +1922,8 @@ CUtils::PopAggFunc
 	BOOL fDistinct,
 	EAggfuncStage eaggfuncstage,
 	BOOL fSplit,
+	OID oidCollation,
+	OID oidInputCollation,
 	IMDId *pmdidResolvedReturnType // return type to be used if original return type is ambiguous
 	)
 {
@@ -1929,7 +1931,18 @@ CUtils::PopAggFunc
 	GPOS_ASSERT(NULL != pstrAggFunc);
 	GPOS_ASSERT_IMP(NULL != pmdidResolvedReturnType, pmdidResolvedReturnType->FValid());
 
-	return GPOS_NEW(pmp) CScalarAggFunc(pmp, pmdidAggFunc, pmdidResolvedReturnType, pstrAggFunc, fDistinct, eaggfuncstage, fSplit);
+	return GPOS_NEW(pmp) CScalarAggFunc
+							(
+							pmp,
+							pmdidAggFunc,
+							pmdidResolvedReturnType,
+							pstrAggFunc,
+							fDistinct,
+							eaggfuncstage,
+							fSplit,
+							oidCollation,
+							oidInputCollation
+							);
 }
 
 // generate an aggregate function
@@ -1942,14 +1955,26 @@ CUtils::PexprAggFunc
 	const CColRef *pcr,
 	BOOL fDistinct,
 	EAggfuncStage eaggfuncstage,
-	BOOL fSplit
+	BOOL fSplit,
+	OID oidCollation,
+	OID oidInputCollation
 	)
 {
 	GPOS_ASSERT(NULL != pstrAggFunc);
 	GPOS_ASSERT(NULL != pcr);
 
 	// generate aggregate function
-	CScalarAggFunc *popScAggFunc = PopAggFunc(pmp, pmdidAggFunc, pstrAggFunc, fDistinct, eaggfuncstage, fSplit);
+	CScalarAggFunc *popScAggFunc = PopAggFunc
+										(
+										pmp,
+										pmdidAggFunc,
+										pstrAggFunc,
+										fDistinct,
+										eaggfuncstage,
+										fSplit,
+										oidCollation,
+										oidInputCollation
+										);
 
 	// generate function arguments
 	CExpression *pexprScalarIdent = PexprScalarIdent(pmp, pcr);
@@ -1974,7 +1999,17 @@ CUtils::PexprCountStar
 	CMDIdGPDB *pmdid = GPOS_NEW(pmp) CMDIdGPDB(GPDB_COUNT_STAR);
 	CWStringConst *pstr = GPOS_NEW(pmp) CWStringConst(GPOS_WSZ_LIT("count"));
 
-	CScalarAggFunc *popScAggFunc = PopAggFunc(pmp, pmdid, pstr, false /*fDistinct*/, EaggfuncstageGlobal /*eaggfuncstage*/, false /*fSplit*/);
+	CScalarAggFunc *popScAggFunc = PopAggFunc
+										(
+										pmp,
+										pmdid,
+										pstr,
+										false /*fDistinct*/,
+										EaggfuncstageGlobal /*eaggfuncstage*/,
+										false, /*fSplit*/
+										OidInvalidCollation,
+										OidInvalidCollation
+										);
 
 	CExpression *pexprCountStar = GPOS_NEW(pmp) CExpression(pmp, popScAggFunc, pdrgpexpr);
 
@@ -2165,7 +2200,7 @@ CUtils::PexprSum
 {
 	CMDAccessor *pmda = COptCtxt::PoctxtFromTLS()->Pmda();
 
-	return PexprAgg(pmp, pmda, IMDType::EaggSum, pcr, false /*fDistinct*/);
+	return PexprAgg(pmp, pmda, IMDType::EaggSum, pcr, false /*fDistinct*/, OidInvalidCollation, OidInvalidCollation);
 }
 
 // generate a GbAgg with sum(col) expressions for all columns in the passed array
@@ -2211,7 +2246,7 @@ CUtils::PexprCount
 {
 	CMDAccessor *pmda = COptCtxt::PoctxtFromTLS()->Pmda();
 
-	return PexprAgg(pmp, pmda, IMDType::EaggCount, pcr, fDistinct);
+	return PexprAgg(pmp, pmda, IMDType::EaggCount, pcr, fDistinct, OidInvalidCollation, OidInvalidCollation);
 }
 
 // generate a min(col) expression
@@ -2220,10 +2255,11 @@ CUtils::PexprMin
 	(
 	IMemoryPool *pmp,
 	CMDAccessor *pmda,
-	const CColRef *pcr
+	const CColRef *pcr,
+	OID oidCollation
 	)
 {
- 	return PexprAgg(pmp, pmda, IMDType::EaggMin, pcr, false /*fDistinct*/);
+ 	return PexprAgg(pmp, pmda, IMDType::EaggMin, pcr, false /*fDistinct*/, oidCollation, oidCollation);
 }
 
 // generate an aggregate expression of the specified type
@@ -2234,7 +2270,9 @@ CUtils::PexprAgg
 	CMDAccessor *pmda,
 	IMDType::EAggType eagg,
 	const CColRef *pcr,
-	BOOL fDistinct
+	BOOL fDistinct,
+	OID oidCollation,
+	OID oidInputCollation
 	)
 {
 	GPOS_ASSERT(IMDType::EaggGeneric >eagg);
@@ -2246,7 +2284,18 @@ CUtils::PexprAgg
 	pmdidAgg->AddRef();
 	CWStringConst *pstr = GPOS_NEW(pmp) CWStringConst(pmp, pmdagg->Mdname().Pstr()->Wsz());
 
-	return PexprAggFunc(pmp, pmdidAgg, pstr, pcr, fDistinct, EaggfuncstageGlobal /*fGlobal*/, false /*fSplit*/);
+	return PexprAggFunc
+				(
+				pmp,
+				pmdidAgg,
+				pstr,
+				pcr,
+				fDistinct,
+				EaggfuncstageGlobal /*fGlobal*/,
+				false /*fSplit*/,
+				oidCollation,
+				oidInputCollation
+				);
 }
 
 // generate a select expression

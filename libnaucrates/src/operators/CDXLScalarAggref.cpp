@@ -36,14 +36,18 @@ CDXLScalarAggref::CDXLScalarAggref
 	IMDId *pmdidAggOid,
 	IMDId *pmdidResolvedRetType,
 	BOOL fDistinct,
-	EdxlAggrefStage edxlaggstage
+	EdxlAggrefStage edxlaggstage,
+	OID oidCollation,
+	OID oidInputCollation
 	)
 	:
 	CDXLScalar(pmp),
 	m_pmdidAgg(pmdidAggOid),
 	m_pmdidResolvedRetType(pmdidResolvedRetType),
 	m_fDistinct(fDistinct),
-	m_edxlaggstage(edxlaggstage)
+	m_edxlaggstage(edxlaggstage),
+	m_oidCollation(oidCollation),
+	m_oidInputCollation(oidInputCollation)
 {
 	GPOS_ASSERT(NULL != pmdidAggOid);
 	GPOS_ASSERT_IMP(NULL != pmdidResolvedRetType, pmdidResolvedRetType->FValid());
@@ -177,6 +181,18 @@ CDXLScalarAggref::FDistinct() const
 	return m_fDistinct;
 }
 
+OID
+CDXLScalarAggref::OidCollation() const
+{
+	return m_oidCollation;
+}
+
+OID
+CDXLScalarAggref::OidInputCollation() const
+{
+	return m_oidInputCollation;
+}
+
 //---------------------------------------------------------------------------
 //	@function:
 //		CDXLScalarAggref::SerializeToDXL
@@ -203,6 +219,17 @@ CDXLScalarAggref::SerializeToDXL
 	{
 		m_pmdidResolvedRetType->Serialize(pxmlser, CDXLTokens::PstrToken(EdxltokenTypeId));
 	}
+
+	if (OidInvalidCollation != m_oidCollation)
+	{
+		pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenCollation), m_oidCollation);
+	}
+
+	if (OidInvalidCollation != m_oidInputCollation)
+	{
+		pxmlser->AddAttribute(CDXLTokens::PstrToken(EdxltokenInputCollation), m_oidInputCollation);
+	}
+
 	pdxln->SerializeChildrenToDXL(pxmlser);
 
 	pxmlser->CloseElement(CDXLTokens::PstrToken(EdxltokenNamespacePrefix), pstrElemName);

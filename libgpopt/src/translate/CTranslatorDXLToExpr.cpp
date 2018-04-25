@@ -3171,6 +3171,8 @@ CTranslatorDXLToExpr::PexprAggFunc
 				pdxlop->FDistinct(),
 				eaggfuncstage,
 				fSplit,
+				pdxlop->OidCollation(),
+				pdxlop->OidInputCollation(),
 				pmdidResolvedReturnType
 				);
 

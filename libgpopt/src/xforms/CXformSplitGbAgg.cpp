@@ -237,7 +237,9 @@ CXformSplitGbAgg::PopulateLocalGlobalProjectList
 														GPOS_NEW(pmp) CWStringConst(pmp, popScAggFunc->PstrAggFunc()->Wsz()),
 														popScAggFunc->FDistinct(),
 														EaggfuncstageLocal, /* fGlobal */
-														true /* fSplit */
+														true, /* fSplit */
+														popScAggFunc->OidCollation(),
+														popScAggFunc->OidInputCollation()
 														);
 
 		popScAggFunc->Pmdid()->AddRef();
@@ -248,7 +250,9 @@ CXformSplitGbAgg::PopulateLocalGlobalProjectList
 														GPOS_NEW(pmp) CWStringConst(pmp, popScAggFunc->PstrAggFunc()->Wsz()),
 														false /* fDistinct */,
 														EaggfuncstageGlobal, /* fGlobal */
-														true /* fSplit */
+														true, /* fSplit */
+														popScAggFunc->OidCollation(),
+														popScAggFunc->OidInputCollation()
 														);
 
 		// determine column reference for the new project element

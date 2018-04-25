@@ -68,6 +68,12 @@ namespace gpopt
 			// is result of splitting aggregates
 			BOOL m_fSplit;
 
+			// catalog oid of collation
+			OID m_oidCollation;
+
+			// catalog oid of input collation
+			OID m_oidInputCollation;
+
 			// private copy ctor
 			CScalarAggFunc(const CScalarAggFunc &);
 		
@@ -82,7 +88,9 @@ namespace gpopt
 				const CWStringConst *pstrAggFunc,
 				BOOL fDistinct,
 				EAggfuncStage eaggfuncstage,
-				BOOL fSplit
+				BOOL fSplit,
+				OID oidCollation,
+				OID oidInputCollation
 				);
 
 			// dtor
@@ -195,6 +203,17 @@ namespace gpopt
 			BOOL FHasAmbiguousReturnType() const
 			{
 				return (NULL != m_pmdidResolvedRetType);
+			}
+
+			virtual
+			OID OidCollation() const
+			{
+				return m_oidCollation;
+			}
+
+			OID OidInputCollation () const
+			{
+				return m_oidInputCollation;
 			}
 
 			// is function count(*)?

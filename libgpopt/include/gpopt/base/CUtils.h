@@ -236,6 +236,8 @@ namespace gpopt
 				BOOL fDistinct,
 				EAggfuncStage eaggfuncstage,
 				BOOL fSplit,
+				OID oidCollation,
+				OID oidInputCollation,
 				IMDId *pmdidResolvedReturnType = NULL // return type to be used if original return type is ambiguous
 				);
 
@@ -249,7 +251,9 @@ namespace gpopt
 				const CColRef *pcr,
 				BOOL fDistinct,
 				EAggfuncStage eaggfuncstage,
-				BOOL fSplit
+				BOOL fSplit,
+				OID oidCollation,
+				OID oidInputCollation
 				);
 
 			// generate a count(*) expression
@@ -290,11 +294,11 @@ namespace gpopt
 
 			// generate a min(col) expression
 			static
-			CExpression *PexprMin(IMemoryPool *pmp, CMDAccessor *pmda, const CColRef *pcr);
+			CExpression *PexprMin(IMemoryPool *pmp, CMDAccessor *pmda, const CColRef *pcr, OID oidCollation);
 
 			// generate an aggregate expression
 			static
-			CExpression *PexprAgg(IMemoryPool *pmp, CMDAccessor *pmda, IMDType::EAggType eagg, const CColRef *pcr, BOOL fDistinct);
+			CExpression *PexprAgg(IMemoryPool *pmp, CMDAccessor *pmda, IMDType::EAggType eagg, const CColRef *pcr, BOOL fDistinct, OID oidCollation, OID oidInputCollation);
 
 			// generate a select expression
 			static

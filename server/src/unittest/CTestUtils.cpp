@@ -1749,7 +1749,9 @@ CTestUtils::PexprPrjElemWithSum
 									pcr,
 									false /*fDistinct*/,
 									EaggfuncstageGlobal /*eaggfuncstage*/,
-									false /*fSplit*/
+									false, /*fSplit*/
+									OidInvalidCollation,
+									OidInvalidCollation
 									);
 
 	// map a computed column to SUM expression

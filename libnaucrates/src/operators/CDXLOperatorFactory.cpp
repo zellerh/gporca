@@ -1308,7 +1308,36 @@ CDXLOperatorFactory::PdxlopAggFunc
 									);
 	}
 
-	return GPOS_NEW(pmp) CDXLScalarAggref(pmp, pmdidAgg, pmdidResolvedRetType, fDistinct, edxlaggstage);
+	OID oidCollation = OidValueFromAttrs
+							(
+							 pmm,
+							 attrs,
+							 EdxltokenCollation,
+							 EdxltokenScalarAggref,
+							 true,
+							 OidInvalidCollation
+							 );
+	OID oidInputCollation = OidValueFromAttrs
+							(
+							 pmm,
+							 attrs,
+							 EdxltokenInputCollation,
+							 EdxltokenScalarAggref,
+							 true,
+							 OidInvalidCollation
+							 );
+
+
+	return GPOS_NEW(pmp) CDXLScalarAggref
+							(
+							pmp,
+							pmdidAgg,
+							pmdidResolvedRetType,
+							fDistinct,
+							edxlaggstage,
+							oidCollation,
+							oidInputCollation
+							);
 }
 
 //---------------------------------------------------------------------------
