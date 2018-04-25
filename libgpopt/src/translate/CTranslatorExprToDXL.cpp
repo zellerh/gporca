@@ -6551,7 +6551,7 @@ CTranslatorExprToDXL::PdxlnScCoerceToDomain
 					popScCoerce->ITypeModifier(),
 					(EdxlCoercionForm) popScCoerce->Ecf(), // map Coercion Form directly based on position in enum
 					popScCoerce->ILoc(),
-					(m_pmda->Pmdtype(pmdid))->OidTypeCollation()
+					popScCoerce->OidResultCollation()
 					)
 			);
 
