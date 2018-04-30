@@ -49,7 +49,7 @@ namespace gpopt
 			BOOL m_fBoolReturnType;
 
 			// collation oid of the result
-			OID m_oidResultCollation;
+			OID m_oidCollation;
 
 			// OID of collation that function should use
 			// In some scenarios, ORCA creates a cast object from
@@ -72,7 +72,7 @@ namespace gpopt
 				IMDId *pmdidReturnType,
 				IMDId *pmdidFunc,
 				BOOL fBinaryCoercible,
-				OID oidResultCollation,
+				OID oidCollation,
 				OID oidInputCollation
 				);
 
@@ -143,9 +143,9 @@ namespace gpopt
 			}
 
 			// collation oid of the result
-			OID OidResultCollation() const
+			OID OidCollation() const
 			{
-				return m_oidResultCollation;
+				return m_oidCollation;
 			}
 
 			// collation oid of the input

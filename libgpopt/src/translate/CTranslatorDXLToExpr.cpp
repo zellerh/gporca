@@ -3632,7 +3632,7 @@ CTranslatorDXLToExpr::PexprScalarCast
 
 	IMDId *pmdidType = pdxlop->PmdidType();
 	IMDId *pmdidFunc = pdxlop->PmdidFunc();
-	OID oidResultCollation = pdxlop->OidResultCollation();
+	OID oidResultCollation = pdxlop->OidCollation();
 	OID oidInputCollation = pdxlop->OidInputCollation();
 
 	pmdidType->AddRef();

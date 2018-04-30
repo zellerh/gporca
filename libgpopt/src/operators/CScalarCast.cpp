@@ -39,7 +39,7 @@ CScalarCast::CScalarCast
 	IMDId *pmdidReturnType,
 	IMDId *pmdidFunc,
 	BOOL fBinaryCoercible,
-	OID oidResultCollation,
+	OID oidCollation,
 	OID oidInputCollation
 	)
 	:
@@ -49,7 +49,7 @@ CScalarCast::CScalarCast
 	m_fBinaryCoercible(fBinaryCoercible),
 	m_fReturnsNullOnNullInput(false),
 	m_fBoolReturnType(false),
-	m_oidResultCollation(oidResultCollation),
+	m_oidCollation(oidCollation),
 	m_oidInputCollation(oidInputCollation)
 {
 	if (NULL != m_pmdidFunc && m_pmdidFunc->FValid())

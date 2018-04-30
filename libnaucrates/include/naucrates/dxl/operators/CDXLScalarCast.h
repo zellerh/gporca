@@ -47,7 +47,7 @@ namespace gpdxl
 			IMDId *m_pmdidFunc;
 
 			// catalog Oid of the result collation function
-			OID m_oidResultCollation;
+			OID m_oidCollation;
 
 			// catalog oid of input collation
 			OID m_oidInputCollation;
@@ -62,7 +62,7 @@ namespace gpdxl
 				IMemoryPool *pmp,
 				IMDId *pmdidType,
 				IMDId *pmdidOpFunc,
-				OID m_oidResultCollation,
+				OID m_oidCollation,
 				OID m_oidInputCollation
 				);
 
@@ -74,7 +74,7 @@ namespace gpdxl
 
 			IMDId *PmdidType() const;
 			IMDId *PmdidFunc() const;
-			OID OidResultCollation() const;
+			OID OidCollation() const;
 			OID OidInputCollation() const;
 
 			// name of the DXL operator name

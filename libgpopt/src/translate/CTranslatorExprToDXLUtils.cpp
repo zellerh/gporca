@@ -2450,7 +2450,7 @@ CTranslatorExprToDXLUtils::ExtractCastMdids
 	CScalarCast *popCast = CScalarCast::PopConvert(pop);
 	*ppmdidType = popCast->PmdidType();
 	*ppmdidCastFunc = popCast->PmdidFunc();
-	oidResultCollation = popCast->OidResultCollation();
+	oidResultCollation = popCast->OidCollation();
 }
 
 BOOL
