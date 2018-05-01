@@ -39,7 +39,6 @@ namespace gpopt
 			// private copy ctor
 			CScalarIdent(const CScalarIdent &);
 
-
 		public:
 		
 			// ctor
@@ -126,6 +125,12 @@ namespace gpopt
 			// the type modifier of the scalar expression
 			virtual
 			INT ITypeModifier() const;
+
+			// collation oid of the result
+			virtual OID OidCollation() const
+			{
+				return m_pcr->OidCollation();
+			}
 
 			// print
 			virtual 

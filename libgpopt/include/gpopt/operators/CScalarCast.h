@@ -143,13 +143,13 @@ namespace gpopt
 			}
 
 			// collation oid of the result
-			OID OidCollation() const
+			virtual OID OidCollation() const
 			{
 				return m_oidCollation;
 			}
 
 			// collation oid of the input
-			OID OidInputCollation() const
+			virtual OID OidInputCollation() const
 			{
 				return m_oidInputCollation;
 			}
