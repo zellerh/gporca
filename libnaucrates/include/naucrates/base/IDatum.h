@@ -69,6 +69,12 @@ namespace gpnaucrates
 				return IDefaultTypeModifier;
 			}
 
+			virtual
+			OID OidCollation() const
+			{
+				return OidInvalidCollation;
+			}
+
 			// accessor of size
 			virtual
 			ULONG UlSize() const = 0;

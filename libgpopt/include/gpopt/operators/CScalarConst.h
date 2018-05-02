@@ -124,6 +124,9 @@ namespace gpopt
 			virtual
 			INT ITypeModifier() const;
 
+			virtual
+			OID OidCollation() const;
+
 			// boolean expression evaluation
 			virtual
 			EBoolEvalResult Eber(DrgPul *pdrgpulChildren) const;

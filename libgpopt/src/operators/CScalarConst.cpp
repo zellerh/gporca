@@ -243,6 +243,12 @@ CScalarConst::ITypeModifier() const
 	return m_pdatum->ITypeModifier();
 }
 
+OID
+CScalarConst::OidCollation() const
+{
+	return m_pdatum->OidCollation();
+}
+
 
 // EOF
 
