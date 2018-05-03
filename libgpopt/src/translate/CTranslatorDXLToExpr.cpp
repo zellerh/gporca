@@ -843,7 +843,7 @@ CTranslatorDXLToExpr::BuildSetOpChild
 		INT iTypeModifier = pdxlcdOutput->ITypeModifier();
 		OID oidCurrentCollation = pcr->OidCollation();
 		OID oidOutCollation = pdxlcdOutput->OidCollation();
-		BOOL fEqualCollation = oidOutCollation == oidCurrentCollation;
+		BOOL fEqualCollation = (oidOutCollation == oidCurrentCollation) || (oidOutCollation == pmdtype->OidTypeCollation() && oidCurrentCollation == 0);
 
 		BOOL fEqualTypes = IMDId::FEqualMDId(pmdidSource, pmdidDest);
 
