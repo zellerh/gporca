@@ -465,6 +465,7 @@ namespace gpdxl
 		EdxltokenRelDistrMasterOnly,
 		EdxltokenRelDistrHash,
 		EdxltokenRelDistrRandom,
+		EdxltokenRelDistrReplicated,
 		EdxltokenConvertHashToRandom,
 		
 		EdxltokenExtRelRejLimit,

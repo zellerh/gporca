@@ -39,6 +39,8 @@ IMDRelation::PstrDistrPolicy
 			return CDXLTokens::PstrToken(EdxltokenRelDistrHash);
 		case EreldistrRandom:
 			return CDXLTokens::PstrToken(EdxltokenRelDistrRandom);
+		case EreldistrReplicated:
+			return CDXLTokens::PstrToken(EdxltokenRelDistrReplicated);
 		default:
 			return NULL;
 	}

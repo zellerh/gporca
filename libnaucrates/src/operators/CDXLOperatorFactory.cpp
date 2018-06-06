@@ -3987,7 +3987,11 @@ CDXLOperatorFactory::EreldistrpolicyFromXmlstr
 	{
 		ereldistrpolicy = IMDRelation::EreldistrRandom;
 	}
-	
+	else if (0 == XMLString::compareString(xmlsz, CDXLTokens::XmlstrToken(EdxltokenRelDistrReplicated)))
+	{
+		ereldistrpolicy = IMDRelation::EreldistrReplicated;
+	}
+
 	return ereldistrpolicy;
 }
 

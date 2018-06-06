@@ -317,7 +317,11 @@ CPhysical::PdsCompute
 			pds = GPOS_NEW(pmp) CDistributionSpecHashed(pdrgpexpr, true /*fNullsColocated*/);
 			break;
 		}
-		
+
+		case IMDRelation::EreldistrReplicated:
+			return GPOS_NEW(pmp) CDistributionSpecReplicated();
+			break;
+
 		default:
 			GPOS_ASSERT(!"Invalid distribution policy");
 	}
