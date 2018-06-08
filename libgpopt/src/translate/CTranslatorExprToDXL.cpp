@@ -3908,33 +3908,6 @@ CTranslatorExprToDXL::PdxlnHashJoin
 
 //---------------------------------------------------------------------------
 //	@function:
-//		CTranslatorExprToDXL::CheckValidity
-//
-//	@doc:
-//		Check if the motion node is valid
-//---------------------------------------------------------------------------
-void
-CTranslatorExprToDXL::CheckValidity
-	(
-	CDXLPhysicalMotion *pdxlopMotion
-	)
-
-{
-	// validate the input segment info for Gather Motion
-	// if Gather has only 1 segment when there are more hosts
-	// it's obviously invalid and we fall back
-	if (EdxlopPhysicalMotionGather == pdxlopMotion->Edxlop())
-	{
-		if (m_pdrgpiSegments->UlLength() != pdxlopMotion->PdrgpiInputSegIds()->UlLength())
-		{
-			GPOS_RAISE(gpdxl::ExmaDXL, gpdxl::ExmiExpr2DXLUnsupportedFeature, GPOS_WSZ_LIT("GatherMotion input segments number does not match with the number of segments in the system"));
-		}
-	}
-}
-
-
-//---------------------------------------------------------------------------
-//	@function:
 //		CTranslatorExprToDXL::PdxlnMotion
 //
 //	@doc:
@@ -4008,8 +3981,6 @@ CTranslatorExprToDXL::PdxlnMotion
 
 	// set input and output segment information
 	pdxlopMotion->SetSegmentInfo(PdrgpiInputSegIds(pexprMotion), PdrgpiOutputSegIds(pexprMotion));
-
-	CheckValidity(pdxlopMotion);
 
 	CDXLNode *pdxlnMotion = GPOS_NEW(m_pmp) CDXLNode(m_pmp, pdxlopMotion);
 	CDXLPhysicalProperties *pdxlprop = Pdxlprop(pexprMotion);
