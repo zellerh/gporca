@@ -2336,9 +2336,20 @@ CXformUtils::FIndexApplicable
 		fApplicable = false;
 	}
 	
+    DrgPcr *pdrgpcrIndexKeys = CXformUtils::PdrgpcrIndexKeys(pmp, pdrgpcrOutput, pmdindex, pmdrel);
+    DrgPcr *pdrgpcrScalar = pcrsScalar->Pdrgpcr(pmp);
+    const CColRef *pcrScalar = (*pdrgpcrScalar)[0];
+    const CColRef *pcrFirstIndexKey = (*pdrgpcrIndexKeys)[0];
+    if (pcrScalar != pcrFirstIndexKey)
+    {
+        fApplicable = false;
+    }
+
 	// clean up
 	pcrsIncludedCols->Release();
 	pcrsIndexCols->Release();
+    pdrgpcrIndexKeys->Release();
+    pdrgpcrScalar->Release();
 
 	return fApplicable;
 }
