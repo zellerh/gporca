@@ -2335,23 +2335,60 @@ CXformUtils::FIndexApplicable
 	{
 		fApplicable = false;
 	}
+
+    if (fApplicable)
+    {
+        fApplicable = FIndexMatchPredicates(pmp, pmdindex,pmdrel, pdrgpcrOutput,pcrsScalar);
+    }
 	
+    // clean up
+	pcrsIncludedCols->Release();
+	pcrsIndexCols->Release();
+
+	return fApplicable;
+}
+
+
+
+BOOL
+CXformUtils::FIndexMatchPredicates
+(
+ IMemoryPool *pmp,
+ const IMDIndex *pmdindex,
+ const IMDRelation *pmdrel,
+ DrgPcr *pdrgpcrOutput,
+ CColRefSet *pcrsScalar
+ )
+{
+    BOOL fApplicable = true;
+
     DrgPcr *pdrgpcrIndexKeys = CXformUtils::PdrgpcrIndexKeys(pmp, pdrgpcrOutput, pmdindex, pmdrel);
     DrgPcr *pdrgpcrScalar = pcrsScalar->Pdrgpcr(pmp);
-    const CColRef *pcrScalar = (*pdrgpcrScalar)[0];
-    const CColRef *pcrFirstIndexKey = (*pdrgpcrIndexKeys)[0];
-    if (pcrScalar != pcrFirstIndexKey)
+
+    const ULONG ulPredicates = pdrgpcrScalar->UlLength();
+    if (ulPredicates > pdrgpcrIndexKeys->UlLength()) // if there are more predicate columns than index keys, the index will not cover
     {
         fApplicable = false;
     }
+    else // check that the predicates match in the order of the index keys
+    {
+        for (ULONG ul = 0; ul < ulPredicates; ul++)
+        {
+            const CColRef *pcrScalar = (*pdrgpcrScalar)[ul];
+            const CColRef *pcrCurrentIndexKey = (*pdrgpcrIndexKeys)[ul];
+            if (pcrScalar != pcrCurrentIndexKey)
+            {
+                fApplicable = false;
+                break;
+            }
+        }
+    }
 
-	// clean up
-	pcrsIncludedCols->Release();
-	pcrsIndexCols->Release();
+    // clean up
     pdrgpcrIndexKeys->Release();
     pdrgpcrScalar->Release();
 
-	return fApplicable;
+    return fApplicable;
 }
 
 //---------------------------------------------------------------------------
@@ -4434,6 +4471,63 @@ CXformUtils::FMergeWithPreviousBitmapIndexProbe
 	return false;
 }
 
+
+BOOL
+CXformUtils::FMergeResidualsWithBitmapIndexProbe
+(
+ IMemoryPool *pmp,
+ CMDAccessor *pmda,
+ const IMDRelation *pmdrel,
+ DrgPcr *pdrgpcrOutput,
+ CExpression *pexprBitmap,
+ CExpression *pexprRecheck,
+ DrgPexpr *pdrgpexprBitmap,
+ DrgPexpr *pdrgpexprRecheck,
+ DrgPexpr *pdrgpexprResidual
+ )
+{
+    if (COperator::EopScalarBitmapIndexProbe != pexprBitmap->Pop()->Eopid())
+    {
+        return false;
+    }
+
+    if (0 == pdrgpexprResidual->UlLength())
+    {
+        return false;
+    }
+
+    CScalarBitmapIndexProbe *popScalar = CScalarBitmapIndexProbe::PopConvert(pexprBitmap->Pop());
+    IMDId *pmdIdIndex = popScalar->Pindexdesc()->Pmdid();
+    const IMDIndex *pmdIndex = pmda->Pmdindex(pmdIdIndex);
+    GPOS_ASSERT(pmdIdIndex);
+    GPOS_ASSERT(pdrgpexprBitmap);
+    const ULONG ulNumScalars = pdrgpexprResidual->UlLength();
+    for (ULONG ul = 0; ul < ulNumScalars; ul++)
+    {
+        CExpression *pexpr = (*pdrgpexprResidual)[ul];
+
+        // create a new expression with the merged conjuncts and
+        // replace the old expression in the expression array
+        CExpression *pexprNew = CPredicateUtils::PexprConjunction(pmp, (*pexprBitmap)[0], (*pexpr)[0]);
+
+        CColRefSet *pcrsScalar = CDrvdPropScalar::Pdpscalar(pexprNew->PdpDerive())->PcrsUsed();
+
+        BOOL fIndexApplicable = FIndexMatchPredicates(pmp, pmdIndex, pmdrel, pdrgpcrOutput, pcrsScalar);
+
+        if (fIndexApplicable)
+        {
+
+        }
+
+        CExpression *pexprRecheckNew =
+        CPredicateUtils::PexprConjunction(pmp, (*pdrgpexprRecheck)[ul], pexprRecheck);
+        pdrgpexprRecheck->Replace(ul, pexprRecheckNew);
+
+        return true;
+    }
+
+    return false;
+}
 
 //---------------------------------------------------------------------------
 //	@function:

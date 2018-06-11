@@ -529,6 +529,24 @@ namespace gpopt
 				DrgPexpr *pdrgpexprRecheck
 				);
 
+            // if there is a residual predicate which can be merged with the index
+            // probe in pdrgpexprBitmap, modify the existing index probe and
+            // the corresponding recheck conditions to subsume pexprBitmap and
+            // pexprRecheck respectively
+            static
+            BOOL FMergeResidualsWithBitmapIndexProbe
+            (
+             IMemoryPool *pmp,
+             CMDAccessor *pmda,
+             const IMDRelation *pmdrel,
+             DrgPcr *pdrgpcrOutput,
+             CExpression *pexprBitmap,
+             CExpression *pexprRecheck,
+             DrgPexpr *pdrgpexprBitmap,
+             DrgPexpr *pdrgpexprRecheck,
+             DrgPexpr *pdrgpexprResidual
+             );
+
 			// iterate over given hash map and return array of arrays of project elements sorted by the column id of the first entries
 			static
 			DrgPdrgPexpr *PdrgpdrgpexprSortedPrjElemsArray(IMemoryPool *pmp, HMExprDrgPexpr *phmexprdrgpexpr);
@@ -815,6 +833,17 @@ namespace gpopt
 				IMDIndex::EmdindexType emdindtype
 				);
 			
+            // check if an ordered index matches the predicates
+            static
+            BOOL FIndexMatchPredicates
+                (
+                 IMemoryPool *pmp,
+                 const IMDIndex *pmdindex,
+                 const IMDRelation *pmdrel,
+                 DrgPcr *pdrgpcrOutput,
+                 CColRefSet *pcrsScalar
+                 );
+
 			// check whether a CTE should be inlined
 			static
 			BOOL FInlinableCTE(ULONG ulCTEId);
