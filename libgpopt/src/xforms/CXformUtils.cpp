@@ -2335,11 +2335,6 @@ CXformUtils::FIndexApplicable
 	{
 		fApplicable = false;
 	}
-
-    if (fApplicable)
-    {
-        fApplicable = FIndexMatchPredicates(pmp, pmdindex,pmdrel, pdrgpcrOutput,pcrsScalar);
-    }
 	
     // clean up
 	pcrsIncludedCols->Release();
@@ -2348,7 +2343,27 @@ CXformUtils::FIndexApplicable
 	return fApplicable;
 }
 
+BOOL
+CXformUtils::FBitmapIndexProbeCheckFirstKey
+(
+ IMemoryPool *pmp,
+ CMDAccessor *pmda,
+ const IMDRelation *pmdrel,
+ DrgPcr *pdrgpcrOutput,
+ CExpression *pexprBitmap
+ )
+{
+    if (COperator::EopScalarBitmapIndexProbe != pexprBitmap->Pop()->Eopid())
+    {
+        return false;
+    }
 
+    CScalarBitmapIndexProbe *popScalar = CScalarBitmapIndexProbe::PopConvert(pexprBitmap->Pop());
+    IMDId *pmdIdIndex = popScalar->Pindexdesc()->Pmdid();
+    const IMDIndex *pmdIndex = pmda->Pmdindex(pmdIdIndex);
+    CColRefSet *pcrsScalar = CDrvdPropScalar::Pdpscalar(pexprBitmap->PdpDerive())->PcrsUsed();
+    return FIndexMatchPredicates(pmp, pmdIndex, pmdrel, pdrgpcrOutput, pcrsScalar);
+}
 
 BOOL
 CXformUtils::FIndexMatchPredicates
@@ -2365,23 +2380,12 @@ CXformUtils::FIndexMatchPredicates
     DrgPcr *pdrgpcrIndexKeys = CXformUtils::PdrgpcrIndexKeys(pmp, pdrgpcrOutput, pmdindex, pmdrel);
     DrgPcr *pdrgpcrScalar = pcrsScalar->Pdrgpcr(pmp);
 
-    const ULONG ulPredicates = pdrgpcrScalar->UlLength();
-    if (ulPredicates > pdrgpcrIndexKeys->UlLength()) // if there are more predicate columns than index keys, the index will not cover
+    // check that the predicate matches the first index key
+    const CColRef *pcrScalar = (*pdrgpcrScalar)[0];
+    const CColRef *pcrFirstIndexKey = (*pdrgpcrIndexKeys)[0];
+    if (pcrScalar != pcrFirstIndexKey)
     {
         fApplicable = false;
-    }
-    else // check that the predicates match in the order of the index keys
-    {
-        for (ULONG ul = 0; ul < ulPredicates; ul++)
-        {
-            const CColRef *pcrScalar = (*pdrgpcrScalar)[ul];
-            const CColRef *pcrCurrentIndexKey = (*pdrgpcrIndexKeys)[ul];
-            if (pcrScalar != pcrCurrentIndexKey)
-            {
-                fApplicable = false;
-                break;
-            }
-        }
     }
 
     // clean up
@@ -3648,7 +3652,8 @@ CXformUtils::CreateBitmapIndexProbeOps
 	)
 {
 	GPOS_ASSERT(NULL != pdrgpexpr);
-	
+
+    DrgPexpr *pdrgpexprResidualNew = GPOS_NEW(pmp) DrgPexpr(pmp);
 	const ULONG ulPredicates = pdrgpexpr->UlLength();
 
 	for (ULONG ul = 0; ul < ulPredicates; ul++)
@@ -3671,22 +3676,35 @@ CXformUtils::CreateBitmapIndexProbeOps
 									&pexprRecheck,
 									&pexprResidual
 									);
-		if (NULL != pexprBitmap)
+        
+        if (NULL != pexprBitmap && CXformUtils::FBitmapIndexProbeCheckFirstKey
+                                (
+                                 pmp,
+                                 pmda,
+                                 pmdrel,
+                                 pdrgpcrOutput,
+                                 pexprBitmap
+                                 ))
 		{
 			GPOS_ASSERT(NULL != pexprRecheck);
-
+    
 			// if possible, merge this index scan with a previous index scan on the same index
-			BOOL fAddedToPredicate = fConjunction && FMergeWithPreviousBitmapIndexProbe
-													(
-													pmp,
-													pexprBitmap,
-													pexprRecheck,
-													pdrgpexprBitmap,
-													pdrgpexprRecheck
-													);
+            BOOL fAddedToPredicate = fConjunction && FMergeResidualsWithBitmapIndexProbe
+                                                    (
+                                                     pmp,
+                                                     pmda,
+                                                     pmdrel,
+                                                     pdrgpcrOutput,
+                                                     pcrsReqd,
+                                                     pexprBitmap,
+                                                     pexprRecheck,
+                                                     pdrgpexprBitmap,
+                                                     pdrgpexprRecheck,
+                                                     pdrgpexprResidualNew
+                                                     );
 			if (NULL != pexprResidual)
 			{
-				pdrgpexprResidual->Append(pexprResidual);
+				pdrgpexprResidualNew->Append(pexprResidual);
 			}
 			if (fAddedToPredicate)
 			{
@@ -3701,10 +3719,28 @@ CXformUtils::CreateBitmapIndexProbeOps
 		}
 		else
 		{
-			pexprPred->AddRef();
-			pdrgpexprResidual->Append(pexprPred);
+            if (NULL != pexprBitmap)
+            {
+                pexprBitmap->Release();
+                pexprRecheck->Release();
+            }
+            pexprPred->AddRef();
+			pdrgpexprResidualNew->Append(pexprPred);
 		}
 	}
+    for(ULONG ul = 0; ul < pdrgpexprResidualNew->UlLength(); ul++)
+    {
+        COperator *pop = (*pdrgpexprResidualNew)[ul]->Pop();
+        if (pop->Eopid() == COperator::EopPatternLeaf)
+            continue;
+        if( NULL != (*pdrgpexprResidualNew)[ul] )
+        {
+            CExpression *pexpr = (*pdrgpexprResidual)[ul];
+            pdrgpexprResidual->Append(pexpr);
+        }
+    }
+
+    pdrgpexprResidualNew->Release();
 }
 
 //---------------------------------------------------------------------------
@@ -4479,6 +4515,7 @@ CXformUtils::FMergeResidualsWithBitmapIndexProbe
  CMDAccessor *pmda,
  const IMDRelation *pmdrel,
  DrgPcr *pdrgpcrOutput,
+ CColRefSet *pcrsReqd,
  CExpression *pexprBitmap,
  CExpression *pexprRecheck,
  DrgPexpr *pdrgpexprBitmap,
@@ -4496,34 +4533,38 @@ CXformUtils::FMergeResidualsWithBitmapIndexProbe
         return false;
     }
 
+    COperator *pop = pexprBitmap->Pop();
     CScalarBitmapIndexProbe *popScalar = CScalarBitmapIndexProbe::PopConvert(pexprBitmap->Pop());
     IMDId *pmdIdIndex = popScalar->Pindexdesc()->Pmdid();
     const IMDIndex *pmdIndex = pmda->Pmdindex(pmdIdIndex);
-    GPOS_ASSERT(pmdIdIndex);
-    GPOS_ASSERT(pdrgpexprBitmap);
     const ULONG ulNumScalars = pdrgpexprResidual->UlLength();
     for (ULONG ul = 0; ul < ulNumScalars; ul++)
     {
         CExpression *pexpr = (*pdrgpexprResidual)[ul];
-
-        // create a new expression with the merged conjuncts and
-        // replace the old expression in the expression array
-        CExpression *pexprNew = CPredicateUtils::PexprConjunction(pmp, (*pexprBitmap)[0], (*pexpr)[0]);
-
-        CColRefSet *pcrsScalar = CDrvdPropScalar::Pdpscalar(pexprNew->PdpDerive())->PcrsUsed();
-
-        BOOL fIndexApplicable = FIndexMatchPredicates(pmp, pmdIndex, pmdrel, pdrgpcrOutput, pcrsScalar);
+        CColRefSet *pcrsScalar = CDrvdPropScalar::Pdpscalar(pexpr->PdpDerive())->PcrsUsed();
+        BOOL fIndexApplicable = FIndexApplicable(pmp, pmdIndex, pmdrel, pdrgpcrOutput, pcrsReqd, pcrsScalar, IMDIndex::EmdindBitmap);
 
         if (fIndexApplicable)
         {
-
+            // keep adding new applicable expressions to the expression array
+            CExpression *pexprNew = CPredicateUtils::PexprConjunction(pmp, (*pexpr)[0], (*pexprBitmap)[0]);
+            CScalarBitmapIndexProbe *popScalarBIP = CScalarBitmapIndexProbe::PopConvert(pop);
+            popScalarBIP->AddRef();
+            
+            CExpression *pexprBitmapNew = GPOS_NEW(pmp) CExpression(pmp, popScalarBIP, pexprNew);
+            pdrgpexprBitmap->Append(pexprBitmapNew);
+    
+            CExpression *pexprRecheckNew = CPredicateUtils::PexprConjunction(pmp, pexpr, pexprRecheck);
+            pdrgpexprRecheck->Append(pexprRecheckNew);
+            pcrsScalar->Release();
+            
+            CExpression *dummyexpr = GPOS_NEW(pmp) CExpression(pmp, GPOS_NEW(pmp) CPatternLeaf(pmp));
+            dummyexpr->AddRef();
+            
+            pdrgpexprResidual->Replace(ul, dummyexpr);
+            return true;
         }
-
-        CExpression *pexprRecheckNew =
-        CPredicateUtils::PexprConjunction(pmp, (*pdrgpexprRecheck)[ul], pexprRecheck);
-        pdrgpexprRecheck->Replace(ul, pexprRecheckNew);
-
-        return true;
+            pcrsScalar->Release();
     }
 
     return false;

@@ -540,6 +540,7 @@ namespace gpopt
              CMDAccessor *pmda,
              const IMDRelation *pmdrel,
              DrgPcr *pdrgpcrOutput,
+             CColRefSet *pcrsReqd,
              CExpression *pexprBitmap,
              CExpression *pexprRecheck,
              DrgPexpr *pdrgpexprBitmap,
@@ -833,6 +834,17 @@ namespace gpopt
 				IMDIndex::EmdindexType emdindtype
 				);
 			
+            // check if first key of index is covered by bitmap index probe predicate
+            static
+            BOOL FBitmapIndexProbeCheckFirstKey
+            (
+             IMemoryPool *pmp,
+             CMDAccessor *pmda,
+             const IMDRelation *pmdrel,
+             DrgPcr *pdrgpcrOutput,
+             CExpression *pexprBitmap
+             );
+        
             // check if an ordered index matches the predicates
             static
             BOOL FIndexMatchPredicates
