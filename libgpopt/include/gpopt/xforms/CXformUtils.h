@@ -495,7 +495,8 @@ namespace gpopt
 				CColRefSet *pcrsReqd,
 				CExpression **ppexprRecheck,
 				BOOL fBoolColumn,
-				BOOL fNegatedBoolColumn
+				BOOL fNegatedBoolColumn,
+                CExpression **ppexprResidual
 				);
 
 			// construct a bitmap index path expression for the given predicate coming
