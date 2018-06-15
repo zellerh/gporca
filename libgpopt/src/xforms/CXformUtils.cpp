@@ -3410,7 +3410,7 @@ CXformUtils::PexprBitmapForSelectCondition
 	)
 {
 	CColRefSet *pcrsScalar = CDrvdPropScalar::Pdpscalar(pexprPred->PdpDerive())->PcrsUsed();
-    GPOS_ASSERT(ppexprResidual);
+
 	const ULONG ulIndexes = pmdrel->UlIndices();
 	for (ULONG ul = 0; ul < ulIndexes; ul++)
 	{
@@ -3453,8 +3453,10 @@ CXformUtils::PexprBitmapForSelectCondition
 				pdrgpexprResidual,
 				NULL  // pcrsAcceptedOuterRefs
 				);
+
             (*ppexprResidual) = CPredicateUtils::PexprConjDisj(pmp, pdrgpexprResidual, true);
 			pdrgpexprScalar->Release();
+            
 			if (0 == pdrgpexprIndex->UlLength())
 			{
 				// no usable predicate, clean up
@@ -3477,9 +3479,10 @@ CXformUtils::PexprBitmapForSelectCondition
 
 			
 			CIndexDescriptor *pindexdesc = CIndexDescriptor::Pindexdesc(pmp, ptabdesc, pmdindex);
-			pmdindex->PmdidItemType()->AddRef();
+            pmdindex->PmdidItemType()->AddRef(); // Even if you remove, it doesn't leak
             CExpression *pexprNew = CPredicateUtils::PexprConjunction(pmp, pdrgpexprIndex);
             *ppexprRecheck = pexprNew;
+            pexprCondToUse->Release();
 
 			return 	GPOS_NEW(pmp) CExpression
 							(
@@ -3615,10 +3618,9 @@ CXformUtils::CreateBitmapIndexProbeOps
     {
         pdrgpexprPredNew->Append((*pexprPred)[ul]);
     }
-
-    CExpression *pexprPredNew = GPOS_NEW(pmp) CExpression(pmp, pexprPred->Pop(), pdrgpexprPredNew);
     
-    pexprPredNew->AddRef();
+    CExpression *pexprPredNew = GPOS_NEW(pmp) CExpression(pmp, pexprPred->Pop(), pdrgpexprPredNew);
+
 	while(true)
 	{
 		
@@ -3628,7 +3630,7 @@ CXformUtils::CreateBitmapIndexProbeOps
 									pmp,
 									pmda,
 									pexprOriginalPred,
-									pexprPred,
+									pexprPredNew,
 									ptabdesc,
 									pmdrel,
 									pdrgpcrOutput,
@@ -3642,9 +3644,12 @@ CXformUtils::CreateBitmapIndexProbeOps
 		{
             GPOS_ASSERT(NULL != pexprRecheck);
 
+            pexprRecheck->AddRef();
             pdrgpexprRecheck->Append(pexprRecheck);
+            pexprBitmap->AddRef();
             pdrgpexprBitmap->Append(pexprBitmap);
-            *pexprPred = *pexprResidual;
+            pexprResidual->AddRef();
+            *pexprPredNew = *pexprResidual;
             pexprResidual = NULL;
             pexprRecheck = NULL;
 
@@ -3660,13 +3665,15 @@ CXformUtils::CreateBitmapIndexProbeOps
         pexprResidual->AddRef();
         pdrgpexprResidual->Append(pexprResidual);
     }
-    else if (NULL != pexprPred)
+    else if (NULL != pexprPredNew)
     {
-        pdrgpexprResidual->Append(pexprPred);
+        pexprPredNew->AddRef();
+        pdrgpexprResidual->Append(pexprPredNew);
     }
     
-    
-    *pexprPred = *pexprPredNew;
+    pexprPredNew->Release();
+    pdrgpexprPredNew->Release();
+
 }
 
 //---------------------------------------------------------------------------
@@ -3808,6 +3815,7 @@ CXformUtils::PexprBitmapTableGet
 	
 	// array of expressions in the scalar expression
 	DrgPexpr *pdrgpexpr = GPOS_NEW(pmp) DrgPexpr(pmp);
+    pexprScalar->AddRef();
     pdrgpexpr->Append(pexprScalar);
 	GPOS_ASSERT(0 < pdrgpexpr->UlLength());
 
