@@ -3609,7 +3609,16 @@ CXformUtils::CreateBitmapIndexProbeOps
     CExpression *pexprRecheck = NULL;
     CExpression *pexprResidual = NULL;
     CExpression *pexprPred = (*pdrgpexpr)[0];
+    DrgPexpr *pdrgpexprPredNew = GPOS_NEW(pmp) DrgPexpr(pmp);
+    
+    for (ULONG ul = 0; ul < pexprPred->UlArity(); ul++)
+    {
+        pdrgpexprPredNew->Append((*pexprPred)[ul]);
+    }
 
+    CExpression *pexprPredNew = GPOS_NEW(pmp) CExpression(pmp, pexprPred->Pop(), pdrgpexprPredNew);
+    
+    pexprPredNew->AddRef();
 	while(true)
 	{
 		
@@ -3648,12 +3657,16 @@ CXformUtils::CreateBitmapIndexProbeOps
 
     if(NULL != pexprResidual)
     {
+        pexprResidual->AddRef();
         pdrgpexprResidual->Append(pexprResidual);
     }
     else if (NULL != pexprPred)
     {
         pdrgpexprResidual->Append(pexprPred);
     }
+    
+    
+    *pexprPred = *pexprPredNew;
 }
 
 //---------------------------------------------------------------------------
