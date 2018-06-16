@@ -3454,7 +3454,7 @@ CXformUtils::PexprBitmapForSelectCondition
 				NULL  // pcrsAcceptedOuterRefs
 				);
 
-            (*ppexprResidual) = CPredicateUtils::PexprConjDisj(pmp, pdrgpexprResidual, true);
+            (*ppexprResidual) = CPredicateUtils::PexprConjDisj(pmp, pdrgpexprResidual, true); // releases pdrgexprResidual
 			pdrgpexprScalar->Release();
             
 			if (0 == pdrgpexprIndex->UlLength())
@@ -3477,10 +3477,10 @@ CXformUtils::PexprBitmapForSelectCondition
 				continue;
 			}
 
-			
 			CIndexDescriptor *pindexdesc = CIndexDescriptor::Pindexdesc(pmp, ptabdesc, pmdindex);
             pmdindex->PmdidItemType()->AddRef(); // Even if you remove, it doesn't leak
             CExpression *pexprNew = CPredicateUtils::PexprConjunction(pmp, pdrgpexprIndex);
+//            pexprNew->AddRef();
             *ppexprRecheck = pexprNew;
             pexprCondToUse->Release();
 
@@ -3616,15 +3616,14 @@ CXformUtils::CreateBitmapIndexProbeOps
     
     for (ULONG ul = 0; ul < pexprPred->UlArity(); ul++)
     {
-        pdrgpexprPredNew->Append((*pexprPred)[ul]);
+        CExpression *pexprPredChild = (*pexprPred)[ul];
+        pdrgpexprPredNew->Append(pexprPredChild);
     }
     
     CExpression *pexprPredNew = GPOS_NEW(pmp) CExpression(pmp, pexprPred->Pop(), pdrgpexprPredNew);
 
 	while(true)
 	{
-		
-		
 		CExpression *pexprBitmap = CXformUtils::PexprBitmap
 									(
 									pmp,
@@ -3662,17 +3661,15 @@ CXformUtils::CreateBitmapIndexProbeOps
 
     if(NULL != pexprResidual)
     {
-        pexprResidual->AddRef();
         pdrgpexprResidual->Append(pexprResidual);
     }
     else if (NULL != pexprPredNew)
     {
-        pexprPredNew->AddRef();
         pdrgpexprResidual->Append(pexprPredNew);
     }
     
-    pexprPredNew->Release();
     pdrgpexprPredNew->Release();
+    
 
 }
 
