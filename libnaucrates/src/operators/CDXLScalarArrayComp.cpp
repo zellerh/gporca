@@ -30,11 +30,13 @@ CDXLScalarArrayComp::CDXLScalarArrayComp
 	IMemoryPool *mp,
 	IMDId *mdid_op,
 	const CWStringConst *str_opname,
-	EdxlArrayCompType comparison_type
+	EdxlArrayCompType comparison_type,
+	INT array_length
 	)
 	:
 	CDXLScalarComp(mp, mdid_op, str_opname),
-	m_comparison_type(comparison_type)
+	m_comparison_type(comparison_type),
+	m_array_length(array_length)
 {
 }
 
@@ -125,6 +127,7 @@ CDXLScalarArrayComp::SerializeToDXL
 	xml_serializer->AddAttribute(CDXLTokens::GetDXLTokenStr(EdxltokenOpName), m_comparison_operator_name);
 	m_mdid->Serialize(xml_serializer, CDXLTokens::GetDXLTokenStr(EdxltokenOpNo));
 	xml_serializer->AddAttribute(CDXLTokens::GetDXLTokenStr(EdxltokenOpType), GetDXLStrArrayCmpType());
+	xml_serializer->AddAttribute(CDXLTokens::GetDXLTokenStr(EdxltokenArrayConstantLength), m_array_length);
 
 	dxlnode->SerializeChildrenToDXL(xml_serializer);
 	xml_serializer->CloseElement(CDXLTokens::GetDXLTokenStr(EdxltokenNamespacePrefix), element_name);

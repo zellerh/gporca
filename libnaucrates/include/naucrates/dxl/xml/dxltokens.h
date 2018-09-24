@@ -270,6 +270,7 @@ namespace gpdxl
 		
 		EdxltokenConstTuple,
 		EdxltokenDatum,
+		EdxltokenArrayConstantLength,
 
 		// CoerceToDomain and CoerceViaIO and ArrayCoerceExpr related tokens
 		EdxltokenTypeMod,

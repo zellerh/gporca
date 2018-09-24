@@ -36,6 +36,7 @@ namespace gpnaucrates
 				EsptConj, // conjunctive filter
 				EsptDisj, // disjunctive filter
 				EsptLike, // LIKE filter
+				EsptNDV, // compute filter based on NDVs (this is used for ANY = () or IN () predicated over large unexpanded array constants)
 				EsptUnsupported, // unsupported filter for statistics calculation
 
 				EsptSentinel

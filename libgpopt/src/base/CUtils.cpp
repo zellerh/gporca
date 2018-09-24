@@ -798,7 +798,7 @@ CUtils::PexprScalarArrayCmp
 	return GPOS_NEW(mp) CExpression
 				(
 				mp,
-				GPOS_NEW(mp) CScalarArrayCmp(mp, pmdidCmpOp, GPOS_NEW(mp) CWStringConst(mp, strOp.GetBuffer()), earrcmptype),
+				GPOS_NEW(mp) CScalarArrayCmp(mp, pmdidCmpOp, GPOS_NEW(mp) CWStringConst(mp, strOp.GetBuffer()), earrcmptype, pexprScalarChildren->Size()),
 				CUtils::PexprScalarIdent(mp, colref),
 				pexprArray
 				);

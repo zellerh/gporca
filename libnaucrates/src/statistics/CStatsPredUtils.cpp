@@ -22,6 +22,7 @@
 #include "naucrates/statistics/CStatisticsUtils.h"
 #include "naucrates/statistics/CStatsPredLike.h"
 #include "naucrates/statistics/CHistogram.h"
+#include "naucrates/statistics/CStatsPredNDV.h"
 
 #include "gpopt/mdcache/CMDAccessor.h"
 
@@ -935,23 +936,43 @@ CStatsPredUtils::ProcessArrayCmp
 	BOOL is_cmp_to_const_and_scalar_idents = CPredicateUtils::FCompareCastIdentToConstArray(predicate_expr) ||
 										  CPredicateUtils::FCompareScalarIdentToConstAndScalarIdentArray(predicate_expr);
 
+	// comparison semantics for statistics purposes is looser than regular comparison.
+	CStatsPred::EStatsCmpType stats_cmp_type = GetStatsCmpType(scalar_array_cmp_op->MdIdOp());
+
+	BOOL is_array_cmp_any = (CScalarArrayCmp::EarrcmpAny == scalar_array_cmp_op->Earrcmpt());
+
+	CScalarIdent *scalar_ident_op = CScalarIdent::PopConvert(expr_ident->Pop());
+	const CColRef *col_ref = scalar_ident_op->Pcr();
+
 	if (!is_cmp_to_const_and_scalar_idents)
 	{
-		// unsupported predicate for stats calculations
-		pred_stats_array->Append(GPOS_NEW(mp) CStatsPredUnsupported(
-			gpos::ulong_max, CStatsPred::EstatscmptOther));
+		if ((0 != scalar_array_cmp_op->UlLength()) &&
+				(CStatsPred::EstatscmptEq == stats_cmp_type) &&
+				is_array_cmp_any)
+		{
+			// for large array constants greater than 100 elements (as defined by the tuning parameter
+			// optimizer_array_expansion_threshold inside GPDB), expanding the constants
+			// is an expensive operation for ORCA's constraint derivation and contradiction detection.
+			// In such scenarios (>100), the GPDB translator will not expand the array, which in turn
+			// causes large errors cardinality estimation (default selectivity for unsupported predicate is 0.4)
+			// In cases of ANY with an equality comparison we can do better. We can use the number of constants
+			// in the array as means of capping the cardinality estimate.
+			pred_stats_array->Append(GPOS_NEW(mp) CStatsPredNDV(col_ref, scalar_array_cmp_op->UlLength()));
+			return;
+		}
+		else
+		{
+			// unsupported predicate for stats calculations
+			pred_stats_array->Append(GPOS_NEW(mp) CStatsPredUnsupported(
+					gpos::ulong_max, CStatsPred::EstatscmptOther));
 
-		return;
+			return;
+		}
 	}
 
 	CStatsPredPtrArry *pred_stats_child_array = pred_stats_array;
 
 	const ULONG constants = CUtils::UlScalarArrayArity(expr_scalar_array);
-	// comparison semantics for statistics purposes is looser than regular comparison.
-	CStatsPred::EStatsCmpType stats_cmp_type = GetStatsCmpType(scalar_array_cmp_op->MdIdOp());
-
-	CScalarIdent *scalar_ident_op = CScalarIdent::PopConvert(expr_ident->Pop());
-	const CColRef *col_ref = scalar_ident_op->Pcr();
 
 	if (!CHistogram::SupportsFilter(stats_cmp_type))
 	{
@@ -961,7 +982,6 @@ CStatsPredUtils::ProcessArrayCmp
 		return;
 	}
 
-	BOOL is_array_cmp_any = (CScalarArrayCmp::EarrcmpAny == scalar_array_cmp_op->Earrcmpt());
 	if (is_array_cmp_any)
 	{
 		pred_stats_child_array = GPOS_NEW(mp) CStatsPredPtrArry(mp);

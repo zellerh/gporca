@@ -20,6 +20,7 @@
 #include "naucrates/statistics/CJoinStatsProcessor.h"
 #include "naucrates/statistics/CStatisticsUtils.h"
 #include "naucrates/statistics/CScaleFactorUtils.h"
+#include "naucrates/statistics/CStatsPredNDV.h"
 
 namespace gpnaucrates
 {
@@ -58,11 +59,23 @@ namespace gpnaucrates
 				(
 				IMemoryPool *mp,
 				CStatsPredLike *pred_stats,
-											  CBitSet *filter_colids,
+				CBitSet *filter_colids,
 				CHistogram *hist_before,
 				CDouble *last_scale_factor,
 				ULONG *target_last_colid
 				);
+
+			// create a new histogram after applying an NDV based filter
+			static
+			CHistogram *MakeHistNDVFilter
+				(
+				IMemoryPool *mp,
+				CStatsPredNDV *pred_stats,
+				CBitSet *filter_colids,
+				CHistogram *hist_before,
+				CDouble *last_scale_factor,
+				ULONG *target_last_colid
+			    );
 
 			// create a new histogram for an unsupported predicate
 			static

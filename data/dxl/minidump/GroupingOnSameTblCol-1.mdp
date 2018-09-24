@@ -10971,7 +10971,7 @@ group  by item.i_item_id, item.i_item_desc, item.i_current_price;
               <dxl:Ident ColId="6" ColName="i_current_price" TypeMdid="0.1700.1.0"/>
               <dxl:ConstValue TypeMdid="0.1700.1.0" IsNull="false" IsByValue="false" Value="AAAACgAAAABcAA==" DoubleValue="92.000000"/>
             </dxl:Comparison>
-            <dxl:ArrayComp OperatorName="=" OperatorMdid="0.96.1.0" OperatorType="Any">
+            <dxl:ArrayComp OperatorName="=" OperatorMdid="0.96.1.0" OperatorType="Any" ArrayConstLength="4">
               <dxl:Ident ColId="14" ColName="i_manufact_id" TypeMdid="0.23.1.0"/>
               <dxl:Array ArrayType="0.1007.1.0" ElementType="0.23.1.0" MultiDimensional="false">
                 <dxl:ConstValue TypeMdid="0.23.1.0" IsNull="false" IsByValue="true" Value="129"/>
@@ -11188,7 +11188,7 @@ group  by item.i_item_id, item.i_item_desc, item.i_current_price;
                           <dxl:Ident ColId="5" ColName="i_current_price" TypeMdid="0.1700.1.0"/>
                           <dxl:ConstValue TypeMdid="0.1700.1.0" IsNull="false" IsByValue="false" Value="AAAACgAAAABcAA==" DoubleValue="92.000000"/>
                         </dxl:Comparison>
-                        <dxl:ArrayComp OperatorName="=" OperatorMdid="0.96.1.0" OperatorType="Any">
+                        <dxl:ArrayComp OperatorName="=" OperatorMdid="0.96.1.0" OperatorType="Any" ArrayConstLength="4">
                           <dxl:Ident ColId="13" ColName="i_manufact_id" TypeMdid="0.23.1.0"/>
                           <dxl:Array ArrayType="0.1007.1.0" ElementType="0.23.1.0" MultiDimensional="false">
                             <dxl:ConstValue TypeMdid="0.23.1.0" IsNull="false" IsByValue="true" Value="129"/>

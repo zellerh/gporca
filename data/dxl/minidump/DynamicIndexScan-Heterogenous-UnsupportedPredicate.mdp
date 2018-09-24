@@ -775,14 +775,14 @@
             <dxl:PartFilters>
               <dxl:Or>
                 <dxl:Or>
-                  <dxl:ArrayComp OperatorName="&gt;" OperatorMdid="0.521.1.0" OperatorType="Any">
+                  <dxl:ArrayComp OperatorName="&gt;" OperatorMdid="0.521.1.0" OperatorType="Any" ArrayConstLength="0">
                     <dxl:ConstValue TypeMdid="0.23.1.0" IsNull="false" IsByValue="true" Value="50"/>
                     <dxl:PartListValues Level="0" ResultType="0.1007.1.0" ElementType="0.23.1.0"/>
                   </dxl:ArrayComp>
                   <dxl:DefaultPart Level="0"/>
                 </dxl:Or>
                 <dxl:Or>
-                  <dxl:ArrayComp OperatorName="&lt;" OperatorMdid="0.97.1.0" OperatorType="Any">
+                  <dxl:ArrayComp OperatorName="&lt;" OperatorMdid="0.97.1.0" OperatorType="Any" ArrayConstLength="0">
                     <dxl:ConstValue TypeMdid="0.23.1.0" IsNull="false" IsByValue="true" Value="50"/>
                     <dxl:PartListValues Level="0" ResultType="0.1007.1.0" ElementType="0.23.1.0"/>
                   </dxl:ArrayComp>
@@ -797,7 +797,7 @@
               <dxl:ConstValue TypeMdid="0.23.1.0" IsNull="false" IsByValue="true" Value="1"/>
             </dxl:PropagationExpression>
             <dxl:PrintableFilter>
-              <dxl:ArrayComp OperatorName="&lt;&gt;" OperatorMdid="0.518.1.0" OperatorType="All">
+              <dxl:ArrayComp OperatorName="&lt;&gt;" OperatorMdid="0.518.1.0" OperatorType="All" ArrayConstLength="1">
                 <dxl:Ident ColId="0" ColName="c1" TypeMdid="0.23.1.0"/>
                 <dxl:Array ArrayType="0.1007.1.0" ElementType="0.23.1.0" MultiDimensional="false">
                   <dxl:ConstValue TypeMdid="0.23.1.0" IsNull="false" IsByValue="true" Value="50"/>

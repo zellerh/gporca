@@ -428,7 +428,7 @@ explain select * from foo where ((b = 25 or b=35) and a > 10) or (b<15 and a>5);
             <dxl:Filter>
               <dxl:Or>
                 <dxl:And>
-                  <dxl:ArrayComp OperatorName="=" OperatorMdid="0.96.1.0" OperatorType="Any">
+                  <dxl:ArrayComp OperatorName="=" OperatorMdid="0.96.1.0" OperatorType="Any" ArrayConstLength="2">
                     <dxl:Ident ColId="1" ColName="b" TypeMdid="0.23.1.0"/>
                     <dxl:Array ArrayType="0.1007.1.0" ElementType="0.23.1.0" MultiDimensional="false">
                       <dxl:ConstValue TypeMdid="0.23.1.0" IsNull="false" IsByValue="true" Value="25"/>

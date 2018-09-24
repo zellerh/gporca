@@ -626,7 +626,8 @@ CTranslatorExprToDXLUtils::PdxlnPartialScanTestRange
 																mp,
 																pmdidEq,
 																GPOS_NEW(mp) CWStringConst(mp, pmdidEq->GetBuffer()),
-																Edxlarraycomptypeany
+																Edxlarraycomptypeany,
+																1 // single datum value
 																),
 													pdxlnScalar,
 													pdxlnPartList
@@ -912,6 +913,9 @@ CTranslatorExprToDXLUtils::PdxlnListFilterScCmp
 
 	pmdidScCmp = CUtils::GetScCmpMdId(mp, md_accessor, pmdidTypeOther, pmdidTypePartKey, cmp_type);
 
+	// number of distinct values used in cardinality estimation, no needed at this stage of leaving ORCA-land
+	ULONG ulLengthArray = 0;
+
 	const IMDScalarOp *md_scalar_op = md_accessor->RetrieveScOp(pmdidScCmp);
 	const CWStringConst *pstrScCmp = md_scalar_op->Mdname().GetMDName();
 
@@ -924,7 +928,8 @@ CTranslatorExprToDXLUtils::PdxlnListFilterScCmp
 															mp,
 															pmdidScCmp,
 															GPOS_NEW(mp) CWStringConst(mp, pstrScCmp->GetBuffer()),
-															Edxlarraycomptypeany
+															Edxlarraycomptypeany,
+															ulLengthArray
 															),
 												pdxlnOther,
 												pdxlnPartKey

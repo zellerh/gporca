@@ -45,13 +45,15 @@ CScalarArrayCmp::CScalarArrayCmp
 	IMemoryPool *mp,
 	IMDId *mdid_op,
 	const CWStringConst *pstrOp,
-	EArrCmpType earrcmpt
+	EArrCmpType earrcmpt,
+	INT array_length
 	)
 	:
 	CScalar(mp),
 	m_mdid_op(mdid_op),
 	m_pscOp(pstrOp),
 	m_earrccmpt(earrcmpt),
+	m_array_length(array_length),
 	m_returns_null_on_null_input(false)
 {
 	GPOS_ASSERT(mdid_op->IsValid());

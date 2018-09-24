@@ -56,6 +56,9 @@ namespace gpopt
 			// array compare type
 			EArrCmpType m_earrccmpt;
 			
+			// length of the array constant
+			INT m_array_length;
+
 			// does operator return NULL on NULL input?
 			BOOL m_returns_null_on_null_input;
 
@@ -74,7 +77,8 @@ namespace gpopt
 				IMemoryPool *mp,
 				IMDId *mdid_op,
 				const CWStringConst *pstrOp,
-				EArrCmpType earrcmpt
+				EArrCmpType earrcmpt,
+				INT array_length
 				);
 
 			// dtor
@@ -98,7 +102,12 @@ namespace gpopt
 			{
 				return m_earrccmpt;
 			}
-			
+
+			INT UlLength() const
+			{
+				return m_array_length;
+			}
+
 			// return a string for operator name
 			virtual 
 			const CHAR *SzId() const

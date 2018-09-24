@@ -809,7 +809,7 @@ select * from P,X where P.a=X.a  and X.a  in (1,2);
             <dxl:Ident ColId="1" ColName="a" TypeMdid="0.23.1.0"/>
             <dxl:Ident ColId="10" ColName="a" TypeMdid="0.23.1.0"/>
           </dxl:Comparison>
-          <dxl:ArrayComp OperatorName="=" OperatorMdid="0.96.1.0" OperatorType="Any">
+          <dxl:ArrayComp OperatorName="=" OperatorMdid="0.96.1.0" OperatorType="Any" ArrayConstLength="2">
             <dxl:Ident ColId="10" ColName="a" TypeMdid="0.23.1.0"/>
             <dxl:Array ArrayType="0.1007.1.0" ElementType="0.23.1.0" MultiDimensional="false">
               <dxl:ConstValue TypeMdid="0.23.1.0" IsNull="false" IsByValue="true" Value="1"/>
@@ -870,7 +870,7 @@ select * from P,X where P.a=X.a  and X.a  in (1,2);
               </dxl:ProjElem>
             </dxl:ProjList>
             <dxl:Filter>
-              <dxl:ArrayComp OperatorName="=" OperatorMdid="0.96.1.0" OperatorType="Any">
+              <dxl:ArrayComp OperatorName="=" OperatorMdid="0.96.1.0" OperatorType="Any" ArrayConstLength="2">
                 <dxl:Ident ColId="9" ColName="a" TypeMdid="0.23.1.0"/>
                 <dxl:Array ArrayType="0.1007.1.0" ElementType="0.23.1.0" MultiDimensional="false">
                   <dxl:ConstValue TypeMdid="0.23.1.0" IsNull="false" IsByValue="true" Value="1"/>
@@ -1003,7 +1003,7 @@ select * from P,X where P.a=X.a  and X.a  in (1,2);
                   <dxl:ConstValue TypeMdid="0.23.1.0" IsNull="false" IsByValue="true" Value="1"/>
                 </dxl:PropagationExpression>
                 <dxl:PrintableFilter>
-                  <dxl:ArrayComp OperatorName="=" OperatorMdid="0.96.1.0" OperatorType="Any">
+                  <dxl:ArrayComp OperatorName="=" OperatorMdid="0.96.1.0" OperatorType="Any" ArrayConstLength="2">
                     <dxl:Ident ColId="0" ColName="a" TypeMdid="0.23.1.0"/>
                     <dxl:Array ArrayType="0.1007.1.0" ElementType="0.23.1.0" MultiDimensional="false">
                       <dxl:ConstValue TypeMdid="0.23.1.0" IsNull="false" IsByValue="true" Value="1"/>
@@ -1025,7 +1025,7 @@ select * from P,X where P.a=X.a  and X.a  in (1,2);
                   </dxl:ProjElem>
                 </dxl:ProjList>
                 <dxl:Filter>
-                  <dxl:ArrayComp OperatorName="=" OperatorMdid="0.96.1.0" OperatorType="Any">
+                  <dxl:ArrayComp OperatorName="=" OperatorMdid="0.96.1.0" OperatorType="Any" ArrayConstLength="2">
                     <dxl:Ident ColId="0" ColName="a" TypeMdid="0.23.1.0"/>
                     <dxl:Array ArrayType="0.1007.1.0" ElementType="0.23.1.0" MultiDimensional="false">
                       <dxl:ConstValue TypeMdid="0.23.1.0" IsNull="false" IsByValue="true" Value="1"/>

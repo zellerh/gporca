@@ -40,6 +40,9 @@ namespace gpdxl
 
 			EdxlArrayCompType m_comparison_type;
 
+			// length of the array constant
+			INT m_array_length;
+
 			// private copy ctor
 			CDXLScalarArrayComp(const CDXLScalarArrayComp&);
 
@@ -52,7 +55,8 @@ namespace gpdxl
 				IMemoryPool *mp,
 				IMDId *mdid_op,
 				const CWStringConst *str_opname,
-				EdxlArrayCompType comparison_type
+				EdxlArrayCompType comparison_type,
+				INT array_length
 				);
 
 			// ident accessors
@@ -91,6 +95,12 @@ namespace gpdxl
 					const
 			{
 				return true;
+			}
+
+			// size of the array constant
+			INT SizeArrayConst() const
+			{
+				return m_array_length;
 			}
 
 #ifdef GPOS_DEBUG

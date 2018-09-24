@@ -812,11 +812,19 @@ CDXLOperatorFactory::MakeDXLArrayComp
 			);
 	}
 
+	INT array_const_len = 0;
+
+	const XMLCh *length_xml = attrs.getValue(CDXLTokens::XmlstrToken(EdxltokenArrayConstantLength));
+	if (NULL != length_xml)
+	{
+		array_const_len = ExtractConvertAttrValueToInt(dxl_memory_manager, attrs, EdxltokenArrayConstantLength, EdxltokenScalarArrayComp);
+	}
+
 	CWStringDynamic *opname = CDXLUtils::CreateDynamicStringFromXMLChArray(dxl_memory_manager, op_expr_xml);
 	CWStringConst *opname_copy = GPOS_NEW(mp) CWStringConst(mp, opname->GetBuffer());
 	GPOS_DELETE(opname);
 
-	return GPOS_NEW(mp) CDXLScalarArrayComp(mp, op_id, opname_copy, array_comp_type);
+	return GPOS_NEW(mp) CDXLScalarArrayComp(mp, op_id, opname_copy, array_comp_type, array_const_len);
 }
 
 //---------------------------------------------------------------------------

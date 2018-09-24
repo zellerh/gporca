@@ -566,6 +566,12 @@ CFilterStatsProcessor::MakeHistSimpleFilter
 		return MakeHistPointFilter(mp, point_pred_stats, filter_colids, hist_before, last_scale_factor, target_last_colid);
 	}
 
+	if (CStatsPred::EsptNDV == pred_stats->GetPredStatsType())
+	{
+		CStatsPredNDV *ndv_pred_stats = CStatsPredNDV::ConvertPredStats(pred_stats);
+		return MakeHistNDVFilter(mp, ndv_pred_stats, filter_colids, hist_before, last_scale_factor, target_last_colid);
+	}
+
 	if (CStatsPred::EsptLike == pred_stats->GetPredStatsType())
 	{
 		CStatsPredLike *like_pred_stats = CStatsPredLike::ConvertPredStats(pred_stats);
@@ -644,6 +650,66 @@ CFilterStatsProcessor::MakeHistUnsupportedPred
 
 	return result_histogram;
 }
+
+
+//	create a new histograms after applying NDV based filtering
+CHistogram *
+CFilterStatsProcessor::MakeHistNDVFilter
+	(
+	IMemoryPool *mp,
+	CStatsPredNDV *pred_stats,
+	CBitSet *filter_colids,
+	CHistogram *hist_before,
+	CDouble *last_scale_factor,
+	ULONG *target_last_colid
+	)
+{
+	GPOS_ASSERT(NULL != pred_stats);
+	GPOS_ASSERT(NULL != filter_colids);
+	GPOS_ASSERT(NULL != hist_before);
+
+	const ULONG colid = pred_stats->GetColId();
+
+	// register column id
+	(void) filter_colids->ExchangeSet(colid);
+	*target_last_colid = colid;
+
+	// estimate scale factor of the predicate by comparing the NDV of the filter
+	// to that present in the histogram
+	CDouble filter_num_distinct = CDouble(pred_stats->NumDistinctValue());
+	CDouble hist_num_distinct = hist_before->GetNumDistinct();
+
+	// consider the predicate foo.b IN (1,2,3) and the array constant is not
+	// expanded and the input has 100 NDV. Then the upper bound of scale factor is 100/3,
+	// i.e out of hundred, max 3 values will match.
+	// Note that we cap the lower bound of the scale factor be the same as that of the
+	// unsupported predicate to ensure we do not over estimate
+	CDouble scale_factor = std::max(1 / CHistogram::DefaultSelectivity, hist_num_distinct / filter_num_distinct);
+	*last_scale_factor = *last_scale_factor * scale_factor;
+
+	// result histogram will only have NDVs and no histograms since we cannot reason
+	// about the later
+
+	CBucketArray *empty_buckets = GPOS_NEW(mp) CBucketArray(mp);
+
+	// the number of distinct values in the result histogram and its corresponding frequency
+	// is based on the frequency of not null constants and the scale factor
+	CDouble distinct_remaining = std::min(filter_num_distinct, hist_num_distinct);
+	CDouble freq_remaining = (1 - hist_before->GetNullFreq()) / std::max(CDouble(1), (hist_num_distinct / filter_num_distinct));
+
+	// generate result histogram
+	CHistogram *result_histogram = GPOS_NEW(mp) CHistogram
+													(
+													empty_buckets,
+													true /*is_well_defined*/,
+													0.0 /*null_freq*/,
+													distinct_remaining,
+													freq_remaining
+													);
+
+	return result_histogram;;
+}
+
 
 //	create a new histograms after applying the LIKE filter
 CHistogram *

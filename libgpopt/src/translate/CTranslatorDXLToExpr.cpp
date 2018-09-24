@@ -3357,7 +3357,14 @@ CTranslatorDXLToExpr::PexprArrayCmp
 		earrcmpt = CScalarArrayCmp::EarrcmpAny;
 	}
 	
-	CScalarArrayCmp *popArrayCmp = GPOS_NEW(m_mp) CScalarArrayCmp(m_mp, mdid_op, GPOS_NEW(m_mp) CWStringConst(m_mp, str_opname->GetBuffer()), earrcmpt);
+	CScalarArrayCmp *popArrayCmp = GPOS_NEW(m_mp) CScalarArrayCmp
+													(
+													m_mp,
+													mdid_op,
+													GPOS_NEW(m_mp) CWStringConst(m_mp, str_opname->GetBuffer()),
+													earrcmpt,
+													dxl_op->SizeArrayConst()
+													);
 	
 	CExpressionArray *pdrgpexprChildren = PdrgpexprChildren(dxlnode);
 

@@ -7079,7 +7079,8 @@ CTranslatorExprToDXL::PdxlnArrayCmp
 									m_mp,
 									mdid_op,
 									GPOS_NEW(m_mp) CWStringConst(m_mp, str_opname->GetBuffer()),
-									edxlarrcmpt
+									edxlarrcmpt,
+									pop->UlLength()
 									)
 						);
 
