@@ -306,7 +306,7 @@ namespace gpnaucrates
 						const CHistogram *other_histogram,
 						CDouble rows_other,
 						CDouble *num_output_rows,
-						BOOL mergeNullsNDV
+						BOOL merge_nulls_ndv
 						)
 						const;
 

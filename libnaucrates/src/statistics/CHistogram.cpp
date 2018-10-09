@@ -1617,7 +1617,7 @@ CHistogram::MakeUnionHistogramNormalize
 	const CHistogram *other_histogram,
 	CDouble rows_other,
 	CDouble *num_output_rows,
-	BOOL mergeNullsNDV
+	BOOL merge_nulls_ndv
 	)
 	const
 {
@@ -1717,7 +1717,7 @@ CHistogram::MakeUnionHistogramNormalize
 	// compute the total number of rows having distinct values not captured by the buckets in both the histograms
 	CDouble NDV_remain_num_rows = std::max( (this->GetFreqRemain() * rows), (other_histogram->GetFreqRemain() * rows_other));
 
-	if (mergeNullsNDV)
+	if (merge_nulls_ndv)
 	{
 		num_null_rows = this->GetNullFreq() * rows + other_histogram->GetNullFreq() * rows_other;
 		num_NDV_remain = m_distinct_remaining + other_histogram->GetDistinctRemain();

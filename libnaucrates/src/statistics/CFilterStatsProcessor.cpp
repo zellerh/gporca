@@ -387,7 +387,7 @@ CFilterStatsProcessor::MakeHistHashMapDisjFilter
 
 	CDouble cumulative_rows(CStatistics::MinRows.Get());
 
-	BOOL eqPredicate = true;
+	BOOL is_eq_predicate = true;
 	// iterate over filters and update corresponding histograms
 	const ULONG filters = disjunctive_pred_stats->GetNumPreds();
 	for (ULONG ul = 0; ul < filters; ul++)
@@ -482,9 +482,10 @@ CFilterStatsProcessor::MakeHistHashMapDisjFilter
 			else
 			{
 
-				if (!eqPredicate || CStatsPred::EsptPoint != child_pred_stats->GetPredStatsType())
+				if (!is_eq_predicate || CStatsPred::EsptPoint != child_pred_stats->GetPredStatsType())
 				{
-					eqPredicate = false;
+					// the predicate is not point predicate or is not an equality predicate
+					is_eq_predicate = false;
 				}
 				else
 				{
@@ -492,7 +493,7 @@ CFilterStatsProcessor::MakeHistHashMapDisjFilter
 					// then we can merge the NDVs, else it does not make sense as we may land up double counting.
 					// For instance, we will not merge NDVs for the predicate [(a = 10) OR (a < 15)]
 					// It is important to note that duplicate predicates will be pruned in the preprocessing step.
-					eqPredicate = (CStatsPred::EstatscmptEq == CStatsPredPoint::ConvertPredStats(child_pred_stats)->GetCmpType());
+					is_eq_predicate = (CStatsPred::EstatscmptEq == CStatsPredPoint::ConvertPredStats(child_pred_stats)->GetCmpType());
 				}
 
 				// statistics operation already conducted on this column
@@ -504,7 +505,7 @@ CFilterStatsProcessor::MakeHistHashMapDisjFilter
 																	disjunctive_child_col_histogram,
 																	num_rows_disj_child,
 																	&output_rows,
-																	eqPredicate
+																	is_eq_predicate
 																	);
 				cumulative_rows = output_rows;
 
