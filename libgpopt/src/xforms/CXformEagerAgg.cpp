@@ -7,7 +7,7 @@
 //
 //  @doc:
 //      Implementation for eagerly pushing aggregates below join
-//          (with on restriction on the join condition)
+//          (with no foreign key restriction on the join condition)
 //---------------------------------------------------------------------------
 #include "gpos/base.h"
 
@@ -22,14 +22,7 @@
 using namespace gpopt;
 using namespace gpmd;
 
-//---------------------------------------------------------------------------
-//  @function:
-//      CXformEagerAgg::CXformEagerAgg
-//
-//  @doc:
-//      Ctor
-//
-//---------------------------------------------------------------------------
+// ctor
 CXformEagerAgg::CXformEagerAgg
     (
     IMemoryPool *mp
@@ -98,10 +91,6 @@ CXformEagerAgg::Transform
 
     IMemoryPool *mp = pxf_ctxt->Pmp();
 
-    // {
-    //  CAutoTrace at(mp);
-    //  at.Os() << *pexpr;
-    // }
     if (!FApplicable(pexpr))
         return;
     /*
@@ -233,7 +222,7 @@ const
 
     /* 4. currently only supporting MIN aggregate function */
     // obtain the oid of the scalar aggregate function and compare to the oid of
-    // EAggSum that applies to the input expression of the aggregate
+    // EAggMin that applies to the input expression of the aggregate
     CScalarAggFunc *scalar_agg_func = CScalarAggFunc::PopConvert(scalar_agg_func_expr->Pop());
     IMDId *agg_mdid = scalar_agg_func->MDId();  // oid of the query agg function
 
@@ -253,7 +242,7 @@ const
     return true;
 }
 
-// populate the lower and upper aggreate's project list after
+// populate the lower and upper aggregate's project list after
 // splitting and pushing down an aggregate.
 void
 CXformEagerAgg::PopulateLowerUpperProjectList
@@ -275,12 +264,12 @@ CXformEagerAgg::PopulateLowerUpperProjectList
     // loop over each project element
     for (ULONG ul = 0; ul < arity; ul++)
     {
-        CExpression *curr_proj_elem_expr = (*orig_proj_list)[ul];
+        CExpression *orig_proj_elem_expr = (*orig_proj_list)[ul];
         CScalarProjectElement *orig_proj_elem =
-        CScalarProjectElement::PopConvert(curr_proj_elem_expr->Pop());
+        CScalarProjectElement::PopConvert(orig_proj_elem_expr->Pop());
 
         // get the scalar agg func
-        CExpression *orig_agg_expr = (*curr_proj_elem_expr)[0];
+        CExpression *orig_agg_expr = (*orig_proj_elem_expr)[0];
         CScalarAggFunc *orig_agg_func = CScalarAggFunc::PopConvert(orig_agg_expr->Pop());
 
         /*  1. create new aggregate function for the lower aggregate operator   */

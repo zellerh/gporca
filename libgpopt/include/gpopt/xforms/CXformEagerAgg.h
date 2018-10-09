@@ -1,13 +1,13 @@
 //---------------------------------------------------------------------------
 
-//	Greenplum Database
-//	Copyright (C) 2018 Pivotal Inc.
+//  Greenplum Database
+//  Copyright (C) 2018 Pivotal Inc.
 //
-//	@filename:
-//		CXformEagerAgg.h
+//  @filename:
+//      CXformEagerAgg.h
 //
-//	@doc:
-//		Eagerly push aggregates below join when there is no primary/foreign keys
+//  @doc:
+//      Eagerly push aggregates below join when there is no primary/foreign keys
 //---------------------------------------------------------------------------
 #ifndef GPOPT_CXformEagerAgg_H
 #define GPOPT_CXformEagerAgg_H
@@ -17,26 +17,26 @@
 
 namespace gpopt
 {
-	using namespace gpos;
+    using namespace gpos;
 
-	//---------------------------------------------------------------------------
-	//	@class:
-	//		CXformEagerAgg
-	//
-	//	@doc:
-	//		Eagerly push aggregates below join when there is no primary/foreign keys
-	//
-	//---------------------------------------------------------------------------
-	class CXformEagerAgg : public CXformExploration
-	{
+    //---------------------------------------------------------------------------
+    //  @class:
+    //      CXformEagerAgg
+    //
+    //  @doc:
+    //      Eagerly push aggregates below join when there is no primary/foreign keys
+    //
+    //---------------------------------------------------------------------------
+    class CXformEagerAgg : public CXformExploration
+    {
 
-		private:
+        private:
 
-			// private copy ctor
-			CXformEagerAgg(const CXformEagerAgg &);
-        
+            // private copy ctor
+            CXformEagerAgg(const CXformEagerAgg &);
 
-		public:
+
+        public:
 
             // ctor
             explicit
@@ -85,10 +85,10 @@ namespace gpopt
             static
             void PopulateLowerUpperProjectList
             (
-             IMemoryPool *mp, // memory pool
-             CExpression *orig_proj_list,       // project list of the original global aggregate
-             CExpression **lower_proj_list, // project list of the new local aggregate
-             CExpression **upper_proj_list // project list of the new global aggregate
+             IMemoryPool *mp,               // memory pool
+             CExpression *orig_proj_list,   // project list of the original global aggregate
+             CExpression **lower_proj_list, // project list of the new lower aggregate
+             CExpression **upper_proj_list  // project list of the new upper aggregate
             );
 
             // return true if xform should be applied only once
@@ -96,7 +96,7 @@ namespace gpopt
             BOOL IsApplyOnce(){
                 return true;
              };
-	}; // class CXformEagerAgg
+    }; // class CXformEagerAgg
 
 }
 
