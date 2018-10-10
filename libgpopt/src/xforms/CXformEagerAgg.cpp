@@ -184,7 +184,8 @@ CXformEagerAgg::Transform
 // Check if the transform can be applied
 //   Eager agg is currently applied only if following is true:
 //     - Inner join of two relations
-//     - Single aggregate (SUM)
+//     - Single aggregate (MIN or MAX)
+//     - Aggregate is not a DQA
 //     - Single expression input in the agg
 //     - Input expression only part of outer child
 BOOL
@@ -220,10 +221,16 @@ const
     if (!outer_child_crs->ContainsAll(proj_list_crs))
         return false;
 
-    /* 4. currently only supporting MIN aggregate function */
+    /* 4. currently only supporting MIN/MAX aggregate function */
     // obtain the oid of the scalar aggregate function and compare to the oid of
     // EAggMin that applies to the input expression of the aggregate
     CScalarAggFunc *scalar_agg_func = CScalarAggFunc::PopConvert(scalar_agg_func_expr->Pop());
+
+    if (scalar_agg_func->IsDistinct())
+    {
+    		return false;
+    }
+
     IMDId *agg_mdid = scalar_agg_func->MDId();  // oid of the query agg function
 
     CExpression *agg_child_expr = (*scalar_agg_func_expr)[0];
@@ -231,15 +238,18 @@ const
     COptCtxt *poctxt = COptCtxt::PoctxtFromTLS();
     CMDAccessor *md_accessor = poctxt->Pmda();
     // get oid of the MIN AGG that would apply to the input expression
-    IMDId *input_supported_agg_mdid = md_accessor->RetrieveType(agg_child_mdid)->
-                                        GetMdidForAggType(IMDType::EaggMin);
-    if (!agg_mdid->Equals(input_supported_agg_mdid))
+    if (agg_mdid->Equals(md_accessor->RetrieveType(agg_child_mdid)->
+            GetMdidForAggType(IMDType::EaggMin)))
     {
-        // inputed agg is not supported
-        return false;
+        return true;
+    }
+    else if (agg_mdid->Equals(md_accessor->RetrieveType(agg_child_mdid)->
+            GetMdidForAggType(IMDType::EaggMax)))
+    {
+    		return true;
     }
 
-    return true;
+    return false;
 }
 
 // populate the lower and upper aggregate's project list after
@@ -321,7 +331,6 @@ CXformEagerAgg::PopulateLowerUpperProjectList
                                                 lower_agg_expr
                                                 );
         // b: determine the aggregate function for that particular type
-		// IMDId *upper_agg_mdid = lower_agg_ret_type->GetMdidForAggType(IMDType::EaggMin);
         IMDId *upper_agg_mdid = orig_agg_mdid;
 
         // c: create a new operator
