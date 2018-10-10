@@ -29,6 +29,7 @@ ULONG CAggTest::m_ulAggTestCounter = 0;  // start from first test
 const CHAR *rgszAggFileNames[] =
 {
 	"../data/dxl/minidump/eager_agg.mdp",
+    "../data/dxl/minidump/eager_agg_empty_input.mdp",
     "../data/dxl/minidump/DQA-KeepOuterReference.mdp",
 	"../data/dxl/minidump/ScalarSubqueryCountStarInJoin.mdp",
 	"../data/dxl/minidump/ScalarCorrelatedSubqueryCountStar.mdp",
