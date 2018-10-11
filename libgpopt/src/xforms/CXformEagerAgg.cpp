@@ -228,7 +228,7 @@ const
 
     if (scalar_agg_func->IsDistinct())
     {
-    		return false;
+    	return false;
     }
 
     IMDId *agg_mdid = scalar_agg_func->MDId();  // oid of the query agg function
@@ -241,12 +241,12 @@ const
     if (agg_mdid->Equals(md_accessor->RetrieveType(agg_child_mdid)->
             GetMdidForAggType(IMDType::EaggMin)))
     {
-        return true;
+    	return true;
     }
     else if (agg_mdid->Equals(md_accessor->RetrieveType(agg_child_mdid)->
             GetMdidForAggType(IMDType::EaggMax)))
     {
-    		return true;
+    	return true;
     }
 
     return false;

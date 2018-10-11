@@ -1,5 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <dxl:DXLMessage xmlns:dxl="http://greenplum.com/dxl/2010/12/">
+ <dxl:Comment><![CDATA[
+	  create table foo (j1 int, g1 int, s1 int);
+	  insert into foo select i%10000, i %1000, i from generate_series(1,100000000) i;
+
+	  create table bar (j2 int, g2 int, s2 int);
+	  insert into bar select i%100, i %1000, i from generate_series(1,100000) i;
+
+	   explain  select g1, g2, max(s1)
+	   from foo inner join bar
+	   on j1 = j2 where s1%2 = 0
+           group by g1, g2 order by g1, g2;
+	 ]]>
+  </dxl:Comment>
   <dxl:Thread Id="0">
     <dxl:OptimizerConfig>
       <dxl:EnumeratorConfig Id="0" PlanSamples="0" CostThreshold="0"/>
@@ -204,12 +217,12 @@
       </dxl:Type>
       <dxl:ColumnStatistics Mdid="1.16391.1.0.1" Name="g2" Width="4.000000" NullFreq="0.000000" NdvRemain="0.000000" FreqRemain="0.000000" ColStatsMissing="true"/>
       <dxl:ColumnStatistics Mdid="1.16391.1.0.0" Name="j2" Width="4.000000" NullFreq="0.000000" NdvRemain="0.000000" FreqRemain="0.000000" ColStatsMissing="true"/>
-      <dxl:ColumnStatistics Mdid="1.16394.1.0.1" Name="g1" Width="4.000000" NullFreq="0.000000" NdvRemain="0.000000" FreqRemain="0.000000" ColStatsMissing="true"/>
-      <dxl:ColumnStatistics Mdid="1.16394.1.0.0" Name="j1" Width="4.000000" NullFreq="0.000000" NdvRemain="0.000000" FreqRemain="0.000000" ColStatsMissing="true"/>
-      <dxl:GPDBAgg Mdid="0.2132.1.0" Name="min" IsSplittable="true" HashAggCapable="true">
+      <dxl:GPDBAgg Mdid="0.2116.1.0" Name="max" IsSplittable="true" HashAggCapable="true">
         <dxl:ResultType Mdid="0.23.1.0"/>
         <dxl:IntermediateResultType Mdid="0.23.1.0"/>
       </dxl:GPDBAgg>
+      <dxl:ColumnStatistics Mdid="1.16394.1.0.1" Name="g1" Width="4.000000" NullFreq="0.000000" NdvRemain="0.000000" FreqRemain="0.000000" ColStatsMissing="true"/>
+      <dxl:ColumnStatistics Mdid="1.16394.1.0.0" Name="j1" Width="4.000000" NullFreq="0.000000" NdvRemain="0.000000" FreqRemain="0.000000" ColStatsMissing="true"/>
       <dxl:MDCast Mdid="3.23.1.0;23.1.0" Name="int4" BinaryCoercible="true" SourceTypeId="0.23.1.0" DestinationTypeId="0.23.1.0" CastFuncId="0.0.0.0" CoercePathType="0"/>
       <dxl:GPDBScalarOp Mdid="0.97.1.0" Name="&lt;" ComparisonType="LT" ReturnsNullOnNullInput="true">
         <dxl:LeftType Mdid="0.23.1.0"/>
@@ -242,7 +255,7 @@
       <dxl:OutputColumns>
         <dxl:Ident ColId="2" ColName="g1" TypeMdid="0.23.1.0"/>
         <dxl:Ident ColId="12" ColName="g2" TypeMdid="0.23.1.0"/>
-        <dxl:Ident ColId="21" ColName="min" TypeMdid="0.23.1.0"/>
+        <dxl:Ident ColId="21" ColName="max" TypeMdid="0.23.1.0"/>
       </dxl:OutputColumns>
       <dxl:CTEList/>
       <dxl:LogicalLimit>
@@ -258,8 +271,8 @@
             <dxl:GroupingColumn ColId="12"/>
           </dxl:GroupingColumns>
           <dxl:ProjList>
-            <dxl:ProjElem ColId="21" Alias="min">
-              <dxl:AggFunc AggMdid="0.2132.1.0" AggDistinct="false" AggStage="Normal">
+            <dxl:ProjElem ColId="21" Alias="max">
+              <dxl:AggFunc AggMdid="0.2116.1.0" AggDistinct="false" AggStage="Normal">
                 <dxl:Ident ColId="3" ColName="s1" TypeMdid="0.23.1.0"/>
               </dxl:AggFunc>
             </dxl:ProjElem>
@@ -314,7 +327,7 @@
         </dxl:LogicalGroupBy>
       </dxl:LogicalLimit>
     </dxl:Query>
-    <dxl:Plan Id="0" SpaceSize="0">
+    <dxl:Plan Id="0" SpaceSize="360">
       <dxl:GatherMotion InputSegments="0,1,2" OutputSegments="-1">
         <dxl:Properties>
           <dxl:Cost StartupCost="0" TotalCost="862.000677" Rows="1.000000" Width="12"/>
@@ -326,8 +339,8 @@
           <dxl:ProjElem ColId="11" Alias="g2">
             <dxl:Ident ColId="11" ColName="g2" TypeMdid="0.23.1.0"/>
           </dxl:ProjElem>
-          <dxl:ProjElem ColId="20" Alias="min">
-            <dxl:Ident ColId="20" ColName="min" TypeMdid="0.23.1.0"/>
+          <dxl:ProjElem ColId="20" Alias="max">
+            <dxl:Ident ColId="20" ColName="max" TypeMdid="0.23.1.0"/>
           </dxl:ProjElem>
         </dxl:ProjList>
         <dxl:Filter/>
@@ -350,8 +363,8 @@
             <dxl:ProjElem ColId="11" Alias="g2">
               <dxl:Ident ColId="11" ColName="g2" TypeMdid="0.23.1.0"/>
             </dxl:ProjElem>
-            <dxl:ProjElem ColId="20" Alias="min">
-              <dxl:AggFunc AggMdid="0.2132.1.0" AggDistinct="false" AggStage="Final">
+            <dxl:ProjElem ColId="20" Alias="max">
+              <dxl:AggFunc AggMdid="0.2116.1.0" AggDistinct="false" AggStage="Final">
                 <dxl:Ident ColId="22" ColName="ColRef_0022" TypeMdid="0.23.1.0"/>
               </dxl:AggFunc>
             </dxl:ProjElem>
@@ -431,7 +444,7 @@
                   </dxl:GroupingColumns>
                   <dxl:ProjList>
                     <dxl:ProjElem ColId="22" Alias="ColRef_0022">
-                      <dxl:AggFunc AggMdid="0.2132.1.0" AggDistinct="false" AggStage="Partial">
+                      <dxl:AggFunc AggMdid="0.2116.1.0" AggDistinct="false" AggStage="Partial">
                         <dxl:Ident ColId="2" ColName="s1" TypeMdid="0.23.1.0"/>
                       </dxl:AggFunc>
                     </dxl:ProjElem>
