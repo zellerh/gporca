@@ -199,57 +199,50 @@ const
 	CExpression *proj_list_expr = (*pexpr)[1];
 	CExpression *outer_child_expr = (*join_expr)[0];
 
-	/* 1. currently only supporting single aggregate function */
-	if (proj_list_expr->Arity() != 1)
-	{
-		return false;
-	}
+	ULONG arity = proj_list_expr->Arity();
 
-	/* 2. currently only supporting single-input aggregates */
-	// scalar aggregate function is the lone child of the project element
-	CExpression *scalar_agg_func_expr = (*(*proj_list_expr)[0])[0];
-	if (scalar_agg_func_expr->Arity() != 1)
-	{
-		return false;
-	}
+    for (ULONG ul = 0; ul < arity; ul++)
+    {
+        // currently only supporting single-input aggregates //
+		// scalar aggregate function is the lone child of the project element
 
-	/* 3. currently only supporting aggregate column references from outer child */
-	CColRefSet *outer_child_crs = CDrvdPropRelational::GetRelationalProperties(
-														outer_child_expr->PdpDerive())->PcrsOutput();
-	CColRefSet *proj_list_crs = CDrvdPropScalar::GetDrvdScalarProps(
-													proj_list_expr->PdpDerive())->PcrsUsed();
-	if (!outer_child_crs->ContainsAll(proj_list_crs))
-		return false;
+        CExpression *scalar_agg_func_expr = (*(*proj_list_expr)[ul])[0];
+        if (scalar_agg_func_expr->Arity() != 1)
+        {
+            return false;
+        }
 
-	/* 4. currently only supporting MIN/MAX aggregate function */
-	// obtain the oid of the scalar aggregate function and compare to the oid of
-	// EAggMin that applies to the input expression of the aggregate
-	CScalarAggFunc *scalar_agg_func = CScalarAggFunc::PopConvert(scalar_agg_func_expr->Pop());
+        // currently not supporting DQA //
+        CScalarAggFunc *scalar_agg_func = CScalarAggFunc::PopConvert(scalar_agg_func_expr->Pop());
+        if (scalar_agg_func->IsDistinct())
+        {
+            return false;
+        }
 
-	if (scalar_agg_func->IsDistinct())
-	{
-		return false;
-	}
+        // currently only supporting MIN/MAX aggregate function //
+        COptCtxt *poctxt = COptCtxt::PoctxtFromTLS();
+        CMDAccessor *md_accessor = poctxt->Pmda();
+        IMDId *agg_mdid = scalar_agg_func->MDId();  // oid of the original aggregate function
+        CExpression *agg_child_expr = (*scalar_agg_func_expr)[0];
+        IMDId *agg_child_mdid = CScalar::PopConvert(agg_child_expr->Pop())->MdidType();
+        const IMDType *agg_child_type = md_accessor->RetrieveType(agg_child_mdid);
+        if (! (agg_mdid->Equals(agg_child_type->GetMdidForAggType(IMDType::EaggMin))) &&
+            ! (agg_mdid->Equals(agg_child_type->GetMdidForAggType(IMDType::EaggMax))))
+        {
+            return false;
+        }
+    }
 
-	IMDId *agg_mdid = scalar_agg_func->MDId();  // oid of the query agg function
 
-	CExpression *agg_child_expr = (*scalar_agg_func_expr)[0];
-	IMDId *agg_child_mdid = CScalar::PopConvert(agg_child_expr->Pop())->MdidType();
-	COptCtxt *poctxt = COptCtxt::PoctxtFromTLS();
-	CMDAccessor *md_accessor = poctxt->Pmda();
-	// get oid of the MIN AGG that would apply to the input expression
-	if (agg_mdid->Equals(md_accessor->RetrieveType(agg_child_mdid)->
-			GetMdidForAggType(IMDType::EaggMin)))
-	{
-		return true;
-	}
-	else if (agg_mdid->Equals(md_accessor->RetrieveType(agg_child_mdid)->
-			GetMdidForAggType(IMDType::EaggMax)))
-	{
-		return true;
-	}
+    // currently only supporting aggregate column references from outer child //
+    CColRefSet *outer_child_crs = CDrvdPropRelational::GetRelationalProperties(
+                                                        outer_child_expr->PdpDerive())->PcrsOutput();
+    CColRefSet *proj_list_crs = CDrvdPropScalar::GetDrvdScalarProps(
+                                                    proj_list_expr->PdpDerive())->PcrsUsed();
+    if (!outer_child_crs->ContainsAll(proj_list_crs))
+        return false;
 
-	return false;
+	return true;
 }
 
 // populate the lower and upper aggregate's project list after
