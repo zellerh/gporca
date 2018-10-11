@@ -82,14 +82,16 @@ namespace gpopt
 			// check if Transform can be applied
 			BOOL FApplicable(CExpression *pexpr) const;
 
-			static
+        	// is this agg supported for push down?
+        	BOOL IsAggSupported (CExpression *scalar_agg_func_expr) const;
+
 			void PopulateLowerUpperProjectList
 			(
 			 IMemoryPool *mp,               // memory pool
 			 CExpression *orig_proj_list,   // project list of the original global aggregate
 			 CExpression **lower_proj_list, // project list of the new lower aggregate
 			 CExpression **upper_proj_list  // project list of the new upper aggregate
-			);
+			) const;
 
 			// return true if xform should be applied only once
 			virtual
