@@ -192,17 +192,18 @@ const
     COptCtxt *poctxt = COptCtxt::PoctxtFromTLS();
     CMDAccessor *md_accessor = poctxt->Pmda();
     IMDId *agg_mdid = scalar_agg_func->MDId();  // oid of the original aggregate function
+
+    if (scalar_agg_func_expr->Arity() != 1)
+    {
+        return false;
+    }
+
     CExpression *agg_child_expr = (*scalar_agg_func_expr)[0];
     IMDId *agg_child_mdid = CScalar::PopConvert(agg_child_expr->Pop())->MdidType();
     const IMDType *agg_child_type = md_accessor->RetrieveType(agg_child_mdid);
 
     if (! (agg_mdid->Equals(agg_child_type->GetMdidForAggType(IMDType::EaggMin))) &&
         ! (agg_mdid->Equals(agg_child_type->GetMdidForAggType(IMDType::EaggMax))))
-    {
-        return false;
-    }
-
-    if (scalar_agg_func_expr->Arity() != 1)
     {
         return false;
     }
