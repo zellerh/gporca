@@ -80,7 +80,7 @@ namespace gpopt
 			void Transform(CXformContext *pxfctxt, CXformResult *pxfres, CExpression *pexpr) const;
 
 			// check if Transform can be applied
-			BOOL FApplicable(CExpression *pexpr) const;
+			BOOL FApplicable(CExpression *pexpr, CColRefSet *push_down_gb_crs) const;
 
         	// is this agg supported for push down?
         	BOOL IsAggSupported (CExpression *scalar_agg_func_expr) const;

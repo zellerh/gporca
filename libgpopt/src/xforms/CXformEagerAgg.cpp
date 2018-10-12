@@ -90,29 +90,29 @@ CXformEagerAgg::Transform
 	GPOS_ASSERT(FCheckPattern(pexpr));
 
 	IMemoryPool *mp = pxf_ctxt->Pmp();
+    /*
+         1. check if aggregate columns is part of single child col ref
+    */
+    // Get col ref set of projection list (columns used in aggregation)
+    CExpression *join_expr = (*pexpr)[0];
+    CExpression *proj_list_expr = (*pexpr)[1];
+    CExpression *outer_child_expr = (*join_expr)[0];
+    CExpression *inner_child_expr = (*join_expr)[1];
+    CExpression *scalar_expr = (*join_expr)[2];
 
-	if (!FApplicable(pexpr))
-		return;
-	/*
-		 1. check if aggregate columns is part of single child col ref
-	*/
-	// Get col ref set of projection list (columns used in aggregation)
-	CExpression *join_expr = (*pexpr)[0];
-	CExpression *proj_list_expr = (*pexpr)[1];
-	CExpression *outer_child_expr = (*join_expr)[0];
-	CExpression *inner_child_expr = (*join_expr)[1];
-	CExpression *scalar_expr = (*join_expr)[2];
+    /*   2. get grouping columns and join predicate columns into a new set  */
+    CLogicalGbAgg *gb_agg_op = CLogicalGbAgg::PopConvert(pexpr->Pop());
+    CColRefSet *grouping_crs = gb_agg_op->PcrsLocalUsed();
+    CColRefSet *push_down_gb_crs = GPOS_NEW(mp) CColRefSet
+                                                (
+                                                 mp,
+                                                 *(CDrvdPropScalar::GetDrvdScalarProps(
+                                                     scalar_expr->PdpDerive())->PcrsUsed())
+                                                );
+    push_down_gb_crs->Union(grouping_crs);
 
-	/*   2. get grouping columns and join predicate columns into a new set  */
-	CLogicalGbAgg *gb_agg_op = CLogicalGbAgg::PopConvert(pexpr->Pop());
-	CColRefSet *grouping_crs = gb_agg_op->PcrsLocalUsed();
-	CColRefSet *push_down_gb_crs = GPOS_NEW(mp) CColRefSet
-												(
-												 mp,
-												 *(CDrvdPropScalar::GetDrvdScalarProps(
-													 scalar_expr->PdpDerive())->PcrsUsed())
-												);
-	push_down_gb_crs->Union(grouping_crs);
+    if (!FApplicable(pexpr, push_down_gb_crs))
+        return;
 
 	/* 3. only keep columns from push down child in new grouping col set */
 	CColRefSet *outer_child_crs =  CDrvdPropRelational::GetRelationalProperties(
@@ -227,7 +227,8 @@ const
 BOOL
 CXformEagerAgg::FApplicable
 (
- CExpression *pexpr
+ CExpression *pexpr,
+ CColRefSet *push_down_gb_crs
 )
 const
 {
@@ -255,8 +256,24 @@ const
 		// scalar aggregate function is the lone child of the project element
 
         // currently only supporting MIN/MAX aggregate function //
-        CExpression *scalar_agg_func_expr = (*(*proj_list_expr)[ul])[0];
-        isSupported = isSupported || IsAggSupported(scalar_agg_func_expr);
+		CExpression *scalar_agg_proj_expr = (*proj_list_expr)[ul];
+        BOOL is_agg_supported = IsAggSupported((*scalar_agg_proj_expr)[0]);
+
+        if (is_agg_supported)
+        {
+            isSupported = true;
+        } else
+        {
+            // An unsupported agg can only be applied on the grouping columns
+            //  of the aggregate being pushed down
+            CScalarProjectElement *scalar_agg_proj_elem =
+                CScalarProjectElement::PopConvert(scalar_agg_proj_expr->Pop());
+            CColRef *scalar_agg_cr = scalar_agg_proj_elem->Pcr();
+            if (!push_down_gb_crs->FMember(scalar_agg_cr)){
+                return false;
+            }
+        }
+
 
     }
 
@@ -298,7 +315,6 @@ CXformEagerAgg::PopulateLowerUpperProjectList
 
         if (IsAggSupported(orig_agg_expr))
         {
-
             /*  1. create new aggregate function for the lower aggregate operator   */
             orig_agg_mdid->AddRef();
             CScalarAggFunc *lower_agg_func  = CUtils::PopAggFunc
@@ -341,50 +357,57 @@ CXformEagerAgg::PopulateLowerUpperProjectList
             // create a column reference for the new created aggregate function
             lower_cr = col_factory->PcrCreate(lower_agg_ret_type, default_type_modifier);
             // create new project element for the aggregate function
-            CExpression *proj_elem_lower = CUtils::PexprScalarProjectElement
+            CExpression *lower_proj_elem_expr = CUtils::PexprScalarProjectElement
                                                    (
                                                     mp,
                                                     lower_cr,
                                                     lower_agg_expr
                                                     );
 
-            lower_proj_elem_array->Append(proj_elem_lower);
+            lower_proj_elem_array->Append(lower_proj_elem_expr);
+
+                // b: determine the aggregate function for that particular type
+            IMDId *upper_agg_mdid = orig_agg_mdid;
+
+                // c: create a new operator
+            upper_agg_mdid->AddRef();
+            CScalarAggFunc *upper_agg_func = CUtils::PopAggFunc
+            (
+             mp,
+             upper_agg_mdid,
+             GPOS_NEW(mp) CWStringConst(mp, orig_agg_func->PstrAggFunc()->GetBuffer()),
+             false /* is_distinct */,
+             EaggfuncstageGlobal, /* fGlobal */
+             true /* fSplit */
+             );
+
+                // populate the argument list for the upper aggregate function
+            CExpressionArray *upper_agg_arg_array = GPOS_NEW(mp) CExpressionArray(mp);
+            upper_agg_arg_array->Append(CUtils::PexprScalarIdent(mp, lower_cr));
+            CExpression *upper_agg_expr = GPOS_NEW(mp) CExpression
+            (
+             mp,
+             upper_agg_func,
+             upper_agg_arg_array
+             );
+
+                // determine column reference for the new project element
+            CColRef *orig_cr = orig_proj_elem->Pcr();
+            CExpression *upper_proj_elem_expr = CUtils::PexprScalarProjectElement
+            (
+             mp,
+             orig_cr,
+             upper_agg_expr
+             );
+
+            upper_proj_elem_array->Append(upper_proj_elem_expr);
         }
-		// b: determine the aggregate function for that particular type
-		IMDId *upper_agg_mdid = orig_agg_mdid;
+        else
+        {
+            orig_proj_elem_expr->AddRef();
+            upper_proj_elem_array->Append(orig_proj_elem_expr);
+        }
 
-		// c: create a new operator
-		upper_agg_mdid->AddRef();
-		CScalarAggFunc *upper_agg_func = CUtils::PopAggFunc
-			(
-			 mp,
-			 upper_agg_mdid,
-			 GPOS_NEW(mp) CWStringConst(mp, orig_agg_func->PstrAggFunc()->GetBuffer()),
-			 false /* is_distinct */,
-			 EaggfuncstageGlobal, /* fGlobal */
-			 true /* fSplit */
-			 );
-
-		// populate the argument list for the upper aggregate function
-		CExpressionArray *upper_agg_arg_array = GPOS_NEW(mp) CExpressionArray(mp);
-		upper_agg_arg_array->Append(CUtils::PexprScalarIdent(mp, lower_cr));
-		CExpression *upper_agg_expr = GPOS_NEW(mp) CExpression
-			(
-			 mp,
-			 upper_agg_func,
-			 upper_agg_arg_array
-			 );
-
-		// determine column reference for the new project element
-		CColRef *orig_cr = orig_proj_elem->Pcr();
-		CExpression *proj_elem_upper = CUtils::PexprScalarProjectElement
-			(
-			 mp,
-			 orig_cr,
-			 upper_agg_expr
-			 );
-
-		upper_proj_elem_array->Append(proj_elem_upper);
 
 	}  // end of loop over each project element
 
