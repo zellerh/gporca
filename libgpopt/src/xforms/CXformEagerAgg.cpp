@@ -200,7 +200,10 @@ const
 	CExpression *outer_child_expr = (*join_expr)[0];
 
 	ULONG arity = proj_list_expr->Arity();
-
+	if (arity == 0)
+    {
+        return false;
+    }
     for (ULONG ul = 0; ul < arity; ul++)
     {
         // currently only supporting single-input aggregates //
