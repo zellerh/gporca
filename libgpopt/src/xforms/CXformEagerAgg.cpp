@@ -71,7 +71,6 @@ CXformEagerAgg::Exfp
 	{
 		return CXform::ExfpNone;
 	}
-
 	return CXform::ExfpHigh;
 }
 
@@ -110,10 +109,11 @@ CXformEagerAgg::Transform
                                                      scalar_expr->PdpDerive())->PcrsUsed())
                                                 );
     push_down_gb_crs->Union(grouping_crs);
-
     if (!FApplicable(pexpr, push_down_gb_crs))
+    {
+        push_down_gb_crs->Release();
         return;
-
+    }
 	/* 3. only keep columns from push down child in new grouping col set */
 	CColRefSet *outer_child_crs =  CDrvdPropRelational::GetRelationalProperties(
 														outer_child_expr->PdpDerive())->PcrsOutput();
@@ -183,18 +183,19 @@ CXformEagerAgg::Transform
 
 BOOL CXformEagerAgg::IsAggSupported
 (
- CExpression *scalar_agg_func_expr
+	CExpression *scalar_agg_func_expr
 )
 const
 {
     CScalarAggFunc *scalar_agg_func = CScalarAggFunc::PopConvert(scalar_agg_func_expr->Pop());
-
     COptCtxt *poctxt = COptCtxt::PoctxtFromTLS();
     CMDAccessor *md_accessor = poctxt->Pmda();
     IMDId *agg_mdid = scalar_agg_func->MDId();  // oid of the original aggregate function
 
     if (scalar_agg_func_expr->Arity() != 1)
     {
+        // currently count() is not supported since it's not possible to
+        // distinguish it from a dummy aggregate with no child expression
         return false;
     }
 
@@ -208,15 +209,14 @@ const
         return false;
     }
 
-    // currently not supporting DQA //
+    // currently not supporting DQA
     if (scalar_agg_func->IsDistinct())
     {
         return false;
     }
-
     return true;
-
 }
+
 // Check if the transform can be applied
 //   Eager agg is currently applied only if following is true:
 //     - Inner join of two relations
@@ -238,12 +238,13 @@ const
 
     // currently only supporting aggregate column references from outer child //
     CColRefSet *outer_child_crs = CDrvdPropRelational::GetRelationalProperties(
-                                                                               outer_child_expr->PdpDerive())->PcrsOutput();
+                                   outer_child_expr->PdpDerive())->PcrsOutput();
     CColRefSet *proj_list_crs = CDrvdPropScalar::GetDrvdScalarProps(
-                                                                    proj_list_expr->PdpDerive())->PcrsUsed();
+                                proj_list_expr->PdpDerive())->PcrsUsed();
     if (!outer_child_crs->ContainsAll(proj_list_crs))
+    {
         return false;
-
+    }
     BOOL isSupported = false;
 	ULONG arity = proj_list_expr->Arity();
 	if (arity == 0)
@@ -258,25 +259,20 @@ const
         // currently only supporting MIN/MAX aggregate function //
 		CExpression *scalar_agg_proj_expr = (*proj_list_expr)[ul];
         BOOL is_agg_supported = IsAggSupported((*scalar_agg_proj_expr)[0]);
-
         if (is_agg_supported)
         {
             isSupported = true;
         } else
         {
             // An unsupported agg can only be applied on the grouping columns
-            //  of the aggregate being pushed down
-            CScalarProjectElement *scalar_agg_proj_elem =
-                CScalarProjectElement::PopConvert(scalar_agg_proj_expr->Pop());
-            CColRef *scalar_agg_cr = scalar_agg_proj_elem->Pcr();
-            if (!push_down_gb_crs->FMember(scalar_agg_cr)){
+            // of the aggregate being pushed down
+            CColRefSet *scalar_agg_crs = CDrvdPropScalar::GetDrvdScalarProps(
+                                        scalar_agg_proj_expr->PdpDerive())->PcrsUsed();
+            if (!push_down_gb_crs->ContainsAll(scalar_agg_crs)){
                 return false;
             }
         }
-
-
     }
-
 	return isSupported;
 }
 
@@ -294,7 +290,7 @@ CXformEagerAgg::PopulateLowerUpperProjectList
 	CColumnFactory *col_factory = COptCtxt::PoctxtFromTLS()->Pcf();
 	CMDAccessor *md_accessor = COptCtxt::PoctxtFromTLS()->Pmda();
 
-	// list of project elements for the new lower and upper aggregates
+	// building an array of project elements for the new lower and upper aggregates
 	CExpressionArray *lower_proj_elem_array = GPOS_NEW(mp) CExpressionArray(mp);
 	CExpressionArray *upper_proj_elem_array = GPOS_NEW(mp) CExpressionArray(mp);
 	const ULONG arity = orig_proj_list->Arity();
@@ -306,15 +302,12 @@ CXformEagerAgg::PopulateLowerUpperProjectList
 		CScalarProjectElement *orig_proj_elem =
 		CScalarProjectElement::PopConvert(orig_proj_elem_expr->Pop());
 
-		// get the scalar agg func
 		CExpression *orig_agg_expr = (*orig_proj_elem_expr)[0];
-		CScalarAggFunc *orig_agg_func = CScalarAggFunc::PopConvert(orig_agg_expr->Pop());
-        CColRef *lower_cr = NULL;
-
-        IMDId *orig_agg_mdid = orig_agg_func->MDId();
-
         if (IsAggSupported(orig_agg_expr))
         {
+        	CScalarAggFunc *orig_agg_func = CScalarAggFunc::PopConvert(orig_agg_expr->Pop());
+            IMDId *orig_agg_mdid = orig_agg_func->MDId();
+
             /*  1. create new aggregate function for the lower aggregate operator   */
             orig_agg_mdid->AddRef();
             CScalarAggFunc *lower_agg_func  = CUtils::PopAggFunc
@@ -326,8 +319,7 @@ CXformEagerAgg::PopulateLowerUpperProjectList
                  EaggfuncstageGlobal, /* fGlobal */
                  false /* fSplit */
                  );
-
-            // now add the arguments for the lower aggregate function which is
+            // add the arguments for the lower aggregate function, which is
             // going to be the same as the original aggregate function
             CExpressionArray *orig_agg_arg_array = orig_agg_expr->PdrgPexpr();
             orig_agg_arg_array->AddRef();
@@ -339,10 +331,8 @@ CXformEagerAgg::PopulateLowerUpperProjectList
                                                         );
 
             /* 2. create new aggregate function for the upper aggregate operator */
-
-            // a: determine the return type of the lower aggregate function
+            // determine the return type of the lower aggregate function
             IMDId *lower_agg_ret_mdid = NULL;
-
             if (orig_agg_func->FHasAmbiguousReturnType())
             {
                 // Agg has an ambiguous return type, use the resolved type instead
@@ -355,7 +345,7 @@ CXformEagerAgg::PopulateLowerUpperProjectList
 
             const IMDType *lower_agg_ret_type = md_accessor->RetrieveType(lower_agg_ret_mdid);
             // create a column reference for the new created aggregate function
-            lower_cr = col_factory->PcrCreate(lower_agg_ret_type, default_type_modifier);
+            CColRef *lower_cr = col_factory->PcrCreate(lower_agg_ret_type, default_type_modifier);
             // create new project element for the aggregate function
             CExpression *lower_proj_elem_expr = CUtils::PexprScalarProjectElement
                                                    (
@@ -363,52 +353,46 @@ CXformEagerAgg::PopulateLowerUpperProjectList
                                                     lower_cr,
                                                     lower_agg_expr
                                                     );
-
             lower_proj_elem_array->Append(lower_proj_elem_expr);
 
-                // b: determine the aggregate function for that particular type
-            IMDId *upper_agg_mdid = orig_agg_mdid;
-
-                // c: create a new operator
-            upper_agg_mdid->AddRef();
+            // create a new operator
+            orig_agg_mdid->AddRef();
             CScalarAggFunc *upper_agg_func = CUtils::PopAggFunc
-            (
-             mp,
-             upper_agg_mdid,
-             GPOS_NEW(mp) CWStringConst(mp, orig_agg_func->PstrAggFunc()->GetBuffer()),
-             false /* is_distinct */,
-             EaggfuncstageGlobal, /* fGlobal */
-             true /* fSplit */
-             );
+                (
+                 mp,
+                 orig_agg_mdid,
+                 GPOS_NEW(mp) CWStringConst(mp, orig_agg_func->PstrAggFunc()->GetBuffer()),
+                 false /* is_distinct */,
+                 EaggfuncstageGlobal, /* fGlobal */
+                 true /* fSplit */
+                 );
 
-                // populate the argument list for the upper aggregate function
+            // populate the argument list for the upper aggregate function
             CExpressionArray *upper_agg_arg_array = GPOS_NEW(mp) CExpressionArray(mp);
             upper_agg_arg_array->Append(CUtils::PexprScalarIdent(mp, lower_cr));
             CExpression *upper_agg_expr = GPOS_NEW(mp) CExpression
-            (
-             mp,
-             upper_agg_func,
-             upper_agg_arg_array
-             );
+                (
+                 mp,
+                 upper_agg_func,
+                 upper_agg_arg_array
+                 );
 
-                // determine column reference for the new project element
-            CColRef *orig_cr = orig_proj_elem->Pcr();
+            // determine column reference for the new project element
             CExpression *upper_proj_elem_expr = CUtils::PexprScalarProjectElement
-            (
-             mp,
-             orig_cr,
-             upper_agg_expr
-             );
-
+                (
+                 mp,
+                 orig_proj_elem->Pcr(),
+                 upper_agg_expr
+                 );
             upper_proj_elem_array->Append(upper_proj_elem_expr);
         }
         else
         {
+            // If unsupported, add the original project element as-is in the
+            // upper project list.
             orig_proj_elem_expr->AddRef();
             upper_proj_elem_array->Append(orig_proj_elem_expr);
         }
-
-
 	}  // end of loop over each project element
 
 	/* 3. create new project lists */
@@ -426,5 +410,4 @@ CXformEagerAgg::PopulateLowerUpperProjectList
 		 upper_proj_elem_array
 		 );
 }
-
 // EOF
