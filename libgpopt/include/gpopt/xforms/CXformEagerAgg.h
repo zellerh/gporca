@@ -69,7 +69,8 @@ namespace gpopt
 			BOOL FCompatible(CXform::EXformId exfid)
 			{
 				return (CXform::ExfEagerAgg != exfid) &&
-							(CXform::ExfSplitGbAgg != exfid);
+							(CXform::ExfSplitGbAgg != exfid) &&
+ 							(CXform::ExfSplitDQA != exfid);
 			}
 
 			// compute xform promise for a given expression handle
@@ -79,16 +80,18 @@ namespace gpopt
 			// actual transform
 			void Transform(CXformContext *pxfctxt, CXformResult *pxfres, CExpression *pexpr) const;
 
-			// check if Transform can be applied
-			BOOL FApplicable(CExpression *pexpr, CColRefSet *push_down_gb_crs) const;
+			// check if transform can be applied
+			BOOL CanApplyTransform(CExpression *pexprAgg, CColRefSet *push_down_gb_crs) const;
 
-        	// is this agg supported for push down?
-        	BOOL IsAggSupported (CExpression *scalar_agg_func_expr) const;
+			// is this aggregate supported for push down?
+			BOOL CanPushAggBelowJoin(CExpression *scalar_agg_func_expr) const;
 
+			// generate project lists for the lower and upper aggregates
+			// from the original aggregate
 			void PopulateLowerUpperProjectList
 			(
 			 IMemoryPool *mp,               // memory pool
-			 CExpression *orig_proj_list,   // project list of the original global aggregate
+			 CExpression *orig_proj_list,   // project list of the original aggregate
 			 CExpression **lower_proj_list, // project list of the new lower aggregate
 			 CExpression **upper_proj_list  // project list of the new upper aggregate
 			) const;

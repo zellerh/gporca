@@ -1,4 +1,4 @@
-//---------------------------------------------------------------------------i
+//---------------------------------------------------------------------------
 //  Greenplum Database
 //  Copyright (C) 2018 Pivotal Inc.
 //
@@ -8,6 +8,9 @@
 //  @doc:
 //      Implementation for eagerly pushing aggregates below join
 //          (with no foreign key restriction on the join condition)
+//          The aggregate is pushed down only on the outer child
+//          (since the inner child alternative will be explored through
+//           commutativity)
 //---------------------------------------------------------------------------
 #include "gpos/base.h"
 
@@ -89,52 +92,54 @@ CXformEagerAgg::Transform
 	GPOS_ASSERT(FCheckPattern(pexpr));
 
 	IMemoryPool *mp = pxf_ctxt->Pmp();
-    /*
-         1. check if aggregate columns is part of single child col ref
-    */
-    // Get col ref set of projection list (columns used in aggregation)
     CExpression *join_expr = (*pexpr)[0];
+    CExpression *join_outer_child_expr = (*join_expr)[0];
+    CExpression *join_inner_child_expr = (*join_expr)[1];
+    CExpression *join_condition_expr = (*join_expr)[2];
     CExpression *proj_list_expr = (*pexpr)[1];
-    CExpression *outer_child_expr = (*join_expr)[0];
-    CExpression *inner_child_expr = (*join_expr)[1];
-    CExpression *scalar_expr = (*join_expr)[2];
 
-    /*   2. get grouping columns and join predicate columns into a new set  */
-    CLogicalGbAgg *gb_agg_op = CLogicalGbAgg::PopConvert(pexpr->Pop());
-    CColRefSet *grouping_crs = gb_agg_op->PcrsLocalUsed();
+    //  'push_down_gb_crs' represents the column references that are used for
+    //  grouping in the pushed-down aggregate. This is the union of the original
+    //  grouping columns and join predicate columns, retaining only the columns
+    //  from the outer child.
     CColRefSet *push_down_gb_crs = GPOS_NEW(mp) CColRefSet
                                                 (
                                                  mp,
                                                  *(CDrvdPropScalar::GetDrvdScalarProps(
-                                                     scalar_expr->PdpDerive())->PcrsUsed())
+                                                     join_condition_expr->PdpDerive())->PcrsUsed())
                                                 );
+    CColRefSet *grouping_crs = (CLogicalGbAgg::PopConvert(pexpr->Pop()))->PcrsLocalUsed();
     push_down_gb_crs->Union(grouping_crs);
-    if (!FApplicable(pexpr, push_down_gb_crs))
+
+    /* verify if this aggregate can be applied */
+    if (!CanApplyTransform(pexpr, push_down_gb_crs))
     {
         push_down_gb_crs->Release();
         return;
     }
-	/* 3. only keep columns from push down child in new grouping col set */
+
+	/* only keep columns from outer child in the new grouping col set */
 	CColRefSet *outer_child_crs =  CDrvdPropRelational::GetRelationalProperties(
-														outer_child_expr->PdpDerive())->PcrsOutput();
+														join_outer_child_expr->PdpDerive())->PcrsOutput();
 	push_down_gb_crs->Intersection(outer_child_crs);
 
-	/* 4. Create new project lists for the two new Gb aggregates */
-	CExpression *lower_expr_proj_list = NULL;
-	CExpression *upper_expr_proj_list = NULL;
-	(void) PopulateLowerUpperProjectList
-			(
-			 mp,
-			 proj_list_expr,
-			 &lower_expr_proj_list,
-			 &upper_expr_proj_list
-			 );
+    /* create new project lists for the two new Gb aggregates */
+    CExpression *lower_expr_proj_list = NULL;
+    CExpression *upper_expr_proj_list = NULL;
+    (void) PopulateLowerUpperProjectList
+            (
+             mp,
+             proj_list_expr,
+             &lower_expr_proj_list,
+             &upper_expr_proj_list
+             );
 
-	/* 5. Create lower agg, join, and upper agg expressions */
+    /* create lower agg, join, and upper agg expressions */
 
-	// lower agg expression
-	outer_child_expr->AddRef();
+    // lower agg expression
 	CColRefArray *push_down_gb_cra = push_down_gb_crs->Pdrgpcr(mp);
+
+    join_outer_child_expr->AddRef();
 	CExpression *lower_agg_expr = GPOS_NEW(mp) CExpression
 												(
 												 mp,
@@ -144,22 +149,22 @@ CXformEagerAgg::Transform
 												  push_down_gb_cra,
 												  COperator::EgbaggtypeGlobal
 												 ),
-												 outer_child_expr,
+												 join_outer_child_expr,
 												 lower_expr_proj_list
 												 );
 
 	// join expression
 	COperator *join_operator = join_expr->Pop();
 	join_operator->AddRef();
-	inner_child_expr->AddRef();
-	scalar_expr->AddRef();
+	join_inner_child_expr->AddRef();
+	join_condition_expr->AddRef();
 	CExpression *new_join_expr = GPOS_NEW(mp) CExpression
 											  (
 											   mp,
 											   join_operator,
 											   lower_agg_expr,
-											   inner_child_expr,
-											   scalar_expr
+											   join_inner_child_expr,
+											   join_condition_expr
 											   );
 
 	// upper agg expression
@@ -181,7 +186,7 @@ CXformEagerAgg::Transform
 	pxfres->Add(upper_agg_expr);
 }
 
-BOOL CXformEagerAgg::IsAggSupported
+BOOL CXformEagerAgg::CanPushAggBelowJoin
 (
 	CExpression *scalar_agg_func_expr
 )
@@ -194,8 +199,7 @@ const
 
     if (scalar_agg_func_expr->Arity() != 1)
     {
-        // currently count() is not supported since it's not possible to
-        // distinguish it from a dummy aggregate with no child expression
+		/* currently only supporting single-input aggregates */
         return false;
     }
 
@@ -203,9 +207,10 @@ const
     IMDId *agg_child_mdid = CScalar::PopConvert(agg_child_expr->Pop())->MdidType();
     const IMDType *agg_child_type = md_accessor->RetrieveType(agg_child_mdid);
 
-    if (! (agg_mdid->Equals(agg_child_type->GetMdidForAggType(IMDType::EaggMin))) &&
-        ! (agg_mdid->Equals(agg_child_type->GetMdidForAggType(IMDType::EaggMax))))
+    if (!(agg_mdid->Equals(agg_child_type->GetMdidForAggType(IMDType::EaggMin))) &&
+        	!(agg_mdid->Equals(agg_child_type->GetMdidForAggType(IMDType::EaggMax))))
     {
+
         return false;
     }
 
@@ -225,55 +230,61 @@ const
 //     - Single expression input in the agg
 //     - Input expression only part of outer child
 BOOL
-CXformEagerAgg::FApplicable
+CXformEagerAgg::CanApplyTransform
 (
- CExpression *pexpr,
+ CExpression *gb_agg_pexpr,
  CColRefSet *push_down_gb_crs
 )
 const
 {
-	CExpression *join_expr = (*pexpr)[0];
-	CExpression *proj_list_expr = (*pexpr)[1];
-	CExpression *outer_child_expr = (*join_expr)[0];
+	CExpression *join_expr = (*gb_agg_pexpr)[0];
+	CExpression *agg_proj_list_expr = (*gb_agg_pexpr)[1];
+	CExpression *join_outer_child_expr = (*join_expr)[0];
 
-    // currently only supporting aggregate column references from outer child //
-    CColRefSet *outer_child_crs = CDrvdPropRelational::GetRelationalProperties(
-                                   outer_child_expr->PdpDerive())->PcrsOutput();
-    CColRefSet *proj_list_crs = CDrvdPropScalar::GetDrvdScalarProps(
-                                proj_list_expr->PdpDerive())->PcrsUsed();
-    if (!outer_child_crs->ContainsAll(proj_list_crs))
+    /* currently only supporting aggregate column references from outer child */
+    CColRefSet *join_outer_child_crs = CDrvdPropRelational::GetRelationalProperties(
+                                   join_outer_child_expr->PdpDerive())->PcrsOutput();
+    CColRefSet *agg_proj_list_crs = CDrvdPropScalar::GetDrvdScalarProps(
+                                agg_proj_list_expr->PdpDerive())->PcrsUsed();
+    if (!join_outer_child_crs->ContainsAll(agg_proj_list_crs))
     {
+		// all columns used by the Gb aggregate should only be present in outer child
         return false;
     }
-    BOOL isSupported = false;
-	ULONG arity = proj_list_expr->Arity();
-	if (arity == 0)
+    BOOL is_atleast_one_agg_supported = false;
+	const ULONG n_aggregates = agg_proj_list_expr->Arity();
+	if (n_aggregates == 0)
     {
+        // at least one aggregate must be present to push down
         return false;
     }
-    for (ULONG ul = 0; ul < arity; ul++)
+    for (ULONG agg_index = 0; agg_index < n_aggregates; agg_index++)
     {
-        // currently only supporting single-input aggregates //
-		// scalar aggregate function is the lone child of the project element
-
-        // currently only supporting MIN/MAX aggregate function //
-		CExpression *scalar_agg_proj_expr = (*proj_list_expr)[ul];
-        BOOL is_agg_supported = IsAggSupported((*scalar_agg_proj_expr)[0]);
-        if (is_agg_supported)
+		CExpression *scalar_agg_proj_expr = (*agg_proj_list_expr)[agg_index];
+        if (CanPushAggBelowJoin((*scalar_agg_proj_expr)[0]))
         {
-            isSupported = true;
+            is_atleast_one_agg_supported = true;
         } else
         {
-            // An unsupported agg can only be applied on the grouping columns
-            // of the aggregate being pushed down
+            // An unsupported agg can only be applied either on the grouping
+			// columns or on the join columns of the aggregate being pushed down.
+            // Example:
+            //  Supported query: SELECT min(foo.s1), sum(foo.j1) FROM foo, bar
+            //                    WHERE foo.j1 = bar.j2
+            //                    GROUP BY foo.g1;
+            //  Unsupported query: SELECT min(foo.s1), sum(foo.s1) FROM foo, bar
+            //                      WHERE foo.j1 = bar.j2
+            //                      GROUP BY foo.g1;
             CColRefSet *scalar_agg_crs = CDrvdPropScalar::GetDrvdScalarProps(
-                                        scalar_agg_proj_expr->PdpDerive())->PcrsUsed();
+                                          scalar_agg_proj_expr->PdpDerive())->PcrsUsed();
             if (!push_down_gb_crs->ContainsAll(scalar_agg_crs)){
+				// if an aggregate not being pushed down contains other columns,
+				// then we can't apply this transform.
                 return false;
             }
         }
     }
-	return isSupported;
+	return is_atleast_one_agg_supported;
 }
 
 // populate the lower and upper aggregate's project list after
@@ -281,10 +292,10 @@ const
 void
 CXformEagerAgg::PopulateLowerUpperProjectList
 (
- IMemoryPool *mp, // memory pool
- CExpression *orig_proj_list,       // project list of the original global aggregate
- CExpression **lower_proj_list, // project list of the new lower aggregate
- CExpression **upper_proj_list // project list of the new upper aggregate
+ IMemoryPool *mp,                // memory pool
+ CExpression *orig_proj_list,    // project list of the original global aggregate
+ CExpression **lower_proj_list,  // project list of the new lower aggregate
+ CExpression **upper_proj_list   // project list of the new upper aggregate
  ) const
 {
 	CColumnFactory *col_factory = COptCtxt::PoctxtFromTLS()->Pcf();
@@ -293,22 +304,22 @@ CXformEagerAgg::PopulateLowerUpperProjectList
 	// building an array of project elements for the new lower and upper aggregates
 	CExpressionArray *lower_proj_elem_array = GPOS_NEW(mp) CExpressionArray(mp);
 	CExpressionArray *upper_proj_elem_array = GPOS_NEW(mp) CExpressionArray(mp);
-	const ULONG arity = orig_proj_list->Arity();
+	const ULONG n_proj_elements = orig_proj_list->Arity();
 
 	// loop over each project element
-	for (ULONG ul = 0; ul < arity; ul++)
+	for (ULONG ul = 0; ul < n_proj_elements; ul++)
 	{
 		CExpression *orig_proj_elem_expr = (*orig_proj_list)[ul];
 		CScalarProjectElement *orig_proj_elem =
 		CScalarProjectElement::PopConvert(orig_proj_elem_expr->Pop());
 
 		CExpression *orig_agg_expr = (*orig_proj_elem_expr)[0];
-        if (IsAggSupported(orig_agg_expr))
+        if (CanPushAggBelowJoin(orig_agg_expr))
         {
         	CScalarAggFunc *orig_agg_func = CScalarAggFunc::PopConvert(orig_agg_expr->Pop());
             IMDId *orig_agg_mdid = orig_agg_func->MDId();
 
-            /*  1. create new aggregate function for the lower aggregate operator   */
+            /* 1. create new aggregate function for the lower aggregate operator */
             orig_agg_mdid->AddRef();
             CScalarAggFunc *lower_agg_func  = CUtils::PopAggFunc
                 (
@@ -388,8 +399,8 @@ CXformEagerAgg::PopulateLowerUpperProjectList
         }
         else
         {
-            // If unsupported, add the original project element as-is in the
-            // upper project list.
+            // if unsupported, add the original project element as-is in the
+            // upper project list
             orig_proj_elem_expr->AddRef();
             upper_proj_elem_array->Append(orig_proj_elem_expr);
         }
