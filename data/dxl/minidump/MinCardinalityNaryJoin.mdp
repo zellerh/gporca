@@ -12,7 +12,7 @@
         </dxl:CostParams>
       </dxl:CostModelConfig>
       <dxl:Hint MinNumOfPartsToRequireSortOnInsert="2147483647" JoinArityForAssociativityCommutativity="18" ArrayExpansionThreshold="25" JoinOrderDynamicProgThreshold="10" BroadcastThreshold="10000000" EnforceConstraintsOnDML="false"/>
-      <dxl:TraceFlags Value="103027,102074,102144,102120,103001,103014,103015,103022,104003,104004,104005,105000"/>
+      <dxl:TraceFlags Value="101013,102074,102120,102144,103001,103014,103015,103016,103022,103027,104002,104003,104004,104005"/>
     </dxl:OptimizerConfig>
     <dxl:Metadata SystemIds="0.GPDB">
       <dxl:RelationStatistics Mdid="2.18433.1.0" Name="dim9" Rows="76036.000000" EmptyRelation="false"/>
@@ -1591,6 +1591,19 @@
           <dxl:OpClass Mdid="0.3027.1.0"/>
         </dxl:OpClasses>
       </dxl:GPDBScalarOp>
+      <dxl:GPDBScalarOp Mdid="0.532.1.0" Name="=" ComparisonType="Eq" ReturnsNullOnNullInput="true">
+        <dxl:LeftType Mdid="0.21.1.0"/>
+        <dxl:RightType Mdid="0.23.1.0"/>
+        <dxl:ResultType Mdid="0.16.1.0"/>
+        <dxl:OpFunc Mdid="0.158.1.0"/>
+        <dxl:Commutator Mdid="0.533.1.0"/>
+        <dxl:InverseOp Mdid="0.538.1.0"/>
+        <dxl:OpClasses>
+          <dxl:OpClass Mdid="0.1976.1.0"/>
+          <dxl:OpClass Mdid="0.1977.1.0"/>
+          <dxl:OpClass Mdid="0.3026.1.0"/>
+        </dxl:OpClasses>
+      </dxl:GPDBScalarOp>
       <dxl:Type Mdid="0.21.1.0" Name="int2" IsRedistributable="true" IsHashable="true" IsComposite="false" IsFixedLength="true" Length="2" PassByValue="true">
         <dxl:EqualityOp Mdid="0.94.1.0"/>
         <dxl:InequalityOp Mdid="0.519.1.0"/>
@@ -1606,19 +1619,6 @@
         <dxl:SumAgg Mdid="0.2109.1.0"/>
         <dxl:CountAgg Mdid="0.2147.1.0"/>
       </dxl:Type>
-      <dxl:GPDBScalarOp Mdid="0.532.1.0" Name="=" ComparisonType="Eq" ReturnsNullOnNullInput="true">
-        <dxl:LeftType Mdid="0.21.1.0"/>
-        <dxl:RightType Mdid="0.23.1.0"/>
-        <dxl:ResultType Mdid="0.16.1.0"/>
-        <dxl:OpFunc Mdid="0.158.1.0"/>
-        <dxl:Commutator Mdid="0.533.1.0"/>
-        <dxl:InverseOp Mdid="0.538.1.0"/>
-        <dxl:OpClasses>
-          <dxl:OpClass Mdid="0.1976.1.0"/>
-          <dxl:OpClass Mdid="0.1977.1.0"/>
-          <dxl:OpClass Mdid="0.3026.1.0"/>
-        </dxl:OpClasses>
-      </dxl:GPDBScalarOp>
       <dxl:GPDBScalarOp Mdid="0.534.1.0" Name="&lt;" ComparisonType="LT" ReturnsNullOnNullInput="true">
         <dxl:LeftType Mdid="0.21.1.0"/>
         <dxl:RightType Mdid="0.23.1.0"/>
@@ -13358,7 +13358,7 @@
         </dxl:LogicalSelect>
       </dxl:LogicalGroupBy>
     </dxl:Query>
-    <dxl:Plan Id="0" SpaceSize="63735661952">
+    <dxl:Plan Id="0" SpaceSize="99826296140">
       <dxl:GatherMotion InputSegments="0,1,2" OutputSegments="-1">
         <dxl:Properties>
           <dxl:Cost StartupCost="0" TotalCost="16516.907108" Rows="122051.162098" Width="191"/>
@@ -13480,12 +13480,12 @@
             </dxl:ProjElem>
             <dxl:ProjElem ColId="584" Alias="rup">
               <dxl:AggFunc AggMdid="0.2114.1.0" AggDistinct="false" AggStage="Final">
-                <dxl:Ident ColId="586" ColName="ColRef_0586" TypeMdid="0.1700.1.0"/>
+                <dxl:Ident ColId="588" ColName="ColRef_0588" TypeMdid="0.1700.1.0"/>
               </dxl:AggFunc>
             </dxl:ProjElem>
             <dxl:ProjElem ColId="585" Alias="fte">
               <dxl:AggFunc AggMdid="0.2114.1.0" AggDistinct="false" AggStage="Final">
-                <dxl:Ident ColId="587" ColName="ColRef_0587" TypeMdid="0.1700.1.0"/>
+                <dxl:Ident ColId="589" ColName="ColRef_0589" TypeMdid="0.1700.1.0"/>
               </dxl:AggFunc>
             </dxl:ProjElem>
           </dxl:ProjList>
@@ -13537,11 +13537,11 @@
               <dxl:ProjElem ColId="407" Alias="pgm">
                 <dxl:Ident ColId="407" ColName="pgm" TypeMdid="0.1043.1.0" TypeModifier="259"/>
               </dxl:ProjElem>
-              <dxl:ProjElem ColId="586" Alias="ColRef_0586">
-                <dxl:Ident ColId="586" ColName="ColRef_0586" TypeMdid="0.1700.1.0"/>
+              <dxl:ProjElem ColId="588" Alias="ColRef_0588">
+                <dxl:Ident ColId="588" ColName="ColRef_0588" TypeMdid="0.1700.1.0"/>
               </dxl:ProjElem>
-              <dxl:ProjElem ColId="587" Alias="ColRef_0587">
-                <dxl:Ident ColId="587" ColName="ColRef_0587" TypeMdid="0.1700.1.0"/>
+              <dxl:ProjElem ColId="589" Alias="ColRef_0589">
+                <dxl:Ident ColId="589" ColName="ColRef_0589" TypeMdid="0.1700.1.0"/>
               </dxl:ProjElem>
             </dxl:ProjList>
             <dxl:Filter/>
@@ -13637,11 +13637,11 @@
                 <dxl:ProjElem ColId="407" Alias="pgm">
                   <dxl:Ident ColId="407" ColName="pgm" TypeMdid="0.1043.1.0" TypeModifier="259"/>
                 </dxl:ProjElem>
-                <dxl:ProjElem ColId="586" Alias="ColRef_0586">
-                  <dxl:Ident ColId="586" ColName="ColRef_0586" TypeMdid="0.1700.1.0"/>
+                <dxl:ProjElem ColId="588" Alias="ColRef_0588">
+                  <dxl:Ident ColId="588" ColName="ColRef_0588" TypeMdid="0.1700.1.0"/>
                 </dxl:ProjElem>
-                <dxl:ProjElem ColId="587" Alias="ColRef_0587">
-                  <dxl:Ident ColId="587" ColName="ColRef_0587" TypeMdid="0.1700.1.0"/>
+                <dxl:ProjElem ColId="589" Alias="ColRef_0589">
+                  <dxl:Ident ColId="589" ColName="ColRef_0589" TypeMdid="0.1700.1.0"/>
                 </dxl:ProjElem>
               </dxl:ProjList>
               <dxl:Filter/>
@@ -13667,12 +13667,12 @@
                   <dxl:GroupingColumn ColId="376"/>
                 </dxl:GroupingColumns>
                 <dxl:ProjList>
-                  <dxl:ProjElem ColId="586" Alias="ColRef_0586">
+                  <dxl:ProjElem ColId="588" Alias="ColRef_0588">
                     <dxl:AggFunc AggMdid="0.2114.1.0" AggDistinct="false" AggStage="Partial">
                       <dxl:Ident ColId="30" ColName="rup" TypeMdid="0.1700.1.0" TypeModifier="1179658"/>
                     </dxl:AggFunc>
                   </dxl:ProjElem>
-                  <dxl:ProjElem ColId="587" Alias="ColRef_0587">
+                  <dxl:ProjElem ColId="589" Alias="ColRef_0589">
                     <dxl:AggFunc AggMdid="0.2114.1.0" AggDistinct="false" AggStage="Partial">
                       <dxl:Ident ColId="29" ColName="fte" TypeMdid="0.1700.1.0" TypeModifier="1179658"/>
                     </dxl:AggFunc>
