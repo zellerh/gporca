@@ -96,7 +96,7 @@ CXformEagerAgg::Transform
     CExpression *join_outer_child_expr = (*join_expr)[0];
     CExpression *join_inner_child_expr = (*join_expr)[1];
     CExpression *join_condition_expr = (*join_expr)[2];
-    CExpression *proj_list_expr = (*pexpr)[1];
+    CExpression *agg_proj_list_expr = (*pexpr)[1];
 
     //  'push_down_gb_crs' represents the column references that are used for
     //  grouping in the pushed-down aggregate. This is the union of the original
@@ -129,7 +129,7 @@ CXformEagerAgg::Transform
     (void) PopulateLowerUpperProjectList
             (
              mp,
-             proj_list_expr,
+             agg_proj_list_expr,
              &lower_expr_proj_list,
              &upper_expr_proj_list
              );
