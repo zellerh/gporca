@@ -182,41 +182,6 @@ CXformEagerAgg::Transform
 												 upper_expr_proj_list
 												 );
 	push_down_gb_crs->Release();
-
-	CScalarAggFunc *agg_func = CScalarAggFunc::PopConvert(agg_proj_list_expr->Pop());
-	IMDId *agg_mdid = agg_func->MDId();
-
-	/* 1. create new aggregate function for the lower aggregate operator */
-
-	// check if orig_agg_func == avg
-	// 		create two lower aggs: sum, count
-	// else create original agg as lower agg
-
-	CMDAccessor *md_accessor = COptCtxt::PoctxtFromTLS()->Pmda();
-	CExpression *agg_arg_expr = (*agg_proj_list_expr->PdrgPexpr())[0];
-	IMDId *agg_arg_mdid = CScalar::PopConvert(agg_arg_expr->Pop())->MdidType();
-	const IMDType *agg_type_mdid = md_accessor->RetrieveType(agg_arg_mdid);
-	IMDId *avg_agg_mdid = agg_type_mdid->GetMdidForAggType(IMDType::EaggAvg);
-	// If its an average aggregate, add a project operation on top
-	if (agg_mdid->Equals(avg_agg_mdid))
-	{
-/*		CExpression *project_list_expr = GPOS_NEW(mp) CExpression
-		(
-		 mp,
-		 GPOS_NEW(mp) CPhysicalComputeScalar(mp),
-		 upper_agg_expr,
-		 (
-		  mp,
-		  grouping_cra,
-		  COperator::EgbaggtypeGlobal
-		  ),
-		 new_join_expr,
-		 upper_expr_proj_list
-		 );
-		
-		GPOS_ASSERT(project_list_expr);
- */
-	}
 	pxfres->Add(upper_agg_expr);
 }
 
@@ -275,7 +240,7 @@ const
 	CExpression *join_expr = (*gb_agg_pexpr)[0];
 	CExpression *agg_proj_list_expr = (*gb_agg_pexpr)[1];
 	CExpression *join_outer_child_expr = (*join_expr)[0];
-
+	
     /* currently only supporting aggregate column references from outer child */
     CColRefSet *join_outer_child_crs = CDrvdPropRelational::GetRelationalProperties(
                                    join_outer_child_expr->PdpDerive())->PcrsOutput();
@@ -333,8 +298,8 @@ CXformEagerAgg::PopulateLowerUpperProjectList
  CExpression **upper_proj_list    // project list of the new upper aggregate
  ) const
 {
-	CColumnFactory *col_factory = COptCtxt::PoctxtFromTLS()->Pcf();
-	CMDAccessor *md_accessor = COptCtxt::PoctxtFromTLS()->Pmda();
+	//CColumnFactory *col_factory = COptCtxt::PoctxtFromTLS()->Pcf();
+	//CMDAccessor *md_accessor = COptCtxt::PoctxtFromTLS()->Pmda();
 
 	// building an array of project elements for the new lower and upper aggregates
 	CExpressionArray *lower_proj_elem_array = GPOS_NEW(mp) CExpressionArray(mp);
@@ -348,120 +313,39 @@ CXformEagerAgg::PopulateLowerUpperProjectList
 		CScalarProjectElement *orig_proj_elem =
 		CScalarProjectElement::PopConvert(orig_proj_elem_expr->Pop());
 
+		
 		CExpression *orig_agg_expr = (*orig_proj_elem_expr)[0];
+		
         if (CanPushAggBelowJoin(orig_agg_expr))
         {
         	CScalarAggFunc *orig_agg_func = CScalarAggFunc::PopConvert(orig_agg_expr->Pop());
             IMDId *orig_agg_mdid = orig_agg_func->MDId();
-
-            /* 1. create new aggregate function for the lower aggregate operator */
-
-			// check if orig_agg_func == avg
-			// 		create two lower aggs: sum, count
-			// else create original agg as lower agg
-
-			CExpression *orig_agg_arg_expr = (*orig_agg_expr->PdrgPexpr())[0];
-			IMDId *orig_agg_arg_mdid = CScalar::PopConvert(orig_agg_arg_expr->Pop())->MdidType();
-			const IMDType *orig_agg_type_mdid = md_accessor->RetrieveType(orig_agg_arg_mdid);
-			IMDId *avg_agg_mdid = orig_agg_type_mdid->GetMdidForAggType(IMDType::EaggAvg);
-			if (orig_agg_mdid->Equals(avg_agg_mdid))
-			{
-				IMDId *sum_lower_agg_mdid = (md_accessor->RetrieveType(orig_agg_arg_mdid))->
-				GetMdidForAggType(IMDType::EaggSum);
-				IMDId *sum_lower_agg_ret_type_mdid = md_accessor->RetrieveAgg(sum_lower_agg_mdid)->GetResultTypeMdid();
-				IMDId *sum_upper_agg_mdid = (md_accessor->RetrieveType(sum_lower_agg_ret_type_mdid))->
-				GetMdidForAggType(IMDType::EaggSum);
-
-				IMDId *count_lower_agg_mdid = (md_accessor->RetrieveType(orig_agg_arg_mdid))->
-				GetMdidForAggType(IMDType::EaggCount);
-				IMDId *count_lower_agg_ret_type_mdid = md_accessor->RetrieveAgg(count_lower_agg_mdid)->GetResultTypeMdid();
-				IMDId *count_upper_agg_mdid = (md_accessor->RetrieveType(count_lower_agg_ret_type_mdid))->
-				GetMdidForAggType(IMDType::EaggSum);
-
-				// add lower and upper corresponding to the sum agg
-				CExpression *lower_sum_proj_elem_expr = NULL;
-				PopulateLowerProjectElement
+			// min and max
+			CExpression *lower_proj_elem_expr = NULL;
+			PopulateLowerProjectElement
 				(
 				 mp,
-				 sum_lower_agg_mdid,
-				 GPOS_NEW(mp) CWStringConst(mp, GPOS_WSZ_LIT("Lower Avg Sum")),
+				 orig_agg_mdid,
+				 GPOS_NEW(mp) CWStringConst(mp, orig_agg_func->PstrAggFunc()->GetBuffer()),
 				 orig_agg_expr->PdrgPexpr(),
 				 orig_agg_func->IsDistinct(),
-				 &lower_sum_proj_elem_expr
-				 );
-				lower_proj_elem_array->Append(lower_sum_proj_elem_expr);
+				 &lower_proj_elem_expr
+				);
+			lower_proj_elem_array->Append(lower_proj_elem_expr);
 
-				CExpression *upper_sum_proj_elem_expr = NULL;
-				IMDId *sum_upper_agg_ret_type_mdid = md_accessor->RetrieveAgg(sum_upper_agg_mdid)->GetResultTypeMdid();
-				const IMDType *upper_sum_agg_ret_type = md_accessor->RetrieveType(sum_upper_agg_ret_type_mdid);
-				CColRef *upper_sum_cr = col_factory->PcrCreate(upper_sum_agg_ret_type, default_type_modifier);
-				PopulateUpperProjectElement
+
+			CExpression *upper_proj_elem_expr = NULL;
+			PopulateUpperProjectElement
 				(
 				 mp,
-				 sum_upper_agg_mdid,
-				 GPOS_NEW(mp) CWStringConst(mp, GPOS_WSZ_LIT("Upper Avg Sum")),
-				 CScalarProjectElement::PopConvert(lower_sum_proj_elem_expr->Pop())->Pcr(),
-				 upper_sum_cr,
-				 orig_agg_func->IsDistinct(),
-				 &upper_sum_proj_elem_expr
-				 );
-				upper_proj_elem_array->Append(upper_sum_proj_elem_expr);
-
-				// add lower and upper corresponding to the count agg
-				CExpression *lower_count_proj_elem_expr = NULL;
-				PopulateLowerProjectElement
-				(
-				 mp,
-				 count_lower_agg_mdid,
-				 GPOS_NEW(mp) CWStringConst(mp, GPOS_WSZ_LIT("Lower Avg Count")),
-				 orig_agg_expr->PdrgPexpr(),
-				 orig_agg_func->IsDistinct(),
-				 &lower_count_proj_elem_expr
-				 );
-				lower_proj_elem_array->Append(lower_count_proj_elem_expr);
-
-				CExpression *upper_count_proj_elem_expr = NULL;
-				PopulateUpperProjectElement
-				(
-				 mp,
-				 count_upper_agg_mdid,
-				 GPOS_NEW(mp) CWStringConst(mp, GPOS_WSZ_LIT("Upper Avg Count")),
-				 CScalarProjectElement::PopConvert(lower_count_proj_elem_expr->Pop())->Pcr(),
+				 orig_agg_mdid,
+				 GPOS_NEW(mp) CWStringConst(mp, orig_agg_func->PstrAggFunc()->GetBuffer()),
+				 CScalarProjectElement::PopConvert(lower_proj_elem_expr->Pop())->Pcr(),
 				 orig_proj_elem->Pcr(),
 				 orig_agg_func->IsDistinct(),
-				 &upper_count_proj_elem_expr
+				 &upper_proj_elem_expr
 				 );
-				upper_proj_elem_array->Append(upper_count_proj_elem_expr);
-			}
-			else
-			{
-				// min and max
-				CExpression *lower_proj_elem_expr = NULL;
-				PopulateLowerProjectElement
-					(
-					 mp,
-					 orig_agg_mdid,
-					 GPOS_NEW(mp) CWStringConst(mp, orig_agg_func->PstrAggFunc()->GetBuffer()),
-					 orig_agg_expr->PdrgPexpr(),
-					 orig_agg_func->IsDistinct(),
-					 &lower_proj_elem_expr
-					);
-				lower_proj_elem_array->Append(lower_proj_elem_expr);
-
-
-				CExpression *upper_proj_elem_expr = NULL;
-				PopulateUpperProjectElement
-					(
-					 mp,
-					 orig_agg_mdid,
-					 GPOS_NEW(mp) CWStringConst(mp, orig_agg_func->PstrAggFunc()->GetBuffer()),
-					 CScalarProjectElement::PopConvert(lower_proj_elem_expr->Pop())->Pcr(),
-					 orig_proj_elem->Pcr(),
-					 orig_agg_func->IsDistinct(),
-					 &upper_proj_elem_expr
-					 );
-				upper_proj_elem_array->Append(upper_proj_elem_expr);
-			}
+			upper_proj_elem_array->Append(upper_proj_elem_expr);
         }
         else
         {
@@ -510,11 +394,9 @@ CXformEagerAgg::PopulateLowerProjectElement
 										 mp,
 										 agg_mdid,
 										 agg_name,
-									//	 GPOS_NEW(mp) CWStringConst(mp, orig_agg_func->PstrAggFunc()->GetBuffer()),
-									//	 orig_agg_func->IsDistinct(),
 										 is_distinct,
-										 EaggfuncstageGlobal, /* fGlobal */
-										 false /* fSplit */
+										 EaggfuncstageLocal, /* fGlobal */
+										 true /* fSplit */
 										 );
 	// add the arguments for the lower aggregate function, which is
 	// going to be the same as the original aggregate function
@@ -536,11 +418,12 @@ CXformEagerAgg::PopulateLowerProjectElement
 //	}
 //	else
 	{
-		lower_agg_ret_mdid = md_accessor->RetrieveAgg(agg_mdid)->GetResultTypeMdid();
+		lower_agg_ret_mdid = md_accessor->RetrieveAgg(agg_mdid)->GetIntermediateResultTypeMdid();
 	}
-
+	
 	const IMDType *lower_agg_ret_type = md_accessor->RetrieveType(lower_agg_ret_mdid);
-		// create a column reference for the new created aggregate function
+	
+	// create a column reference for the new created aggregate function
 	CColRef *lower_cr = col_factory->PcrCreate(lower_agg_ret_type, default_type_modifier);
 	// create new project element for the aggregate function
 	*lower_proj_elem_expr = CUtils::PexprScalarProjectElement
@@ -572,7 +455,6 @@ CXformEagerAgg::PopulateUpperProjectElement
 		 mp,
 		 agg_mdid,
 		 agg_name,
-//		 GPOS_NEW(mp) CWStringConst(mp, orig_agg_func->PstrAggFunc()->GetBuffer()),
 		 is_distinct,
 		 EaggfuncstageGlobal, /* fGlobal */
 		 true /* fSplit */
@@ -580,7 +462,6 @@ CXformEagerAgg::PopulateUpperProjectElement
 
 		// populate the argument list for the upper aggregate function
 	CExpressionArray *upper_agg_arg_array = GPOS_NEW(mp) CExpressionArray(mp);
-//	CColRef *lower_cr = CScalarProjectElement::PopConvert(lower_proj_elem_expr->Pop())->Pcr();
 	upper_agg_arg_array->Append(CUtils::PexprScalarIdent(mp, lower_cr));
 	CExpression *upper_agg_expr = GPOS_NEW(mp) CExpression
 									(

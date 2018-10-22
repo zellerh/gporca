@@ -1847,7 +1847,8 @@ CXformUtils::FSplitAggXform
 	return
 		CXform::ExfSplitGbAgg == exfid ||
 		CXform::ExfSplitDQA == exfid ||
-		CXform::ExfSplitGbAggDedup == exfid;
+		CXform::ExfSplitGbAggDedup == exfid ||
+		CXform::ExfEagerAgg == exfid;
 }
 
 
