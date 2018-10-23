@@ -147,7 +147,7 @@ CXformEagerAgg::Transform
 												 (
 												  mp,
 												  push_down_gb_cra,
-												  COperator::EgbaggtypeGlobal
+												  COperator::EgbaggtypeLocal
 												 ),
 												 join_outer_child_expr,
 												 lower_expr_proj_list
