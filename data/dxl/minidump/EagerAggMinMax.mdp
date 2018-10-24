@@ -7,11 +7,11 @@
  	  create table bar (j2 int, g2 int, s2 int);
 	  insert into bar select i%100, i %1000, i from generate_series(1,100000) i;
 
- 	   explain  select min(s1), max(s1)
+ 	   explain select min(s1), max(s1), sum(s1), count(s1), avg(s1), sum(j1)
 	   from foo, bar where j1 = j2
 	   group by g1 ;
 
-	   Objective: Push down the Agg  below join when we have min and max both
+	   Objective: Push down the Agg below join when we have min and max both
 	 ]]>
   </dxl:Comment>
    <dxl:Thread Id="0">

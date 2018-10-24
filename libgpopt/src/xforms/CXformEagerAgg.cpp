@@ -208,6 +208,8 @@ const
 
     if (!(agg_mdid->Equals(agg_child_type->GetMdidForAggType(IMDType::EaggMin))) &&
         	!(agg_mdid->Equals(agg_child_type->GetMdidForAggType(IMDType::EaggMax))) &&
+        	!(agg_mdid->Equals(agg_child_type->GetMdidForAggType(IMDType::EaggSum))) &&
+        	!(agg_mdid->Equals(agg_child_type->GetMdidForAggType(IMDType::EaggCount))) &&
 			!(agg_mdid->Equals(agg_child_type->GetMdidForAggType(IMDType::EaggAvg))))
     {
 
