@@ -65,6 +65,25 @@ CCastUtils::FBinaryCoercibleCastedScId
 	return COperator::EopScalarIdent == pexprChild->Pop()->Eopid();
 }
 
+BOOL
+CCastUtils::FBinaryCoercibleCastedConst
+    (
+	CExpression *pexpr
+	)
+{
+	GPOS_ASSERT(NULL != pexpr);
+
+	if (!FBinaryCoercibleCast(pexpr))
+	{
+		return false;
+	}
+
+    CExpression *pexprChild = (*pexpr)[0];
+
+	// cast(col1)
+	return COperator::EopScalarConst == pexprChild->Pop()->Eopid();
+}
+
 // extract the column reference if the given expression a scalar identifier
 // or a cast of a scalar identifier or a function that casts a scalar identifier.
 // Else return NULL.

@@ -13,6 +13,7 @@
 #include "gpos/common/CAutoRef.h"
 
 #include "gpopt/base/CUtils.h"
+#include "gpopt/base/CCastUtils.h"
 #include "gpopt/base/IColConstraintsMapper.h"
 #include "gpopt/base/CColConstraintsArrayMapper.h"
 #include "gpopt/base/CColConstraintsHashMapper.h"
@@ -372,14 +373,35 @@ CConstraint::PcnstrFromScalarCmp
 	CExpression *pexprLeft = (*pexpr)[0];
 	CExpression *pexprRight = (*pexpr)[1];
 
-	// check if the scalar comparison is over scalar idents
-	if (COperator::EopScalarIdent == pexprLeft->Pop()->Eopid()
-		&& COperator::EopScalarIdent == pexprRight->Pop()->Eopid())
+	// check if the scalar comparison is over scalar idents of binary coercible casted scalar idents
+	if ((CUtils::FScalarIdent(pexprLeft) || CCastUtils::FBinaryCoercibleCastedScId(pexprLeft)) &&
+		(CUtils::FScalarIdent(pexprRight) || CCastUtils::FBinaryCoercibleCastedScId(pexprRight)))
 	{
-		CScalarIdent *popScIdLeft = CScalarIdent::PopConvert((*pexpr)[0]->Pop());
-		const CColRef *pcrLeft =  popScIdLeft->Pcr();
+		CScalarIdent *popScIdLeft, *popScIdRight;
+		// TODO: Extract the foll out as functions.
+		if (CUtils::FScalarIdent(pexprLeft))
+		{
+			// col1 = ...
+			popScIdLeft = CScalarIdent::PopConvert(pexprLeft->Pop());
+		}
+		else
+		{
+			// cast(col1) = ...
+			popScIdLeft = CScalarIdent::PopConvert((*pexprLeft)[0]->Pop());
+		}
 
-		CScalarIdent *popScIdRight = CScalarIdent::PopConvert((*pexpr)[1]->Pop());
+		if (CUtils::FScalarIdent(pexprRight))
+		{
+			// ... = col2
+			popScIdRight = CScalarIdent::PopConvert(pexprRight->Pop());
+		}
+		else
+		{
+			// ... = cost(col2)
+			popScIdRight = CScalarIdent::PopConvert((*pexprRight)[0]->Pop());
+		}
+
+		const CColRef *pcrLeft =  popScIdLeft->Pcr();
 		const CColRef *pcrRight =  popScIdRight->Pcr();
 
 		if (!CUtils::FConstrainableType(pcrLeft->RetrieveType()->MDId()) ||
@@ -391,7 +413,7 @@ CConstraint::PcnstrFromScalarCmp
 		*ppdrgpcrs = GPOS_NEW(mp) CColRefSetArray(mp);
 		if (CPredicateUtils::IsEqualityOp(pexpr))
 		{
-			// col1 = col2
+			// col1 = col2 or bcast(col1) = col2 or col1 = bcast(col2) or bcast(col1) = bcast(col2)
 			CColRefSet *pcrsNew = GPOS_NEW(mp) CColRefSet(mp);
 			pcrsNew->Include(pcrLeft);
 			pcrsNew->Include(pcrRight);
