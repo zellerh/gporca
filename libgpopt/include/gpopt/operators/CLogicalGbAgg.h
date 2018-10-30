@@ -44,6 +44,9 @@ namespace gpopt
 
 			// local / intermediate / global aggregate
 			COperator::EGbAggType m_egbaggtype;
+		
+			// is the group by columns for local different from the global agg
+			BOOL m_has_different_local_gb_crs;
 
 		protected:
 
@@ -262,7 +265,11 @@ namespace gpopt
 				return dynamic_cast<CLogicalGbAgg*>(pop);
 			}
 
-		
+			BOOL IsLocalAndDifferentGroupingCRS() const
+			{
+				return COperator::EgbaggtypeLocal == m_egbaggtype && m_has_different_local_gb_crs;
+			}
+
 			// debug print
 			virtual 
 			IOstream &OsPrint(IOstream &os) const;

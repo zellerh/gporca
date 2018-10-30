@@ -155,7 +155,7 @@ CXformGbAgg2HashAgg::Transform
 						popAgg->FGeneratesDuplicates(),
 						pdrgpcrArgDQA,
 						CXformUtils::FMultiStageAgg(pexpr),
-						!popAgg->IsLocalAndDifferentGroupingCRS()
+						!CXformUtils::FLocalAggCreatedByEagerAggXform(pexpr)
 						),
 			pexprRel,
 			pexprScalar

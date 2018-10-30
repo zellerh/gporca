@@ -31,6 +31,9 @@ namespace gpopt
 	{
 		private:
 
+			// should we enforce distribution or not for this operator
+			BOOL m_should_enforce_distribution;
+
 			// private copy ctor
 			CPhysicalHashAgg(const CPhysicalHashAgg &);
 
@@ -45,7 +48,8 @@ namespace gpopt
 				COperator::EGbAggType egbaggtype,
 				BOOL fGeneratesDuplicates,
 				CColRefArray *pdrgpcrArgDQA,
-				BOOL fMultiStage
+				BOOL fMultiStage,
+				BOOL should_enforce_distribution = true
 				);
 
 			// dtor

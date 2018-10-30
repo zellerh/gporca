@@ -37,11 +37,14 @@ CPhysicalHashAgg::CPhysicalHashAgg
 	COperator::EGbAggType egbaggtype,
 	BOOL fGeneratesDuplicates,
 	CColRefArray *pdrgpcrArgDQA,
-	BOOL fMultiStage
+	BOOL fMultiStage,
+	BOOL should_enforce_distribution
 	)
 	:
-	CPhysicalAgg(mp, colref_array, pdrgpcrMinimal, egbaggtype, fGeneratesDuplicates, pdrgpcrArgDQA, fMultiStage)
-{}
+	CPhysicalAgg(mp, colref_array, pdrgpcrMinimal, egbaggtype, fGeneratesDuplicates, pdrgpcrArgDQA, fMultiStage, should_enforce_distribution)
+{
+	m_should_enforce_distribution = should_enforce_distribution;
+}
 
 
 //---------------------------------------------------------------------------

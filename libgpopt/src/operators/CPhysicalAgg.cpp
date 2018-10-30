@@ -20,6 +20,7 @@
 #include "gpopt/operators/CPhysicalAgg.h"
 #include "gpopt/operators/CLogicalGbAgg.h"
 #include "gpopt/base/CDistributionSpecStrictSingleton.h"
+#include "gpopt/xforms/CXformUtils.h"
 
 using namespace gpopt;
 
@@ -41,7 +42,7 @@ CPhysicalAgg::CPhysicalAgg
 	BOOL fGeneratesDuplicates,
 	CColRefArray *pdrgpcrArgDQA,
 	BOOL fMultiStage,
-	BOOL should_enforce_distribution = true
+	BOOL should_enforce_distribution
 	)
 	:
 	CPhysical(mp),
@@ -50,13 +51,13 @@ CPhysicalAgg::CPhysicalAgg
 	m_pdrgpcrMinimal(NULL),
 	m_fGeneratesDuplicates(fGeneratesDuplicates),
 	m_pdrgpcrArgDQA(pdrgpcrArgDQA),
-	m_fMultiStage(fMultiStage),
-	m_should_enforce_distribution(should_enforce_distribution)
+	m_fMultiStage(fMultiStage)
 {
 	GPOS_ASSERT(NULL != colref_array);
 	GPOS_ASSERT(COperator::EgbaggtypeSentinel > egbaggtype);
 	GPOS_ASSERT_IMP(EgbaggtypeGlobal != egbaggtype, fMultiStage);
 
+	m_should_enforce_distribution = should_enforce_distribution;
 	ULONG ulDistrReqs = 1;
 	if (pdrgpcrMinimal == NULL || 0 == pdrgpcrMinimal->Size())
 	{
@@ -634,8 +635,7 @@ CPhysicalAgg::EpetDistribution
 
 	if (ped->FCompatible(pds))
 	{
-		if (COperator::EgbaggtypeLocal != Egbaggtype() ||
-				!m_should_check_local_distribution)
+		if (COperator::EgbaggtypeLocal != Egbaggtype() || !m_should_enforce_distribution)
 		{
 			return CEnfdProp::EpetUnnecessary;
 		}

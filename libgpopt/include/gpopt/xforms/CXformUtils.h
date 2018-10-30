@@ -1086,6 +1086,9 @@ namespace gpopt
 			static
 			BOOL FMultiStageAgg(CExpression *pexprAgg);
 
+			static
+			BOOL FLocalAggCreatedByEagerAggXform(CExpression *pexprAgg);
+		
 			// check if expression handle is attached to a Join with a predicate that uses columns from only one child
 			static
 			BOOL FJoinPredOnSingleChild(IMemoryPool *mp, CExpressionHandle &exprhdl);
