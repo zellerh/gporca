@@ -40,7 +40,8 @@ CPhysicalAgg::CPhysicalAgg
 	COperator::EGbAggType egbaggtype,
 	BOOL fGeneratesDuplicates,
 	CColRefArray *pdrgpcrArgDQA,
-	BOOL fMultiStage
+	BOOL fMultiStage,
+	BOOL should_enforce_distribution = true
 	)
 	:
 	CPhysical(mp),
@@ -49,7 +50,8 @@ CPhysicalAgg::CPhysicalAgg
 	m_pdrgpcrMinimal(NULL),
 	m_fGeneratesDuplicates(fGeneratesDuplicates),
 	m_pdrgpcrArgDQA(pdrgpcrArgDQA),
-	m_fMultiStage(fMultiStage)
+	m_fMultiStage(fMultiStage),
+	m_should_enforce_distribution(should_enforce_distribution)
 {
 	GPOS_ASSERT(NULL != colref_array);
 	GPOS_ASSERT(COperator::EgbaggtypeSentinel > egbaggtype);
@@ -632,13 +634,15 @@ CPhysicalAgg::EpetDistribution
 
 	if (ped->FCompatible(pds))
 	{
-		if (COperator::EgbaggtypeLocal != Egbaggtype())
+		if (COperator::EgbaggtypeLocal != Egbaggtype() ||
+				!m_should_check_local_distribution)
 		{
 			return CEnfdProp::EpetUnnecessary;
 		}
 
-		// prohibit the plan if local aggregate already delivers the enforced distribution, since
-		// otherwise we would create two aggregates with no intermediate motion operators
+		// prohibit the plan if local aggregate already delivers the enforced
+		// distribution, since otherwise we would create two aggregates with
+		//	no intermediate motion operators
 		return CEnfdProp::EpetProhibited;
 
 	}

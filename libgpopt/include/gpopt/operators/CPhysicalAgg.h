@@ -63,6 +63,9 @@ namespace gpopt
 			static
 			CDistributionSpec *PdsMaximalHashed(IMemoryPool *mp, CColRefArray *colref_array);
 
+			//
+			BOOL m_should_check_local_distribution;
+
 		protected:
 
 			// array of minimal grouping columns based on FDs
