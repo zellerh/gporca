@@ -42,6 +42,8 @@ namespace gpopt
 
 			// construct order spec on grouping column so that it covers required order spec
 			COrderSpec *PosCovering(IMemoryPool *mp, COrderSpec *posRequired, CColRefArray *pdrgpcrGrp) const;
+		
+			BOOL m_should_enforce_distribution;
 
 		protected:
 
@@ -70,7 +72,8 @@ namespace gpopt
 				COperator::EGbAggType egbaggtype,
 				BOOL fGeneratesDuplicates,
 				CColRefArray *pdrgpcrArgDQA,
-				BOOL fMultiStage
+				BOOL fMultiStage,
+				BOOL should_enforce_distribution
 				);
 
 			// dtor

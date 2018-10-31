@@ -92,7 +92,8 @@ CXformGbAggDedup2StreamAggDedup::Transform
 						popAggDedup->Egbaggtype(),
 						pdrgpcrKeys,
 						popAggDedup->FGeneratesDuplicates(),
-						CXformUtils::FMultiStageAgg(pexpr)
+						CXformUtils::FMultiStageAgg(pexpr),
+						!CXformUtils::FLocalAggCreatedByEagerAggXform(pexpr)
 						),
 			pexprRel,
 			pexprScalar

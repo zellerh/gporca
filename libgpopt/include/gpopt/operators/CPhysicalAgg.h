@@ -117,7 +117,7 @@ namespace gpopt
 				BOOL fGeneratesDuplicates,
 				CColRefArray *pdrgpcrArgDQA,
 				BOOL fMultiStage,
-				BOOL should_enforce_distribution = true
+				BOOL should_enforce_distribution
 				);
 
 			// dtor

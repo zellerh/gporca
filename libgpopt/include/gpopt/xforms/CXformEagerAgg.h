@@ -81,7 +81,7 @@ namespace gpopt
 			void Transform(CXformContext *pxfctxt, CXformResult *pxfres, CExpression *pexpr) const;
 
 			// check if transform can be applied
-			BOOL CanApplyTransform(CExpression *pexprAgg, CColRefSet *push_down_gb_crs) const;
+			BOOL CanApplyTransform(CExpression *pexprAgg) const;
 
 			// is this aggregate supported for push down?
 			BOOL CanPushAggBelowJoin(CExpression *scalar_agg_func_expr) const;

@@ -1889,10 +1889,11 @@ CXformUtils::FLocalAggCreatedByEagerAggXform
 	)
 {
 	GPOS_ASSERT(NULL != pexprAgg);
-	GPOS_ASSERT(COperator::EopLogicalGbAgg == pexprAgg->Pop()->Eopid());
+	GPOS_ASSERT(COperator::EopLogicalGbAgg == pexprAgg->Pop()->Eopid()||
+				COperator::EopLogicalGbAggDeduplicate == pexprAgg->Pop()->Eopid());
 	
 	CLogicalGbAgg *popAgg = CLogicalGbAgg::PopConvert(pexprAgg->Pop());
-	if (COperator::EgbaggtypeGlobal == popAgg->Egbaggtype())
+	if (COperator::EgbaggtypeLocal != popAgg->Egbaggtype())
 	{
 		return false;
 	}
@@ -1902,6 +1903,7 @@ CXformUtils::FLocalAggCreatedByEagerAggXform
 	CGroupExpression *pgexprOrigin = pexprAgg->Pgexpr();
 	while (NULL != pgexprOrigin && !is_eager_agg)
 	{
+		// parse all expressions in group to check if any was created by CXformEagerAgg
 		is_eager_agg = CXform::ExfEagerAgg == pgexprOrigin->ExfidOrigin();
 		pgexprOrigin = pgexprOrigin->PgexprOrigin();
 	}

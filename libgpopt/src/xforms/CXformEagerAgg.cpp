@@ -112,7 +112,7 @@ CXformEagerAgg::Transform
     push_down_gb_crs->Union(grouping_crs);
 
     /* verify if this aggregate can be applied */
-    if (!CanApplyTransform(pexpr, push_down_gb_crs))
+    if (!CanApplyTransform(pexpr))
     {
         push_down_gb_crs->Release();
         return;
@@ -234,8 +234,7 @@ const
 BOOL
 CXformEagerAgg::CanApplyTransform
 (
- CExpression *gb_agg_pexpr,
- CColRefSet *push_down_gb_crs
+ CExpression *gb_agg_pexpr
 )
 const
 {
@@ -253,7 +252,7 @@ const
 		// all columns used by the Gb aggregate should only be present in outer child
         return false;
     }
-    BOOL is_atleast_one_agg_supported = false;
+	
 	const ULONG n_aggregates = agg_proj_list_expr->Arity();
 	if (n_aggregates == 0)
     {
@@ -263,30 +262,12 @@ const
     for (ULONG agg_index = 0; agg_index < n_aggregates; agg_index++)
     {
 		CExpression *scalar_agg_proj_expr = (*agg_proj_list_expr)[agg_index];
-        if (CanPushAggBelowJoin((*scalar_agg_proj_expr)[0]))
+        if (!CanPushAggBelowJoin((*scalar_agg_proj_expr)[0]))
         {
-            is_atleast_one_agg_supported = true;
-        } else
-        {
-            // An unsupported agg can only be applied either on the grouping
-			// columns or on the join columns of the aggregate being pushed down.
-            // Example:
-            //  Supported query: SELECT min(foo.s1), sum(foo.j1) FROM foo, bar
-            //                    WHERE foo.j1 = bar.j2
-            //                    GROUP BY foo.g1;
-            //  Unsupported query: SELECT min(foo.s1), sum(foo.s1) FROM foo, bar
-            //                      WHERE foo.j1 = bar.j2
-            //                      GROUP BY foo.g1;
-            CColRefSet *scalar_agg_crs = CDrvdPropScalar::GetDrvdScalarProps(
-                                          scalar_agg_proj_expr->PdpDerive())->PcrsUsed();
-            if (!push_down_gb_crs->ContainsAll(scalar_agg_crs)){
-				// if an aggregate not being pushed down contains other columns,
-				// then we can't apply this transform.
-                return false;
-            }
+			return false;
         }
     }
-	return is_atleast_one_agg_supported;
+	return true;
 }
 
 // populate the lower and upper aggregate's project list after

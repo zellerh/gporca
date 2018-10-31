@@ -45,7 +45,8 @@ namespace gpopt
 				COperator::EGbAggType egbaggtype,
 				BOOL fGeneratesDuplicates,
 				CColRefArray *pdrgpcrArgDQA,
-				BOOL fMultiStage
+				BOOL fMultiStage,
+				BOOL should_enforce_distribution
 				);
 
 			// dtor

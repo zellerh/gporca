@@ -48,6 +48,7 @@ CPhysicalAgg::CPhysicalAgg
 	CPhysical(mp),
 	m_pdrgpcr(colref_array),
 	m_egbaggtype(egbaggtype),
+	m_should_enforce_distribution(should_enforce_distribution),
 	m_pdrgpcrMinimal(NULL),
 	m_fGeneratesDuplicates(fGeneratesDuplicates),
 	m_pdrgpcrArgDQA(pdrgpcrArgDQA),
@@ -57,7 +58,6 @@ CPhysicalAgg::CPhysicalAgg
 	GPOS_ASSERT(COperator::EgbaggtypeSentinel > egbaggtype);
 	GPOS_ASSERT_IMP(EgbaggtypeGlobal != egbaggtype, fMultiStage);
 
-	m_should_enforce_distribution = should_enforce_distribution;
 	ULONG ulDistrReqs = 1;
 	if (pdrgpcrMinimal == NULL || 0 == pdrgpcrMinimal->Size())
 	{
