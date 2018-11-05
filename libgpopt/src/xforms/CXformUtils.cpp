@@ -1847,10 +1847,9 @@ CXformUtils::FSplitAggXform
 	return
 		CXform::ExfSplitGbAgg == exfid ||
 		CXform::ExfSplitDQA == exfid ||
-		CXform::ExfSplitGbAggDedup == exfid;
+		CXform::ExfSplitGbAggDedup == exfid ||
+		CXform::ExfEagerAgg == exfid;
 }
-
-
 
 // Check if given expression is a multi-stage Agg based on agg type
 // or origin xform
@@ -1882,6 +1881,36 @@ CXformUtils::FMultiStageAgg
 
 	return fMultiStage;
 }
+
+BOOL
+CXformUtils::FLocalAggCreatedByEagerAggXform
+	(
+	CExpression *pexprAgg
+	)
+{
+	GPOS_ASSERT(NULL != pexprAgg);
+	GPOS_ASSERT(COperator::EopLogicalGbAgg == pexprAgg->Pop()->Eopid()||
+				COperator::EopLogicalGbAggDeduplicate == pexprAgg->Pop()->Eopid());
+	
+	CLogicalGbAgg *popAgg = CLogicalGbAgg::PopConvert(pexprAgg->Pop());
+	if (COperator::EgbaggtypeLocal != popAgg->Egbaggtype())
+	{
+		return false;
+	}
+	
+	// check xform lineage
+	BOOL is_eager_agg = false;
+	CGroupExpression *pgexprOrigin = pexprAgg->Pgexpr();
+	while (NULL != pgexprOrigin && !is_eager_agg)
+	{
+		// parse all expressions in group to check if any was created by CXformEagerAgg
+		is_eager_agg = CXform::ExfEagerAgg == pgexprOrigin->ExfidOrigin();
+		pgexprOrigin = pgexprOrigin->PgexprOrigin();
+	}
+	
+	return is_eager_agg;
+}
+
 
 
 //---------------------------------------------------------------------------

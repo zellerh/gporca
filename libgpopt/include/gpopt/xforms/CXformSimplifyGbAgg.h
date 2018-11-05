@@ -74,7 +74,8 @@ namespace gpopt
 			{
 				return (CXform::ExfSimplifyGbAgg != exfid) && 
 						(CXform::ExfSplitDQA != exfid) && 
-						(CXform::ExfSplitGbAgg != exfid);
+						(CXform::ExfSplitGbAgg != exfid) &&
+						(CXform::ExfEagerAgg != exfid);
 			}
 
 			// compute xform promise for a given expression handle

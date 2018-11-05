@@ -63,6 +63,9 @@ namespace gpopt
 			static
 			CDistributionSpec *PdsMaximalHashed(IMemoryPool *mp, CColRefArray *colref_array);
 
+			// should distribution be enforced on this agg
+			BOOL m_should_enforce_distribution;
+		
 		protected:
 
 			// array of minimal grouping columns based on FDs
@@ -113,7 +116,8 @@ namespace gpopt
 				COperator::EGbAggType egbaggtype,
 				BOOL fGeneratesDuplicates,
 				CColRefArray *pdrgpcrArgDQA,
-				BOOL fMultiStage
+				BOOL fMultiStage,
+				BOOL should_enforce_distribution
 				);
 
 			// dtor

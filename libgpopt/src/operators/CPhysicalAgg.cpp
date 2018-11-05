@@ -20,6 +20,7 @@
 #include "gpopt/operators/CPhysicalAgg.h"
 #include "gpopt/operators/CLogicalGbAgg.h"
 #include "gpopt/base/CDistributionSpecStrictSingleton.h"
+#include "gpopt/xforms/CXformUtils.h"
 
 using namespace gpopt;
 
@@ -40,12 +41,14 @@ CPhysicalAgg::CPhysicalAgg
 	COperator::EGbAggType egbaggtype,
 	BOOL fGeneratesDuplicates,
 	CColRefArray *pdrgpcrArgDQA,
-	BOOL fMultiStage
+	BOOL fMultiStage,
+	BOOL should_enforce_distribution
 	)
 	:
 	CPhysical(mp),
 	m_pdrgpcr(colref_array),
 	m_egbaggtype(egbaggtype),
+	m_should_enforce_distribution(should_enforce_distribution),
 	m_pdrgpcrMinimal(NULL),
 	m_fGeneratesDuplicates(fGeneratesDuplicates),
 	m_pdrgpcrArgDQA(pdrgpcrArgDQA),
@@ -632,13 +635,14 @@ CPhysicalAgg::EpetDistribution
 
 	if (ped->FCompatible(pds))
 	{
-		if (COperator::EgbaggtypeLocal != Egbaggtype())
+		if (COperator::EgbaggtypeLocal != Egbaggtype() || !m_should_enforce_distribution)
 		{
 			return CEnfdProp::EpetUnnecessary;
 		}
 
-		// prohibit the plan if local aggregate already delivers the enforced distribution, since
-		// otherwise we would create two aggregates with no intermediate motion operators
+		// prohibit the plan if local aggregate already delivers the enforced
+		// distribution, since otherwise we would create two aggregates with
+		//	no intermediate motion operators
 		return CEnfdProp::EpetProhibited;
 
 	}
