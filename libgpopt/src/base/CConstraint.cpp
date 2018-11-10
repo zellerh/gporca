@@ -378,7 +378,6 @@ CConstraint::PcnstrFromScalarCmp
 		(CUtils::FScalarIdent(pexprRight) || CCastUtils::FBinaryCoercibleCastedScId(pexprRight)))
 	{
 		CScalarIdent *popScIdLeft, *popScIdRight;
-		// TODO: Extract the foll out as functions.
 		if (CUtils::FScalarIdent(pexprLeft))
 		{
 			// col1 = ...
