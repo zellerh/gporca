@@ -123,7 +123,7 @@ namespace gpos
 
 		// Disable partition selection
 		EopttraceDisablePartSelection = 103012,
-		
+
 		// Disable outer-join To inner-join rewrite
 		EopttraceDisableOuterJoin2InnerJoinRewrite = 103013,
 
@@ -172,6 +172,8 @@ namespace gpos
 		// non-master gather enforcement for DML queries
 		EopttraceDisableNonMasterGatherForDML = 103028,
 
+        // experimental features
+		EopttraceEnableExperiment = 103029,
 		///////////////////////////////////////////////////////
 		///////////////////// statistics flags ////////////////
 		//////////////////////////////////////////////////////

@@ -591,7 +591,6 @@ CLogicalGbAgg::PxfsCandidates
 	(void) xform_set->ExchangeSet(CXform::ExfSimplifyGbAgg);
 	(void) xform_set->ExchangeSet(CXform::ExfGbAggWithMDQA2Join);
 	(void) xform_set->ExchangeSet(CXform::ExfCollapseGbAgg);
-	(void) xform_set->ExchangeSet(CXform::ExfEagerAgg);
 	(void) xform_set->ExchangeSet(CXform::ExfPushGbBelowJoin);
 	(void) xform_set->ExchangeSet(CXform::ExfPushGbBelowUnion);
 	(void) xform_set->ExchangeSet(CXform::ExfPushGbBelowUnionAll);
@@ -602,6 +601,10 @@ CLogicalGbAgg::PxfsCandidates
 	(void) xform_set->ExchangeSet(CXform::ExfGbAgg2StreamAgg);
 	(void) xform_set->ExchangeSet(CXform::ExfGbAgg2ScalarAgg);
 
+	if (GPOS_FTRACE(EopttraceEnableExperiment)){
+		// experimental transforms
+		(void) xform_set->ExchangeSet(CXform::ExfEagerAgg);
+	}
 	return xform_set;
 }
 
