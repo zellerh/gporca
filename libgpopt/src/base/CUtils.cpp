@@ -485,31 +485,27 @@ CUtils::PexprScalarCmp
 	CExpression *pexprNewLeft = pexprLeft;
 	CExpression *pexprNewRight = pexprRight;
 
-	IMDId *pmdidCmpOp = NULL;
+	IMDId *pmdidCmpOp = CUtils::GetScCmpMdId(mp, md_accessor, left_mdid, right_mdid, cmp_type);
+	GPOS_ASSERT(NULL != pmdidCmpOp);
 
-	if (CMDAccessorUtils::FCmpExists(md_accessor, left_mdid, right_mdid, cmp_type))
+	const IMDScalarOp *op = md_accessor->RetrieveScOp(pmdidCmpOp);
+
+	if (!op->GetLeftMdid()->Equals(left_mdid))
 	{
-		pmdidCmpOp = GetScCmpMdId(mp, md_accessor, left_mdid, right_mdid, cmp_type);
+		pexprNewLeft = PexprCast(mp, md_accessor, pexprLeft, op->GetLeftMdid());
 	}
-	else if (CMDAccessorUtils::FCmpExists(md_accessor, left_mdid, left_mdid, cmp_type) && CMDAccessorUtils::FCastExists(md_accessor, right_mdid, left_mdid))
+
+	if (!op->GetRightMdid()->Equals(right_mdid))
 	{
-		pexprNewRight = PexprCast(mp, md_accessor, pexprRight, left_mdid);
-		pmdidCmpOp = GetScCmpMdId(mp, md_accessor, left_mdid, left_mdid, cmp_type);
+		pexprNewRight = PexprCast(mp, md_accessor, pexprRight, op->GetRightMdid());
 	}
-	else if (CMDAccessorUtils::FCmpExists(md_accessor, right_mdid, right_mdid, cmp_type) && CMDAccessorUtils::FCastExists(md_accessor, left_mdid, right_mdid))
-	{
-		pexprNewLeft = PexprCast(mp, md_accessor, pexprLeft, right_mdid);
-		pmdidCmpOp = GetScCmpMdId(mp, md_accessor, right_mdid, right_mdid, cmp_type);
-	}
-	else
-	{
-		CWStringDynamic *str = GPOS_NEW(mp) CWStringDynamic(mp);
-		str->AppendFormat(GPOS_WSZ_LIT("Cannot generate a comparison expression between %ls and %ls"), left_mdid->GetBuffer(), right_mdid->GetBuffer());
-		GPOS_RAISE(gpopt::ExmaGPOPT, gpopt::ExmiUnexpectedOp, str->GetBuffer());
-	}
+
+	GPOS_ASSERT(pexprNewLeft != NULL);
+	GPOS_ASSERT(pexprNewRight != NULL);
 
 	pmdidCmpOp->AddRef();
-	const CMDName mdname = md_accessor->RetrieveScOp(pmdidCmpOp)->Mdname();
+
+	const CMDName mdname = op->Mdname();
 	CWStringConst strCmpOpName(mdname.GetMDName()->GetBuffer());
 	
 	CExpression *pexprResult = GPOS_NEW(mp) CExpression
