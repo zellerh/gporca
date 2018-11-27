@@ -61,8 +61,9 @@ CCastUtils::FBinaryCoercibleCastedScId
 
     CExpression *pexprChild = (*pexpr)[0];
 
-	// cast(col1)
-	return COperator::EopScalarIdent == pexprChild->Pop()->Eopid();
+    // cast(col1)
+    // TODO: validate this
+    return (GPOS_FTRACE(EopttraceEnableConstantExpressionEvaluation) && COperator::EopScalarIdent == pexprChild->Pop()->Eopid());
 }
 
 BOOL
@@ -71,7 +72,7 @@ CCastUtils::FBinaryCoercibleCastedConst
 	CExpression *pexpr
 	)
 {
-	GPOS_ASSERT(NULL != pexpr);
+    GPOS_ASSERT(NULL != pexpr);
 
 	if (!FBinaryCoercibleCast(pexpr))
 	{
@@ -80,8 +81,9 @@ CCastUtils::FBinaryCoercibleCastedConst
 
     CExpression *pexprChild = (*pexpr)[0];
 
-	// cast(col1)
-	return COperator::EopScalarConst == pexprChild->Pop()->Eopid();
+    // cast(col1)
+    // TODO: validate this
+    return (GPOS_FTRACE(EopttraceEnableConstantExpressionEvaluation) && COperator::EopScalarConst == pexprChild->Pop()->Eopid());
 }
 
 // extract the column reference if the given expression a scalar identifier
