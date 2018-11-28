@@ -485,19 +485,41 @@ CUtils::PexprScalarCmp
 	CExpression *pexprNewLeft = pexprLeft;
 	CExpression *pexprNewRight = pexprRight;
 
-	IMDId *pmdidCmpOp = CUtils::GetScCmpMdId(mp, md_accessor, left_mdid, right_mdid, cmp_type);
-	GPOS_ASSERT(NULL != pmdidCmpOp);
+    IMDId *pmdidCmpOp = NULL;
+    
+    if (CMDAccessorUtils::FCmpExists(md_accessor, left_mdid, right_mdid, cmp_type))
+    {
+        pmdidCmpOp = GetScCmpMdId(mp, md_accessor, left_mdid, right_mdid, cmp_type);
+    }
+    else if (CMDAccessorUtils::FCmpExists(md_accessor, left_mdid, left_mdid, cmp_type) && CMDAccessorUtils::FCastExists(md_accessor, right_mdid, left_mdid))
+    {
+        pexprNewRight = PexprCast(mp, md_accessor, pexprRight, left_mdid);
+        pmdidCmpOp = GetScCmpMdId(mp, md_accessor, left_mdid, left_mdid, cmp_type);
+        right_mdid = left_mdid;
+    }
+    else if (CMDAccessorUtils::FCmpExists(md_accessor, right_mdid, right_mdid, cmp_type) && CMDAccessorUtils::FCastExists(md_accessor, left_mdid, right_mdid))
+    {
+        pexprNewLeft = PexprCast(mp, md_accessor, pexprLeft, right_mdid);
+        pmdidCmpOp = GetScCmpMdId(mp, md_accessor, right_mdid, right_mdid, cmp_type);
+        left_mdid = right_mdid;
+    }
+    else
+    {
+        CWStringDynamic *str = GPOS_NEW(mp) CWStringDynamic(mp);
+        str->AppendFormat(GPOS_WSZ_LIT("Cannot generate a comparison expression between %ls and %ls"), left_mdid->GetBuffer(), right_mdid->GetBuffer());
+        GPOS_RAISE(gpopt::ExmaGPOPT, gpopt::ExmiUnexpectedOp, str->GetBuffer());
+    }
 
 	const IMDScalarOp *op = md_accessor->RetrieveScOp(pmdidCmpOp);
 
 	if (!op->GetLeftMdid()->Equals(left_mdid))
 	{
-		pexprNewLeft = PexprCast(mp, md_accessor, pexprLeft, op->GetLeftMdid());
+		pexprNewLeft = PexprCast(mp, md_accessor, pexprNewLeft, op->GetLeftMdid());
 	}
 
 	if (!op->GetRightMdid()->Equals(right_mdid))
 	{
-		pexprNewRight = PexprCast(mp, md_accessor, pexprRight, op->GetRightMdid());
+		pexprNewRight = PexprCast(mp, md_accessor, pexprNewRight, op->GetRightMdid());
 	}
 
 	GPOS_ASSERT(pexprNewLeft != NULL);
