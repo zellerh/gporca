@@ -15,6 +15,7 @@
 #include "gpos/error/CErrorHandlerStandard.h"
 #include "gpos/task/CAutoTraceFlag.h"
 
+#include "gpopt/base/COptCtxt.h"
 #include "gpopt/mdcache/CMDAccessorUtils.h"
 
 #include "naucrates/exception.h"
@@ -114,6 +115,7 @@ CMDAccessorUtils::FCmpExists
 	GPOS_CATCH_END;
 }
 
+// TODO: Write me a ccomment
 IMDId *
 CMDAccessorUtils::GetScCmpMdid
 	(
@@ -154,6 +156,78 @@ CMDAccessorUtils::GetScCmpMdid
 	GPOS_ASSERT(IMDId::IsValid(sc_cmp_mdid));
 
 	return sc_cmp_mdid;
+}
+
+
+// check is a comparison between given types or a comparison after casting
+// one side to an another exists
+BOOL
+CMDAccessorUtils::FCmpOrCastedCmpExists
+(
+	IMDId *left_mdid,
+	IMDId *right_mdid,
+	IMDType::ECmpType cmp_type
+	)
+{
+	CMDAccessor *md_accessor = COptCtxt::PoctxtFromTLS()->Pmda();
+
+	GPOS_ASSERT(NULL != md_accessor);
+	GPOS_ASSERT(NULL != left_mdid);
+	GPOS_ASSERT(NULL != left_mdid);
+	GPOS_ASSERT(IMDType::EcmptOther > cmp_type);
+
+	GPOS_TRY
+	{
+		(void) CMDAccessorUtils::GetScCmpMdIdConsiderCasts(md_accessor, left_mdid, right_mdid, cmp_type);
+
+		return true;
+	}
+	GPOS_CATCH_EX(ex)
+	{
+		GPOS_ASSERT(GPOS_MATCH_EX(ex, gpdxl::ExmaMD, gpdxl::ExmiMDCacheEntryNotFound));
+		GPOS_RESET_EX;
+
+		return false;
+	}
+	GPOS_CATCH_END;
+}
+
+// return the scalar comparison operator id between the two types
+IMDId *
+CMDAccessorUtils::GetScCmpMdIdConsiderCasts
+	(
+	CMDAccessor *md_accessor,
+	IMDId *left_mdid,
+	IMDId *right_mdid,
+	IMDType::ECmpType cmp_type
+	)
+{
+	GPOS_ASSERT(NULL != left_mdid);
+	GPOS_ASSERT(NULL != right_mdid);
+	GPOS_ASSERT(IMDType::EcmptOther > cmp_type);
+
+	// left op right
+	if (CMDAccessorUtils::FCmpExists(md_accessor, left_mdid, right_mdid, cmp_type))
+	{
+		return CMDAccessorUtils::GetScCmpMdid(md_accessor, left_mdid, right_mdid, cmp_type);
+	}
+
+	// left op cast(right)
+	if (CMDAccessorUtils::FCmpExists(md_accessor, left_mdid, left_mdid, cmp_type) &&
+		CMDAccessorUtils::FCastExists(md_accessor, right_mdid, left_mdid))
+	{
+		return CMDAccessorUtils::GetScCmpMdid(md_accessor, left_mdid, left_mdid, cmp_type);
+	}
+
+	// cast(left) op right
+	if (CMDAccessorUtils::FCmpExists(md_accessor, right_mdid, right_mdid, cmp_type) &&
+		CMDAccessorUtils::FCastExists(md_accessor, left_mdid, right_mdid))
+	{
+		return CMDAccessorUtils::GetScCmpMdid(md_accessor, right_mdid, right_mdid, cmp_type);
+	}
+
+	// call again, this time to raise error on non-comparable data types
+	return CMDAccessorUtils::GetScCmpMdid(md_accessor, left_mdid, right_mdid, cmp_type);
 }
 
 //---------------------------------------------------------------------------

@@ -53,6 +53,15 @@ namespace gpopt
 			static
 			IMDId *GetScCmpMdid(CMDAccessor *md_accessor, IMDId *left_mdid, IMDId *right_mdid, IMDType::ECmpType cmp_type);
 
+			// check is a comparison between given types or a comparison after casting
+			// one side to an another exists
+			static
+			BOOL FCmpOrCastedCmpExists(IMDId *left_mdid, IMDId *right_mdid, IMDType::ECmpType cmp_type);
+
+			// return the mdid of the given scalar comparison between the two types
+			static
+			IMDId *GetScCmpMdIdConsiderCasts(CMDAccessor *md_accessor, IMDId *left_mdid, IMDId *right_mdid, IMDType::ECmpType cmp_type);
+
 			// is scalar operator commutative? this can be used with ScalarOp and ScalarCmp
 			static
 			BOOL FCommutativeScalarOp(CMDAccessor *md_accessor, IMDId *mdid_op);
