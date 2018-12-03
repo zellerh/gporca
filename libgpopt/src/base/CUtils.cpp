@@ -491,15 +491,19 @@ CUtils::PexprScalarCmp
 	{
 		pmdidCmpOp = GetScCmpMdId(mp, md_accessor, left_mdid, right_mdid, cmp_type);
 	}
-	else if (CMDAccessorUtils::FCmpExists(md_accessor, left_mdid, left_mdid, cmp_type) && CMDAccessorUtils::FCastExists(md_accessor, right_mdid, left_mdid))
+	else if (CMDAccessorUtils::FCmpExists(md_accessor, left_mdid, left_mdid, cmp_type) &&
+			 CMDAccessorUtils::FCastExists(md_accessor, right_mdid, left_mdid))
 	{
 		pexprNewRight = PexprCast(mp, md_accessor, pexprRight, left_mdid);
 		pmdidCmpOp = GetScCmpMdId(mp, md_accessor, left_mdid, left_mdid, cmp_type);
+		right_mdid = left_mdid;
 	}
-	else if (CMDAccessorUtils::FCmpExists(md_accessor, right_mdid, right_mdid, cmp_type) && CMDAccessorUtils::FCastExists(md_accessor, left_mdid, right_mdid))
+	else if (CMDAccessorUtils::FCmpExists(md_accessor, right_mdid, right_mdid, cmp_type) &&
+			 CMDAccessorUtils::FCastExists(md_accessor, left_mdid, right_mdid))
 	{
 		pexprNewLeft = PexprCast(mp, md_accessor, pexprLeft, right_mdid);
 		pmdidCmpOp = GetScCmpMdId(mp, md_accessor, right_mdid, right_mdid, cmp_type);
+		left_mdid = right_mdid;
 	}
 	else
 	{
@@ -508,8 +512,24 @@ CUtils::PexprScalarCmp
 		GPOS_RAISE(gpopt::ExmaGPOPT, gpopt::ExmiUnexpectedOp, str->GetBuffer());
 	}
 
+	const IMDScalarOp *op = md_accessor->RetrieveScOp(pmdidCmpOp);
+
+	if (!op->GetLeftMdid()->Equals(left_mdid))
+	{
+		pexprNewLeft = PexprCast(mp, md_accessor, pexprNewLeft, op->GetLeftMdid());
+	}
+
+	if (!op->GetRightMdid()->Equals(right_mdid))
+	{
+		pexprNewRight = PexprCast(mp, md_accessor, pexprNewRight, op->GetRightMdid());
+	}
+
+	GPOS_ASSERT(pexprNewLeft != NULL);
+	GPOS_ASSERT(pexprNewRight != NULL);
+
 	pmdidCmpOp->AddRef();
-	const CMDName mdname = md_accessor->RetrieveScOp(pmdidCmpOp)->Mdname();
+
+	const CMDName mdname = op->Mdname();
 	CWStringConst strCmpOpName(mdname.GetMDName()->GetBuffer());
 	
 	CExpression *pexprResult = GPOS_NEW(mp) CExpression

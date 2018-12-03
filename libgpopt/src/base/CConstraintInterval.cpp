@@ -419,12 +419,28 @@ CConstraintInterval::PciIntervalFromScalarCmp
 	{
 		// column
 #ifdef GPOS_DEBUG
-		CScalarIdent *popScId = CScalarIdent::PopConvert((*pexpr)[0]->Pop());
+		CScalarIdent *popScId;
+		if (CUtils::FScalarIdent((*pexpr)[0]))
+		{
+			popScId = CScalarIdent::PopConvert((*pexpr)[0]->Pop());
+		}
+		else
+		{
+			popScId = CScalarIdent::PopConvert((*(*pexpr)[0])[0]->Pop());
+		}
 		GPOS_ASSERT (colref == (CColRef *) popScId->Pcr());
 #endif // GPOS_DEBUG
 
 		// constant
-		CScalarConst *popScConst = CScalarConst::PopConvert((*pexpr)[1]->Pop());
+		CScalarConst *popScConst;
+		if (CUtils::FScalarConst((*pexpr)[1]))
+		{
+			popScConst = CScalarConst::PopConvert((*pexpr)[1]->Pop());
+		}
+		else
+		{
+			popScConst = CScalarConst::PopConvert((*(*pexpr)[1])[0]->Pop());
+		}
 		CScalarCmp *popScCmp = CScalarCmp::PopConvert(pexpr->Pop());
 
 		return PciIntervalFromColConstCmp(mp, colref, popScCmp->ParseCmpType(), popScConst);
