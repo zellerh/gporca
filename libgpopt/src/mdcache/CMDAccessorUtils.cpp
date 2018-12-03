@@ -21,6 +21,7 @@
 #include "naucrates/dxl/gpdb_types.h"
 
 #include "naucrates/md/IMDAggregate.h"
+#include "naucrates/md/IMDScCmp.h"
 #include "naucrates/md/IMDFunction.h"
 #include "naucrates/md/IMDScalarOp.h"
 #include "naucrates/md/CMDIdGPDB.h"
@@ -82,17 +83,39 @@ CMDAccessorUtils::PmdidWindowReturnType
 	return pmdfunc->GetResultTypeMdid();
 }
 
-
-//---------------------------------------------------------------------------
-//	@function:
-//		CMDAccessorUtils::FCmpExists
-//
-//	@doc:
-//		Does a scalar comparison object between given types exists
-//
-//---------------------------------------------------------------------------
+// Does a scalar comparison object between given types exists
 BOOL
 CMDAccessorUtils::FCmpExists
+	(
+	CMDAccessor *md_accessor,
+	IMDId *left_mdid,
+	IMDId *right_mdid,
+	IMDType::ECmpType cmp_type
+	)
+{
+	GPOS_ASSERT(NULL != md_accessor);
+	GPOS_ASSERT(NULL != left_mdid);
+	GPOS_ASSERT(NULL != left_mdid);
+	GPOS_ASSERT(IMDType::EcmptOther > cmp_type);
+
+	GPOS_TRY
+	{
+		(void) GetScCmpMdid(md_accessor, left_mdid, right_mdid, cmp_type);
+
+		return true;
+	}
+	GPOS_CATCH_EX(ex)
+	{
+		GPOS_ASSERT(GPOS_MATCH_EX(ex, gpdxl::ExmaMD, gpdxl::ExmiMDCacheEntryNotFound));
+		GPOS_RESET_EX;
+
+		return false;
+	}
+	GPOS_CATCH_END;
+}
+
+IMDId *
+CMDAccessorUtils::GetScCmpMdid
 	(
 	CMDAccessor *md_accessor,
 	IMDId *left_mdid,
@@ -110,26 +133,27 @@ CMDAccessorUtils::FCmpExists
 	CAutoTraceFlag atf3(EtraceSimulateIOError, false);
 	CAutoTraceFlag atf4(EtraceSimulateNetError, false);
 
+	IMDId *sc_cmp_mdid;
+
+	// if the left & right are the same, first check the MDType
 	if (left_mdid->Equals(right_mdid))
 	{
 		const IMDType *pmdtypeLeft = md_accessor->RetrieveType(left_mdid);
-		return IMDId::IsValid(pmdtypeLeft->GetMdidForCmpType(cmp_type));
+		sc_cmp_mdid = pmdtypeLeft->GetMdidForCmpType(cmp_type);
+
+		if (IMDId::IsValid(sc_cmp_mdid))
+		{
+			return sc_cmp_mdid;
+		}
 	}
 
-	GPOS_TRY
-	{
-		(void) md_accessor->Pmdsccmp(left_mdid, right_mdid, cmp_type);
+	// then check for an explicit operator
+	sc_cmp_mdid = md_accessor->Pmdsccmp(left_mdid, right_mdid, cmp_type)->MdIdOp();
 
-		return true;
-	}
-	GPOS_CATCH_EX(ex)
-	{
-		GPOS_ASSERT(GPOS_MATCH_EX(ex, gpdxl::ExmaMD, gpdxl::ExmiMDCacheEntryNotFound));
-		GPOS_RESET_EX;
+	// either sc_cmp_mdid is valid or an exception was raised during lookup
+	GPOS_ASSERT(IMDId::IsValid(sc_cmp_mdid));
 
-		return false;
-	}
-	GPOS_CATCH_END;
+	return sc_cmp_mdid;
 }
 
 //---------------------------------------------------------------------------

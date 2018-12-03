@@ -49,6 +49,10 @@ namespace gpopt
 			static
 			BOOL FCmpExists(CMDAccessor *md_accessor, IMDId *left_mdid, IMDId *right_mdid, IMDType::ECmpType cmp_type);
 
+			// get scalar comparison mdid between given types exist
+			static
+			IMDId *GetScCmpMdid(CMDAccessor *md_accessor, IMDId *left_mdid, IMDId *right_mdid, IMDType::ECmpType cmp_type);
+
 			// is scalar operator commutative? this can be used with ScalarOp and ScalarCmp
 			static
 			BOOL FCommutativeScalarOp(CMDAccessor *md_accessor, IMDId *mdid_op);

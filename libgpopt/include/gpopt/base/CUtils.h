@@ -120,7 +120,7 @@ namespace gpopt
 
 			// return the mdid of the given scalar comparison between the two types
 			static
-			IMDId *GetScCmpMdId(IMemoryPool *mp, CMDAccessor *md_accessor, IMDId *left_mdid, IMDId *right_mdid, IMDType::ECmpType cmp_type);
+			IMDId *GetScCmpMdIdConsiderCasts(CMDAccessor *md_accessor, IMDId *left_mdid, IMDId *right_mdid, IMDType::ECmpType cmp_type);
 			
 			// generate a comparison expression for two column references
 			static
