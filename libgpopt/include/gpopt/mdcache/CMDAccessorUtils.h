@@ -15,6 +15,7 @@
 #define GPOPT_CMDAccessorUtils_H
 
 #include "gpopt/mdcache/CMDAccessor.h"
+#include "gpopt/operators/CExpression.h"
 
 namespace gpopt
 {
@@ -61,6 +62,10 @@ namespace gpopt
 			// return the mdid of the given scalar comparison between the two types
 			static
 			IMDId *GetScCmpMdIdConsiderCasts(CMDAccessor *md_accessor, IMDId *left_mdid, IMDId *right_mdid, IMDType::ECmpType cmp_type);
+
+			// similar to GetScCmpMdIdConsiderCasts() but also add the appropriate casts
+			static
+			IMDId *GetScCmpMdIdApplyCasts(IMemoryPool *mp, CMDAccessor *md_accessor, CExpression*& pexprLeft, CExpression*& pexprRight, IMDType::ECmpType cmp_type);
 
 			// is scalar operator commutative? this can be used with ScalarOp and ScalarCmp
 			static

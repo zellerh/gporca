@@ -406,38 +406,23 @@ CUtils::PexprScalarCmp
 	
 	CMDAccessor *md_accessor = COptCtxt::PoctxtFromTLS()->Pmda();
 
-	IMDId *left_mdid = CScalar::PopConvert(pexprLeft->Pop())->MdidType();
-	IMDId *right_mdid = CScalar::PopConvert(pexprRight->Pop())->MdidType();
-
 	CExpression *pexprNewLeft = pexprLeft;
 	CExpression *pexprNewRight = pexprRight;
 
-	IMDId *pmdidCmpOp = CMDAccessorUtils::GetScCmpMdIdConsiderCasts(md_accessor, left_mdid, right_mdid, cmp_type);
-	const IMDScalarOp *op = md_accessor->RetrieveScOp(pmdidCmpOp);
-
-	// TODO: At least assert that a cast exists!
-	if (!op->GetLeftMdid()->Equals(left_mdid))
-	{
-		pexprNewLeft = PexprCast(mp, md_accessor, pexprNewLeft, op->GetLeftMdid());
-	}
-
-	if (!op->GetRightMdid()->Equals(right_mdid))
-	{
-		pexprNewRight = PexprCast(mp, md_accessor, pexprNewRight, op->GetRightMdid());
-	}
+	IMDId *op_mdid = CMDAccessorUtils::GetScCmpMdIdApplyCasts(mp, md_accessor, pexprNewLeft, pexprNewRight, cmp_type);
 
 	GPOS_ASSERT(pexprNewLeft != NULL);
 	GPOS_ASSERT(pexprNewRight != NULL);
 
-	pmdidCmpOp->AddRef();
-
+	op_mdid->AddRef();
+	const IMDScalarOp *op = md_accessor->RetrieveScOp(op_mdid);
 	const CMDName mdname = op->Mdname();
 	CWStringConst strCmpOpName(mdname.GetMDName()->GetBuffer());
 	
 	CExpression *pexprResult = GPOS_NEW(mp) CExpression
 					(
 					mp,
-					GPOS_NEW(mp) CScalarCmp(mp, pmdidCmpOp, GPOS_NEW(mp) CWStringConst(mp, strCmpOpName.GetBuffer()), cmp_type),
+					GPOS_NEW(mp) CScalarCmp(mp, op_mdid, GPOS_NEW(mp) CWStringConst(mp, strCmpOpName.GetBuffer()), cmp_type),
 					pexprNewLeft,
 					pexprNewRight
 					);

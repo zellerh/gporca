@@ -17,6 +17,7 @@
 
 #include "gpopt/base/COptCtxt.h"
 #include "gpopt/mdcache/CMDAccessorUtils.h"
+#include "gpopt/base/CUtils.h"
 
 #include "naucrates/exception.h"
 #include "naucrates/dxl/gpdb_types.h"
@@ -228,6 +229,100 @@ CMDAccessorUtils::GetScCmpMdIdConsiderCasts
 
 	// call again, this time to raise error on non-comparable data types
 	return CMDAccessorUtils::GetScCmpMdid(md_accessor, left_mdid, right_mdid, cmp_type);
+}
+
+// similar to GetScCmpMdIdConsiderCasts() but also add the appropriate casts
+IMDId *
+CMDAccessorUtils::GetScCmpMdIdApplyCasts
+	(
+	IMemoryPool *mp,
+	CMDAccessor *md_accessor,
+	CExpression*& pexprLeft,
+	CExpression*& pexprRight,
+	IMDType::ECmpType cmp_type
+	)
+{
+	IMDId *left_mdid = CScalar::PopConvert(pexprLeft->Pop())->MdidType();
+	IMDId *right_mdid = CScalar::PopConvert(pexprRight->Pop())->MdidType();
+
+	IMDId *op_mdid = CMDAccessorUtils::GetScCmpMdIdConsiderCasts(md_accessor, left_mdid, right_mdid, cmp_type);
+	const IMDScalarOp *op = md_accessor->RetrieveScOp(op_mdid);
+	IMDId *op_left_mdid = op->GetLeftMdid();
+	IMDId *op_right_mdid = op->GetRightMdid();
+
+	// Determine if casts need to be added (following is a description of what to
+	// do on the left side, for the right side it's analogous):
+
+	// GetScCmpMdIdConsiderCasts() has determined that
+	// a) there is a comparison operator with matching input types (left_mdid equals
+	//    op_left_mdid); or
+	//
+	// b) there is a common type t (either left_mdid or right_mdid) such that we
+	//    can cast both left and right side to t, if needed, and that type t has a
+	//    valid comparison operator.  Note that the input types of that operator
+	//    may or may not be equal to t.  Note that we assume in this case that
+	//    casts from t to the operators's input types "op_left_mdid" and
+	//    "op_right_mdid" exist, otherwise this cannot be used to compare to
+	//    values of type t (proposition A). Unfortunately, when we reach here, we
+	//    don't know whether t is "left_mdid" or "right_mdid".
+	//
+	//    Case b) may require one or two casts. If a direct cast from "left_mdid"
+	//    to "op_left_mdid" exists, we can use that directly. Otherwise,
+	//    GetScCmpMdIdConsiderCasts() must have picked "right_mdid" as the common
+	//    type t and it will have established that a cast from "left_mdid" to
+	//    "right_mdid" must exist (proposition B). We know that we can cast from
+	//    "left_mdid" to "right_mdid" and then, using the assumption above, from
+	//    "right_mdid" to "op_left_mdid".
+
+	if (!op_left_mdid->Equals(left_mdid))
+	{
+		// We are in case b).
+		if (CMDAccessorUtils::FCastExists(md_accessor, left_mdid, op_left_mdid))
+		{
+			// The simple case, a direct cast exists
+			pexprLeft = CUtils::PexprCast(mp, md_accessor, pexprLeft, op_left_mdid);
+		}
+		else
+		{
+			// validate proposition B
+			GPOS_ASSERT(CMDAccessorUtils::FCastExists(md_accessor, left_mdid, right_mdid));
+			// Create the two casts described above, first from left to right type
+			pexprLeft = CUtils::PexprCast(mp, md_accessor, pexprLeft, right_mdid);
+			if (!right_mdid->Equals(op_left_mdid))
+			{
+				// validate proposition A
+				GPOS_ASSERT(CMDAccessorUtils::FCastExists(md_accessor, right_mdid, op_left_mdid));
+				// and then from right type to the type the comparison operator expects
+				pexprLeft = CUtils::PexprCast(mp, md_accessor, pexprLeft, op_left_mdid);
+			}
+		}
+	}
+
+	if (!op_right_mdid->Equals(right_mdid))
+	{
+		// We are in case b).
+		if (CMDAccessorUtils::FCastExists(md_accessor, right_mdid, op_right_mdid))
+		{
+			// The simple case, a direct cast exists
+			pexprRight = CUtils::PexprCast(mp, md_accessor, pexprRight, op_right_mdid);
+		}
+		else
+		{
+			// validate proposition B
+			GPOS_ASSERT(CMDAccessorUtils::FCastExists(md_accessor, right_mdid, left_mdid));
+			// Create the two casts described above, first from right to left type
+			pexprRight = CUtils::PexprCast(mp, md_accessor, pexprRight, left_mdid);
+			if (!left_mdid->Equals(op_right_mdid))
+			{
+				// validate proposition A
+				GPOS_ASSERT(CMDAccessorUtils::FCastExists(md_accessor, left_mdid, op_right_mdid));
+				// and then from left type to the type the comparison operator expects
+				pexprRight = CUtils::PexprCast(mp, md_accessor, pexprRight, op_right_mdid);
+			}
+		}
+	}
+
+	return op_mdid;
 }
 
 //---------------------------------------------------------------------------
