@@ -516,7 +516,7 @@ CBucket::CompareLowerBounds
 	CPoint *point2 = bucket2->GetLowerBound();
 
 	BOOL is_closed_point1 = bucket1->IsLowerClosed();
-	BOOL is_closed_point2 = bucket1->IsLowerClosed();
+	BOOL is_closed_point2 = bucket2->IsLowerClosed();
 
 	if (point1->Equals(point2))
 	{
@@ -909,13 +909,13 @@ CBucket::Difference
 	}
 
 	// if other bucket's LB is after this bucket's LB, then we get a valid first split
-	if (this->GetLowerBound()->IsLessThan(bucket_other->GetLowerBound()))
+	if (0 > CBucket::CompareLowerBounds(this, bucket_other))
 	{
 		*result_bucket_lower = this->MakeBucketScaleUpper(mp, bucket_other->GetLowerBound(), !bucket_other->IsLowerClosed());
 	}
 
-	// if other bucket's UB is lesser than this bucket's LB, then we get a valid split
-	if (bucket_other->GetUpperBound()->IsLessThan(this->GetUpperBound()))
+	// if other bucket's UB is lesser than this bucket's UB, then we get a valid split
+	if (0 > CBucket::CompareUpperBounds(bucket_other, this))
 	{
 		*result_bucket_upper = this->MakeBucketScaleLower(mp, bucket_other->GetUpperBound(), !bucket_other->IsUpperClosed());
 	}

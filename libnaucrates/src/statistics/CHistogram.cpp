@@ -929,7 +929,7 @@ CHistogram::MakeLASJHistogram
 	const ULONG buckets1 = Buckets();
 	const ULONG buckets2 = histogram->Buckets();
 
-	while (idx1 < buckets1 && idx2 < buckets2)
+	while ((idx1 < buckets1 || NULL != upper_split_bucket) && idx2 < buckets2)
 	{
 		// bucket from other histogram
 		CBucket *bucket2 = (*histogram->m_histogram_buckets) [idx2];
@@ -957,11 +957,13 @@ CHistogram::MakeLASJHistogram
 			new_buckets->Append(lower_split_bucket);
 		}
 
+		// advance bucket2, if UB(candidate_bucket) >= UB(bucket2)
+		if (NULL != upper_split_bucket || 0 <= CBucket::CompareUpperBounds(candidate_bucket, bucket2))
+			idx2++;
+
 		// need to find a new candidate
 		GPOS_DELETE(candidate_bucket);
 		candidate_bucket = NULL;
-
-		idx2++;
 	}
 
 	candidate_bucket = upper_split_bucket;

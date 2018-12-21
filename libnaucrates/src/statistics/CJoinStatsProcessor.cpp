@@ -229,7 +229,7 @@ CJoinStatsProcessor::SetResultingJoinStats
 		CStatisticsConfig *stats_config,
 		const IStatistics *outer_stats_input,
 		const IStatistics *inner_stats_input,
-										   CStatsPredJoinArray *join_pred_stats_info,
+		CStatsPredJoinArray *join_pred_stats_info,
 		IStatistics::EStatsJoinType join_type,
 		BOOL DoIgnoreLASJHistComputation
 		)

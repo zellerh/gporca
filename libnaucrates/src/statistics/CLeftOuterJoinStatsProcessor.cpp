@@ -86,7 +86,7 @@ CLeftOuterJoinStatsProcessor::MakeLOJHistogram
 		const CStatistics *outer_side_stats,
 		const CStatistics *inner_side_stats,
 		CStatistics *inner_join_stats,
-											   CStatsPredJoinArray *join_preds_stats,
+		CStatsPredJoinArray *join_preds_stats,
 		CDouble num_rows_inner_join,
 		CDouble *result_rows_LASJ
 		)
