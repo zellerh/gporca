@@ -20,6 +20,7 @@
 #include "gpopt/operators/CPhysicalHashAgg.h"
 #include "gpopt/operators/CPhysicalUnionAll.h"
 #include "gpopt/operators/CPhysicalMotion.h"
+#include "gpopt/operators/CPhysicalPartitionSelector.h"
 #include "gpopt/operators/CPredicateUtils.h"
 #include "naucrates/statistics/CStatisticsUtils.h"
 #include "gpopt/operators/CExpression.h"
@@ -242,6 +243,26 @@ CCostModelGPDB::CostUnary
 	CCost costLocal = CCost(num_rebinds * CostTupleProcessing(rows, width, pcp).Get());
 	CCost costChild = CostChildren(mp, exprhdl, pci, pcp);
 
+	if(COperator::EopPhysicalPartitionSelector == exprhdl.Pop()->Eopid())
+	{
+		COperator *popChild = exprhdl.Pop(0);
+		if (NULL != popChild && CUtils::FPhysicalScan(popChild))
+		{
+			CPhysicalPartitionSelector *partSelector = dynamic_cast<CPhysicalPartitionSelector *>(exprhdl.Pop());
+			CPhysicalDynamicScan *scanChild = dynamic_cast<CPhysicalDynamicScan*>(popChild);
+
+			if (NULL != partSelector && NULL != scanChild &&
+				partSelector->ScanId() == scanChild->ScanId())
+			{
+				// partition selectors for a scan that is right underneath the partition
+				// selector don't add any cost to the scan
+				DOUBLE *pdCost = pci->PdCost();
+				DOUBLE dCostChild = pdCost[0];
+
+				return CCost(dCostChild);
+			}
+		}
+	}
 	return costLocal + costChild;
 }
 
