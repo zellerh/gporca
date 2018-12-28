@@ -5,16 +5,16 @@ DISTRIBUTED BY (id)
 PARTITION BY RANGE (year)
     SUBPARTITION BY LIST (month)
        SUBPARTITION TEMPLATE (
-        SUBPARTITION Q1 VALUES (1, 2, 3), 
+        SUBPARTITION Q1 VALUES (1, 2, 3),
         SUBPARTITION Q2 VALUES (4 ,5 ,6),
         SUBPARTITION Q3 VALUES (7, 8, 9),
         SUBPARTITION Q4 VALUES (10, 11, 12),
         DEFAULT SUBPARTITION other_months )
             SUBPARTITION BY RANGE(day)
                 SUBPARTITION TEMPLATE (
-                START (1) END (31) EVERY (20), 
+                START (1) END (31) EVERY (20),
                 DEFAULT SUBPARTITION other_days)
-( START (2002) END (2012) EVERY (5), 
+( START (2002) END (2012) EVERY (5),
   DEFAULT PARTITION outlying_years );
 
 CREATE INDEX date_parts_ind ON date_parts USING BITMAP(month);
@@ -30,7 +30,7 @@ EXPLAIN SELECT * FROM date_parts WHERE month BETWEEN 1 AND 4;
     <dxl:OptimizerConfig>
       <dxl:EnumeratorConfig Id="0" PlanSamples="0" CostThreshold="0"/>
       <dxl:StatisticsConfig DampingFactorFilter="0.750000" DampingFactorJoin="0.010000" DampingFactorGroupBy="0.750000"/>
-      <dxl:CTEConfig CTEInliningCutoff="0"/> 
+      <dxl:CTEConfig CTEInliningCutoff="0"/>
       <dxl:WindowOids RowNumber="7000" Rank="7001"/>
       <dxl:CostModelConfig CostModelType="1" SegmentsForCosting="3">
         <dxl:CostParams>
@@ -3306,7 +3306,7 @@ EXPLAIN SELECT * FROM date_parts WHERE month BETWEEN 1 AND 4;
     <dxl:Plan Id="0" SpaceSize="2">
       <dxl:GatherMotion InputSegments="0,1,2" OutputSegments="-1">
         <dxl:Properties>
-          <dxl:Cost StartupCost="0" TotalCost="431.113231" Rows="1201.003300" Width="16"/>
+          <dxl:Cost StartupCost="0" TotalCost="431.094911" Rows="1201.003300" Width="16"/>
         </dxl:Properties>
         <dxl:ProjList>
           <dxl:ProjElem ColId="0" Alias="id">
@@ -3329,7 +3329,7 @@ EXPLAIN SELECT * FROM date_parts WHERE month BETWEEN 1 AND 4;
         <dxl:SortingColumnList/>
         <dxl:Sequence>
           <dxl:Properties>
-            <dxl:Cost StartupCost="0" TotalCost="431.041619" Rows="1201.003300" Width="16"/>
+            <dxl:Cost StartupCost="0" TotalCost="431.023299" Rows="1201.003300" Width="16"/>
           </dxl:Properties>
           <dxl:ProjList>
             <dxl:ProjElem ColId="0" Alias="id">
@@ -3399,7 +3399,7 @@ EXPLAIN SELECT * FROM date_parts WHERE month BETWEEN 1 AND 4;
           </dxl:PartitionSelector>
           <dxl:DynamicTableScan PartIndexId="1">
             <dxl:Properties>
-              <dxl:Cost StartupCost="0" TotalCost="431.041619" Rows="1201.003300" Width="16"/>
+              <dxl:Cost StartupCost="0" TotalCost="431.023299" Rows="1201.003300" Width="16"/>
             </dxl:Properties>
             <dxl:ProjList>
               <dxl:ProjElem ColId="0" Alias="id">

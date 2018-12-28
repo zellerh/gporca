@@ -5,7 +5,7 @@ DISTRIBUTED BY (id)
 PARTITION BY RANGE (year)
     SUBPARTITION BY LIST (month)
        SUBPARTITION TEMPLATE (
-        SUBPARTITION Q1 VALUES (1, 2, 3), 
+        SUBPARTITION Q1 VALUES (1, 2, 3),
         SUBPARTITION Q2 VALUES (4 ,5 ,6),
         SUBPARTITION Q3 VALUES (7, 8, 9),
         SUBPARTITION Q4 VALUES (10, 11, 12))
@@ -27,7 +27,7 @@ EXPLAIN SELECT * FROM date_parts WHERE year BETWEEN 2002 AND 2003;
     <dxl:OptimizerConfig>
       <dxl:EnumeratorConfig Id="0" PlanSamples="0" CostThreshold="0"/>
       <dxl:StatisticsConfig DampingFactorFilter="0.750000" DampingFactorJoin="0.010000" DampingFactorGroupBy="0.750000"/>
-      <dxl:CTEConfig CTEInliningCutoff="0"/> 
+      <dxl:CTEConfig CTEInliningCutoff="0"/>
       <dxl:WindowOids RowNumber="7000" Rank="7001"/>
       <dxl:CostModelConfig CostModelType="1" SegmentsForCosting="3">
         <dxl:CostParams>
@@ -2243,7 +2243,7 @@ EXPLAIN SELECT * FROM date_parts WHERE year BETWEEN 2002 AND 2003;
     <dxl:Plan Id="0" SpaceSize="2">
       <dxl:GatherMotion InputSegments="0,1,2" OutputSegments="-1">
         <dxl:Properties>
-          <dxl:Cost StartupCost="0" TotalCost="204.393261" Rows="10.000000" Width="16"/>
+          <dxl:Cost StartupCost="0" TotalCost="204.393109" Rows="10.000000" Width="16"/>
         </dxl:Properties>
         <dxl:ProjList>
           <dxl:ProjElem ColId="0" Alias="id">

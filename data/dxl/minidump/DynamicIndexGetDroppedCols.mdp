@@ -80,7 +80,7 @@ PARTITION BY LIST(year_id)
                 SUBPARTITION jul VALUES(7) WITH (appendonly=false),
                 SUBPARTITION aug VALUES(8) WITH (appendonly=false),
                 SUBPARTITION sep VALUES(9) WITH (appendonly=false),
-                SUBPARTITION oct VALUES(10) WITH (appendonly=false), 
+                SUBPARTITION oct VALUES(10) WITH (appendonly=false),
                 SUBPARTITION nov VALUES(11) WITH (appendonly=false),
                 SUBPARTITION "dec" VALUES(12) WITH (appendonly=false),
                 DEFAULT SUBPARTITION invalid_months  WITH (appendonly=false)
@@ -2285,7 +2285,7 @@ EXPLAIN SELECT * FROM solo WHERE year_id=2017 AND month_id=6;
     <dxl:Plan Id="0" SpaceSize="2">
       <dxl:GatherMotion InputSegments="0,1,2" OutputSegments="-1">
         <dxl:Properties>
-          <dxl:Cost StartupCost="0" TotalCost="6.001611" Rows="1.774224" Width="88"/>
+          <dxl:Cost StartupCost="0" TotalCost="6.001462" Rows="1.774224" Width="88"/>
         </dxl:Properties>
         <dxl:ProjList>
           <dxl:ProjElem ColId="0" Alias="some_id">
