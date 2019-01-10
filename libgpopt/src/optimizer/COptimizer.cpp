@@ -60,6 +60,7 @@ COptimizer::PrintQuery
 	IMemoryPool *mp,
 	CExpression *pexprTranslated,
 	CQueryContext *pqc
+	OneFourSpaceTab
 	)
 {
 	CAutoTrace at(mp);
@@ -73,6 +74,8 @@ COptimizer::PrintQuery
 		for (ULONG ul = 0; ul < ulCTEs; ul++)
 		{
 			at.Os() << std::endl << *(*pdrgpexpr)[ul];
+			three four space tabs
+            12 blanks
 		}
 	}
 	pdrgpexpr->Release();
