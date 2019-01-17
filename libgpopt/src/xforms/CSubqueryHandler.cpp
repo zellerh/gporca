@@ -844,7 +844,7 @@ CSubqueryHandler::FCreateGrpCols
 //			|                   |---{return NULL}
 //			|                   +---else {return FALSE}
 //			|
-//			+--Gb[T.i] , c1 = count(*), c2 = count(NULL values in R.i)
+//			+--Gb[T.i, T.ctid, T.gp_segment_id], c1 = count(*), c2 = count(NULL values in R.i)
 //				+---LOJ_(T.i=R.i  OR  R.i is NULL)
 //					|---T
 //					+---R
@@ -1261,7 +1261,16 @@ CSubqueryHandler::FRemoveAnySubquery
 		if (!CDrvdPropRelational::GetRelationalProperties(pexprResult->PdpDerive())->PcrsNotNull()->FMember(colref))
 		{
 			// if inner column is nullable, we create a disjunction to handle null values
-			CExpression *pexprNewSelect = PexprInnerSelect(mp, colref, pexprResult, pexprPredicate);
+			//CExpression *pexprNewSelect = PexprInnerSelect(mp, colref, pexprResult, pexprPredicate);
+			pexprPredicate->AddRef();
+			pexprInner->AddRef();
+			CExpression *pexprNewPred = GPOS_NEW(mp) CExpression(mp,
+																 GPOS_NEW(mp) CScalarBooleanTest (mp,
+																				CScalarBooleanTest::EbtIsNotFalse),
+																 pexprPredicate
+																);
+			CExpression *pexprNewSelect = CUtils::PexprLogicalSelect(mp, pexprResult, pexprNewPred);
+
 			pexprSelect->Release();
 			pexprSelect = pexprNewSelect;
 		}
@@ -1337,8 +1346,8 @@ CSubqueryHandler::PexprIsNotNull
 //		SELECT									SELECT
 //		/		|								/		|
 //		R		<>			==>			LAS-APPLY		true
-//				/	|				 /				|
-//			   R.a	ALL			SELECT				|
+//				/	|				 /			  \
+//			   R.a	ALL			SELECT			   \
 //			  		/	|		/	|				SELECT
 //					S	S.b		R	IS_NOT_NULL		/	|
 //											|		S	IS_NOT_FALSE
@@ -1817,7 +1826,7 @@ CSubqueryHandler::FRecursiveHandler
 		// Note that conjunction is special cased here. Multiple non-scalar subqueries
 		// will produce nested Apply expressions which are implicitly AND-ed. Thus,
 		// unlike disjuctions or negations, it is not neccesary to use the Value
-		// context for disjuctions.  This enables us to generate optimal plans with
+		// context for disjunctions.  This enables us to generate optimal plans with
 		// nested joins for queries like:
 		// SELECT * FROM t3 WHERE EXISTS(SELECT c FROM t2) AND NOT EXISTS (SELECT c from t3);
 		//
