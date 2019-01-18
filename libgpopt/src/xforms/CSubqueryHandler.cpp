@@ -834,34 +834,39 @@ CSubqueryHandler::FCreateGrpCols
 //			- if T.i=1 and R.i = {}, return FALSE
 //			- if T.i=1 and R.i = {NULL}, return NULL
 //
+//		Note that we already filtered out the rows that evaluate to FALSE, those don't
+//		contribute to the result, while the TRUE and NULL rows do.
+//
 //		To implement these semantics (without the need for correlated execution), the
 //		optimizer can generate a special plan alternative during subquery decorrelation
 //		that can be simplified as follows:
 //
-//		+-If (c1 > 0)
-//			|    |---{return TRUE}
-//			|    +-- else if (c2  > 0)
-//			|                   |---{return NULL}
-//			|                   +---else {return FALSE}
-//			|
+//		+-Select
 //			+--Gb[T.i, T.ctid, T.gp_segment_id], c1 = count(*), c2 = count(NULL values in R.i)
-//				+---LOJ_(T.i=R.i  OR  R.i is NULL)
-//					|---T
-//					+---R
+//			|	+---LOJ_((T.i=R.i) IS NOT FALSE)
+//			|		|---T
+//			|		+---R
+//			+--If (c1 > 0)
+//				+-- if (c1 > c2)
+//				|	 +---{return TRUE}
+//				|	 +---else {return NULL}
+//				+---{return FALSE}
 //
 //		The reasoning behind this alternative is the following:
 //
 //		- LOJ will return T.i values along with their matching R.i values.
-//			The LOJ will also join a T tuple with any R tuple if R.i is NULL
+//		  The LOJ will also join a T tuple with any R tuple if R.i is NULL,
+//		  but it will eliminate all the rows where T.i <op> R.i is FALSE.
 //
 //		- The Gb on top of LOJ groups join results based on T.i values, and for each
-//			group, it computes the size of the group  (count(*)), as well as the number
-//			of NULL values in R.i
+//		  group, it computes the size of the group  (count(*)), as well as the number
+//		  of NULL values in R.i. That number of NULL values is NULL when there is
+//		  no match for T.i in the LOJ.
 //
 //		- After the Gb, the optimizer generates an If operator that checks the values
-//		of the two computed aggregates (c1 and c2) and determines what value
-//		(TRUE/FALSE/NULL) should be generated for each T tuple based on the IN subquery
-//		semantics described above.
+//		  of the two computed aggregates (c1 and c2) and determines what value
+//		  (TRUE/FALSE/NULL) should be generated for each T tuple based on the IN subquery
+//		  semantics described above.
 //
 //
 //---------------------------------------------------------------------------
