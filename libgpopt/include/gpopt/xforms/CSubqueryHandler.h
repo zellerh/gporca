@@ -118,6 +118,7 @@ namespace gpopt
 				IMemoryPool *mp,
 				CExpression *pexpr,
 				CExpression *pexprSubquery,
+				CExpression *pexprPredicate,
 				CExpression **ppexprResult
 				);
 
@@ -165,6 +166,7 @@ namespace gpopt
 				CExpression *pexprOuter,
 				CExpression *pexprInner,
 				CExpression *pexprSubquery,
+				CExpression *pexprPredicate,
 				BOOL fOuterRefsUnderInner,
 				CExpression **ppexprNewOuter,
 				CExpression **ppexprResidualScalar
@@ -178,6 +180,7 @@ namespace gpopt
 				CExpression *pexprOuter,
 				CExpression *pexprInner,
 				CExpression *pexprSubquery,
+				CExpression *pexprPredicate,
 				BOOL fOuterRefsUnderInner,
 				CExpression **ppexprNewOuter,
 				CExpression **ppexprResidualScalar

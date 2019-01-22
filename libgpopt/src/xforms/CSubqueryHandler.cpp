@@ -584,7 +584,7 @@ CSubqueryHandler::FRemoveScalarSubqueryInternal
 	BOOL fSuccess = true;
 	if (psd->m_fValueSubquery)
 	{
-		fSuccess = FCreateOuterApply(mp, pexprOuter, pexprInner, pexprSubquery, psd->m_fHasOuterRefs, ppexprNewOuter, ppexprResidualScalar);
+		fSuccess = FCreateOuterApply(mp, pexprOuter, pexprInner, pexprSubquery, NULL /* pexprPredicate */, psd->m_fHasOuterRefs, ppexprNewOuter, ppexprResidualScalar);
 		if (!fSuccess)
 		{
 			pexprInner->Release();
@@ -877,6 +877,7 @@ CSubqueryHandler::FCreateOuterApplyForExistOrQuant
 	CExpression *pexprOuter,
 	CExpression *pexprInner,
 	CExpression *pexprSubquery,
+	CExpression *pexprPredicate,
 	BOOL fOuterRefsUnderInner,
 	CExpression **ppexprNewOuter,
 	CExpression **ppexprResidualScalar
@@ -907,6 +908,7 @@ CSubqueryHandler::FCreateOuterApplyForExistOrQuant
 	CColRef *pcrSum = NULL;
 	if (fExistential)
 	{
+		GPOS_ASSERT(NULL == pexprPredicate);
 		// add the new column introduced by project node
 		colref_array->Append(colref);
 		pexprPrjList = GPOS_NEW(mp) CExpression(mp, GPOS_NEW(mp) CScalarProjectList(mp));
@@ -982,6 +984,7 @@ CSubqueryHandler::FCreateOuterApply
 	CExpression *pexprOuter,
 	CExpression *pexprInner,
 	CExpression *pexprSubquery,
+	CExpression *pexprPredicate,
 	BOOL fOuterRefsUnderInner,
 	CExpression **ppexprNewOuter,
 	CExpression **ppexprResidualScalar
@@ -993,7 +996,7 @@ CSubqueryHandler::FCreateOuterApply
 
 	if (fExistential || fQuantified)
 	{
-		return FCreateOuterApplyForExistOrQuant(mp, pexprOuter, pexprInner, pexprSubquery, fOuterRefsUnderInner, ppexprNewOuter, ppexprResidualScalar);
+		return FCreateOuterApplyForExistOrQuant(mp, pexprOuter, pexprInner, pexprSubquery, pexprPredicate, fOuterRefsUnderInner, ppexprNewOuter, ppexprResidualScalar);
 	}
 
 	return FCreateOuterApplyForScalarSubquery(mp, pexprOuter, pexprInner, pexprSubquery, fOuterRefsUnderInner, ppexprNewOuter, ppexprResidualScalar);
@@ -1427,7 +1430,7 @@ CSubqueryHandler::FRemoveAllSubquery
 			pexprInnerSelect = pexprNewInnerSelect;
 		}
 
-		fSuccess = FCreateOuterApply(mp, pexprOuter, pexprInnerSelect, pexprSubquery, fOuterRefsUnderInner, ppexprNewOuter, ppexprResidualScalar);
+		fSuccess = FCreateOuterApply(mp, pexprOuter, pexprInnerSelect, pexprSubquery, NULL, /* pexprPredicate*/ fOuterRefsUnderInner, ppexprNewOuter, ppexprResidualScalar); //Todo - do the same thing as FRemoveAnySubquery
 		if (!fSuccess)
 		{
 			pexprInnerSelect->Release();
@@ -1662,7 +1665,7 @@ CSubqueryHandler::FRemoveExistentialSubquery
 	BOOL fSuccess = true;
 	if (EsqctxtValue == esqctxt)
 	{
-		fSuccess = FCreateOuterApply(mp, pexprOuter, pexprInner, pexprSubquery, fOuterRefsUnderInner, ppexprNewOuter, ppexprResidualScalar);
+		fSuccess = FCreateOuterApply(mp, pexprOuter, pexprInner, pexprSubquery, NULL /* pexprPredicate */, fOuterRefsUnderInner, ppexprNewOuter, ppexprResidualScalar);
 		if (!fSuccess)
 		{
 			pexprInner->Release();
