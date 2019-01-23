@@ -118,9 +118,21 @@ namespace gpopt
 				IMemoryPool *mp,
 				CExpression *pexpr,
 				CExpression *pexprSubquery,
-				CExpression *pexprPredicate,
 				CExpression **ppexprResult
 				);
+
+			static
+			CExpression *CreateGroupByForAnySubquery
+				(
+				 IMemoryPool *mp,
+				 CExpression *pexprChild,
+				 CColRefArray *colref_array,
+				 BOOL fExistential,
+				 CColRef *colref,
+				 CExpression *pexprPredicate,
+				 CColRef **pcrCount,
+				 CColRef **pcrSum
+				 );
 
 			// helper for creating an inner select expression when creating outer apply
 			static
