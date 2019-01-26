@@ -1466,7 +1466,7 @@ CSubqueryHandler::FRemoveAllSubquery
 			pexprInnerSelect = pexprNewInnerSelect;
 		}
 
-		fSuccess = FCreateOuterApply(mp, pexprOuter, pexprInnerSelect, pexprSubquery, NULL, /* pexprPredicate*/ fOuterRefsUnderInner, ppexprNewOuter, ppexprResidualScalar); //Todo - do the same thing as FRemoveAnySubquery
+		fSuccess = FCreateOuterApply(mp, pexprOuter, pexprInnerSelect, pexprSubquery, pexprPredicate, fOuterRefsUnderInner, ppexprNewOuter, ppexprResidualScalar); //Todo - do the same thing as FRemoveAnySubquery
 		if (!fSuccess)
 		{
 			pexprInnerSelect->Release();
