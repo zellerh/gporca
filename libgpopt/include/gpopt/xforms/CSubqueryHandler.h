@@ -139,7 +139,6 @@ namespace gpopt
 			CExpression *PexprInnerSelect
 				(
 				IMemoryPool *mp,
-				const CColRef *pcrInner,
 				CExpression *pexprInner,
 				CExpression *pexprPredicate
 				);

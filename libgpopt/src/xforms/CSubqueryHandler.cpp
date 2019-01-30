@@ -608,31 +608,32 @@ CSubqueryHandler::FRemoveScalarSubqueryInternal
 //	@doc:
 //		Helper for creating an inner select expression when creating
 //		outer apply;
-//		we create a disjunctive predicate to handle null values from
-//		inner expression
+//		we create a select node with a <pexprPredicate> IS NOT NULL
+//		predicate to allow rows where the comparision evaluates to
+//		true or NULL.
 //
 //---------------------------------------------------------------------------
 CExpression *
 CSubqueryHandler::PexprInnerSelect
 	(
 	IMemoryPool *mp,
-	const CColRef *pcrInner,
 	CExpression *pexprInner,
 	CExpression *pexprPredicate
 	)
 {
-	GPOS_ASSERT(!CDrvdPropRelational::GetRelationalProperties(pexprInner->PdpDerive())->PcrsNotNull()->FMember(pcrInner) &&
-			"subquery's column is not nullable");
-
-	CExpression *pexprIsNull = CUtils::PexprIsNull(mp, CUtils::PexprScalarIdent(mp, pcrInner));
-	CExpressionArray *pdrgpexpr = GPOS_NEW(mp) CExpressionArray(mp);
 	pexprPredicate->AddRef();
-	pdrgpexpr->Append(pexprPredicate);
-	pdrgpexpr->Append(pexprIsNull);
-	CExpression *pexprDisj = CPredicateUtils::PexprDisjunction(mp, pdrgpexpr);
+	CExpression *pexprIsNotFalse =
+			GPOS_NEW(mp) CExpression
+				(
+				 mp,
+				 GPOS_NEW(mp) CScalarBooleanTest (mp,
+												  CScalarBooleanTest::EbtIsNotFalse),
+				 pexprPredicate
+				);
+
 	pexprInner->AddRef();
 
-	return CUtils::PexprLogicalSelect(mp, pexprInner, pexprDisj);
+	return CUtils::PexprLogicalSelect(mp, pexprInner, pexprIsNotFalse);
 }
 
 
@@ -1282,7 +1283,6 @@ CSubqueryHandler::FRemoveAnySubquery
 #ifdef GPOS_DEBUG
 	AssertValidArguments(mp, pexprOuter, pexprSubquery, ppexprNewOuter, ppexprResidualScalar);
 	COperator *popSubqChild = (*pexprSubquery)[0]->Pop();
-	//CScalarSubqueryAny *anyOp = CScalarSubqueryAny::PopConvert(pexprSubquery->Pop());
 	GPOS_ASSERT_IMP(COperator::EopLogicalConstTableGet == popSubqChild->Eopid(),
 			0 == CLogicalConstTableGet::PopConvert(popSubqChild)->Pdrgpdrgpdatum()->Size() &&
 			"Constant subqueries must be unnested during preprocessing");
@@ -1306,19 +1306,19 @@ CSubqueryHandler::FRemoveAnySubquery
 
 	// build subquery quantified comparison
 	CExpression *pexprResult = NULL;
+	CExpression *pexprPredicate = PexprSubqueryPred(pexprInner, pexprSubquery, &pexprResult);
 
 	// generate a select for the quantified predicate
 	pexprInner->AddRef();
-	CExpression *pexprPredicate = GPOS_NEW(mp) CExpression(mp,
-														   GPOS_NEW(mp) CScalarBooleanTest (mp,
-																						    CScalarBooleanTest::EbtIsNotFalse),
-														   PexprSubqueryPred(pexprInner, pexprSubquery, &pexprResult)
-														   );
 	CExpression *pexprSelect = CUtils::PexprLogicalSelect(mp, pexprResult, pexprPredicate);
 	BOOL fSuccess = true;
 
 	if (EsqctxtValue == esqctxt)
 	{
+		CExpression *pexprNewSelect = PexprInnerSelect(mp, pexprResult, pexprPredicate);
+
+		pexprSelect->Release();
+		pexprSelect = pexprNewSelect;
 		fSuccess = FCreateOuterApply(mp, pexprOuter, pexprSelect, pexprSubquery, pexprPredicate, fOuterRefsUnderInner, ppexprNewOuter, ppexprResidualScalar);
 		if (!fSuccess)
 		{
@@ -1452,19 +1452,15 @@ CSubqueryHandler::FRemoveAllSubquery
 
 	CExpression *pexprInversePred = CXformUtils::PexprInversePred(mp, pexprSubquery);
 	// generate a select with the inverse predicate as the selection predicate
+	// TODO: Handle the case where pexprInversePred == NULL
 	pexprPredicate = pexprInversePred;
 	pexprInnerSelect = CUtils::PexprLogicalSelect(mp, pexprInner, pexprPredicate);
 
 	if (EsqctxtValue == esqctxt)
 	{
-		const CColRef *colref = CScalarSubqueryAll::PopConvert(pexprSubquery->Pop())->Pcr();
-		if (!CDrvdPropRelational::GetRelationalProperties(pexprInner->PdpDerive())->PcrsNotNull()->FMember(colref))
-		{
-			// if inner column is nullable, we create a disjunction to handle null values
-			CExpression *pexprNewInnerSelect = PexprInnerSelect(mp, colref, pexprInner, pexprPredicate);
-			pexprInnerSelect->Release();
-			pexprInnerSelect = pexprNewInnerSelect;
-		}
+		CExpression *pexprNewInnerSelect = PexprInnerSelect(mp, pexprInner, pexprPredicate);
+		pexprInnerSelect->Release();
+		pexprInnerSelect = pexprNewInnerSelect;
 
 		fSuccess = FCreateOuterApply(mp, pexprOuter, pexprInnerSelect, pexprSubquery, pexprPredicate, fOuterRefsUnderInner, ppexprNewOuter, ppexprResidualScalar); //Todo - do the same thing as FRemoveAnySubquery
 		if (!fSuccess)
