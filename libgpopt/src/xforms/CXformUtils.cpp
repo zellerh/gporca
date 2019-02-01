@@ -1160,6 +1160,7 @@ CXformUtils::PexprInversePred
 //
 //	@doc:
 //		Helper for creating a null indicator
+//		Creates an expression case when <pexpr> is null then 1 else 0 end
 //
 //
 //---------------------------------------------------------------------------

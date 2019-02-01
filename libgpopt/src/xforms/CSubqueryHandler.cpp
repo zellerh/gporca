@@ -813,6 +813,32 @@ CSubqueryHandler::FCreateGrpCols
 
 	return true;
 }
+//---------------------------------------------------------------------------
+//	@function:
+//		CSubqueryHandler::CreateGroupByForAnySubquery
+//
+//	@doc:
+//		Given a <child>, a <colref>, an initial list of grouping columns
+//		<colref_array> and a <predicate>, generate the following
+//		CExpression tree:
+//		- For exists subqueries:
+//
+//						GbAgg [<colref_array>, <colref>]
+//						/			\
+//					<child>			<no aggregates>
+//
+//		- For quantified subqueries:
+//
+//						GbAgg [<colref_array>]
+//						/			\
+//					  Proj			 count(<colref>)
+//					 /	 \			 sum(CR1)
+//					/	  \
+//				<child>	  CR1: case when <predicate> is null then 1 else 0 end
+//
+//		For quantified subqueries, return the newly generated colrefs for
+//		the count and sum aggregates.
+//---------------------------------------------------------------------------
 CExpression *
 CSubqueryHandler::CreateGroupByForAnySubquery
 (
@@ -886,29 +912,43 @@ CSubqueryHandler::CreateGroupByForAnySubquery
 //		subqueries; see below for an example:
 //
 //		For queries similar to
-//			select (select T.i in (select R.i from R)) from T;
+//			select (select T.i <op> ANY|ALL (select R.i from R)) from T;
 //
 //		the expectation is to return for each row in T one of three possible values
-//		{TRUE, FALSE, NULL) based on the semantics of IN subquery.
-//		For example,
+//		{TRUE, FALSE, NULL) based on the semantics of the subquery. This depends on
+//		the comparison result of T.i with all the qualifying rows of R:
+//
+//		set of													(see below)
+//		comparison results	ANY subquery	ALL subquery	count		sum
+//		T.i <op> R.i		result			result			aggregate	aggregate
+//		------------------	------------	------------	---------	---------
+//		{}						false			true			0			null
+//		{false}					false			false			0			null
+//		{null}					null			false			n			n
+//		{true}					true			true			n			0
+//		{null, false}			null			false			n			n
+//		{null, true}			true			null			n			<n
+//		{false, true}			true			false			n			0
+//		{null, false, true}		true			false			n			0
+//
+//		For example, for an = ANY subquery:
 //			- if T.i=1 and R.i = {1,2,3}, return TRUE
 //			- if T.i=1 and R.i = {2,3}, return FALSE
 //			- if T.i=1 and R.i = {2,3, NULL}, return NULL
 //			- if T.i=1 and R.i = {}, return FALSE
 //			- if T.i=1 and R.i = {NULL}, return NULL
 //
-//		Note that we already filtered out the rows that evaluate to FALSE, those don't
-//		contribute to the result, while the TRUE and NULL rows do.
-//
 //		To implement these semantics (without the need for correlated execution), the
 //		optimizer can generate a special plan alternative during subquery decorrelation
 //		that can be simplified as follows:
 //
 //		+-Select
-//			+--Gb[T.i, T.ctid, T.gp_segment_id], c1 = count(*), c2 = count(NULL values in R.i)
+//			+--Gb[T.i, T.ctid, T.gp_segment_id], c1 = count(C1), c2 = count(C2)
 //			|	+---LOJ_((T.i=R.i) IS NOT FALSE)
 //			|		|---T
-//			|		+---R
+//			|		+---Project
+//			|				|---R
+//			|				+--- (C1: 1, C2: case when (T.i=R.i) is null then 1 else 0 end)
 //			+--If (c1 > 0)
 //				+-- if (c1 > c2)
 //				|	 +---{return TRUE}
@@ -918,11 +958,16 @@ CSubqueryHandler::CreateGroupByForAnySubquery
 //		The reasoning behind this alternative is the following:
 //
 //		- LOJ will return T.i values along with their matching R.i values.
-//		  The LOJ will also join a T tuple with any R tuple if R.i is NULL,
-//		  but it will eliminate all the rows where T.i <op> R.i is FALSE.
+//		  The LOJ will also join a T tuple with any R tuple if R.i <op> T.i is NULL,
+//		  but it will eliminate all the rows where T.i <op> R.i is FALSE. The table
+//		  above shows that this is ok for ANY subqueries. For ALL subqueries, those
+//		  get transformed into the equivalent of an ANY subquery, and it is also ok
+//		  to eliminate the FALSE rows:
+//
+//			x <op> ALL (SQ)		<==>	NOT(x <inv-op> ANY (SQ))
 //
 //		- The Gb on top of LOJ groups join results based on T.i values, and for each
-//		  group, it computes the size of the group  (count(*)), as well as the number
+//		  group, it computes the size of the group  (count(C1)), as well as the number
 //		  of NULL values in R.i. That number of NULL values is NULL when there is
 //		  no match for T.i in the LOJ.
 //
@@ -980,13 +1025,13 @@ CSubqueryHandler::FCreateOuterApplyForExistOrQuant
 	if (fGbOnInner)
 	{
 		CExpression *pexprGb = CreateGroupByForAnySubquery(mp,
-														   pexprPrjOrInner, // child on which to create the project
-														   colref_array, // group by cols
+														   pexprPrjOrInner,	// child on which to create the project
+														   colref_array,	// group by cols
 														   fExistential,
-														   colref, // colref for existential SQ
-														   pexprPredicate,
-														   &pcrCount,
-														   &pcrSum); // comparison op for quantified SQ
+														   colref,			// colref for existential SQ
+														   pexprPredicate,	// comparison op for quantified SQ
+														   &pcrCount,		// out: count aggregate colref
+														   &pcrSum);		// out: sum aggregate colref
 
 		// generate an outer apply between outer expression and a group by on inner expression
 		*ppexprNewOuter = CUtils::PexprLogicalApply<CLogicalLeftOuterApply>(mp, pexprOuter, pexprGb, pcrSubquery, COperator::EopScalarSubquery);
@@ -997,11 +1042,11 @@ CSubqueryHandler::FCreateOuterApplyForExistOrQuant
 		CExpression *result = CUtils::PexprLogicalApply<CLogicalLeftOuterApply>(mp, pexprOuter, pexprPrjOrInner, pcrSubquery, COperator::EopScalarSubquery);
 
 		*ppexprNewOuter = CreateGroupByForAnySubquery(mp,
-													  result, // child on which to create the project
-													  colref_array, // group by cols
+													  result,
+													  colref_array,
 													  fExistential,
-													  colref, // colref for existential SQ
-													  pexprPredicate,  // comparison op for quantified SQ
+													  colref,
+													  pexprPredicate,
 													  &pcrCount,
 													  &pcrSum);
 	}
@@ -1252,10 +1297,11 @@ CSubqueryHandler::FCreateCorrelatedApplyForExistOrQuant
 //		CSubqueryHandler::FRemoveAnySubquery
 //
 //	@doc:
-//		Replace a subquery ANY node with a constant True, and create
-//		a new Apply expression
+//		Replace a subquery ALL node <pexprSubquery> with a new predicate
+//		<*ppexprResidualScalar> and put the relational part of the subquery
+//		on top of an existing relational node <pexprOuter>:
 //
-//		Example:
+//		Example, for filter context:
 //
 //			SELECT									SELECT
 //			/		|								/		|
@@ -1265,7 +1311,10 @@ CSubqueryHandler::FCreateCorrelatedApplyForExistOrQuant
 //					/	|						/	 |
 //					S	S.b						S		=
 //													/	|
-//													R.a	S.b
+//													R.a	S.b  TODO: Fix this picture
+//
+//		For a picture of the tree in a value context, see method
+//		CSubqueryHandler::FCreateOuterApplyForExistOrQuant().
 //
 //---------------------------------------------------------------------------
 BOOL
@@ -1319,6 +1368,7 @@ CSubqueryHandler::FRemoveAnySubquery
 
 		pexprSelect->Release();
 		pexprSelect = pexprNewSelect;
+
 		fSuccess = FCreateOuterApply(mp, pexprOuter, pexprSelect, pexprSubquery, pexprPredicate, fOuterRefsUnderInner, ppexprNewOuter, ppexprResidualScalar);
 		if (!fSuccess)
 		{
@@ -1382,12 +1432,13 @@ CSubqueryHandler::PexprIsNotNull
 //		CSubqueryHandler::FRemoveAllSubquery
 //
 //	@doc:
-//		Replace a subquery ALL node with a constant True, and create
-//		a new Apply expression
+//		Replace a subquery ALL node <pexprSubquery> with a new predicate
+//		<*ppexprResidualScalar> and put the relational part of the subquery
+//		on top of an existing relational node <pexprOuter>:
 //
-//		Example:
+//		Example, for filter context:
 //
-//		SELECT									SELECT
+//		 Parent									Parent
 //		/		|								/		|
 //		R		<>			==>			LAS-APPLY		true
 //				/	|				 /			  \
@@ -1398,8 +1449,10 @@ CSubqueryHandler::PexprIsNotNull
 //											R.a				|
 //															=
 //															/	|
-//															R.a	S.b
+//															R.a	S.b TODO: Fix this picture
 //
+//		For a picture of the tree in a value context, see method
+//		CSubqueryHandler::FCreateOuterApplyForExistOrQuant().
 //
 //---------------------------------------------------------------------------
 BOOL
@@ -1459,10 +1512,11 @@ CSubqueryHandler::FRemoveAllSubquery
 	if (EsqctxtValue == esqctxt)
 	{
 		CExpression *pexprNewInnerSelect = PexprInnerSelect(mp, pexprInner, pexprPredicate);
+
 		pexprInnerSelect->Release();
 		pexprInnerSelect = pexprNewInnerSelect;
 
-		fSuccess = FCreateOuterApply(mp, pexprOuter, pexprInnerSelect, pexprSubquery, pexprPredicate, fOuterRefsUnderInner, ppexprNewOuter, ppexprResidualScalar); //Todo - do the same thing as FRemoveAnySubquery
+		fSuccess = FCreateOuterApply(mp, pexprOuter, pexprInnerSelect, pexprSubquery, pexprPredicate, fOuterRefsUnderInner, ppexprNewOuter, ppexprResidualScalar);
 		if (!fSuccess)
 		{
 			pexprInnerSelect->Release();
