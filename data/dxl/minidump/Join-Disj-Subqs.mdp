@@ -362,6 +362,10 @@ OR
         <dxl:ResultType Mdid="0.20.1.0"/>
         <dxl:IntermediateResultType Mdid="0.20.1.0"/>
       </dxl:GPDBAgg>
+      <dxl:GPDBAgg Mdid="0.2147.1.0" Name="count" IsSplittable="true">
+        <dxl:ResultType Mdid="0.20.1.0"/>
+        <dxl:IntermediateResultType Mdid="0.20.1.0"/>
+      </dxl:GPDBAgg>
       <dxl:Type Mdid="0.10689.1.0" Name="sql_identifier" IsRedistributable="true" IsHashable="true" IsComposite="false" IsFixedLength="false" PassByValue="false">
         <dxl:EqualityOp Mdid="0.98.1.0"/>
         <dxl:InequalityOp Mdid="0.531.1.0"/>
@@ -460,6 +464,9 @@ OR
           <dxl:OpClass Mdid="0.3031.1.0"/>
         </dxl:OpClasses>
       </dxl:GPDBScalarOp>
+      <dxl:GPDBFunc Mdid="0.62.1.0" Name="nameeq" ReturnsSet="false" Stability="Immutable" DataAccess="NoSQL" IsStrict="true">
+	    <dxl:ResultType Mdid="0.16.1.0"/>
+      </dxl:GPDBFunc>
       <dxl:GPDBScalarOp Mdid="0.607.1.0" Name="=" ComparisonType="Eq" ReturnsNullOnNullInput="true">
         <dxl:LeftType Mdid="0.26.1.0"/>
         <dxl:RightType Mdid="0.26.1.0"/>
