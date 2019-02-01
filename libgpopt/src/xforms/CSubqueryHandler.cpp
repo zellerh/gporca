@@ -831,7 +831,7 @@ CSubqueryHandler::FCreateGrpCols
 //
 //						GbAgg [<colref_array>]
 //						/			\
-//					  Proj			 count(<colref>)
+//					  Proj			 count(*)
 //					 /	 \			 sum(CR1)
 //					/	  \
 //				<child>	  CR1: case when <predicate> is null then 1 else 0 end
@@ -855,6 +855,7 @@ CSubqueryHandler::CreateGroupByForAnySubquery
 {
 	GPOS_ASSERT(NULL == *pcrCount);
 	GPOS_ASSERT(NULL == *pcrSum);
+	GPOS_ASSERT_IMP(fExistential, NULL != colref);
 	// create project list of group by expression
 	CExpression *pexprPrjList = NULL;
 	CExpression *pexprNewChild = pexprChild;
@@ -872,7 +873,7 @@ CSubqueryHandler::CreateGroupByForAnySubquery
 		CColumnFactory *col_factory = COptCtxt::PoctxtFromTLS()->Pcf();
 		CMDAccessor *md_accessor = COptCtxt::PoctxtFromTLS()->Pmda();
 
-		CExpression *pexprCount = CUtils::PexprCount(mp, colref, false /* is_distinct */);
+		CExpression *pexprCount = CUtils::PexprCountStar(mp);
 		CScalarAggFunc *popCount = CScalarAggFunc::PopConvert(pexprCount->Pop());
 		const IMDType *pmdtypeCount = md_accessor->RetrieveType(popCount->MdidType());
 		*pcrCount = col_factory->PcrCreate(pmdtypeCount, popCount->TypeModifier());
@@ -922,8 +923,8 @@ CSubqueryHandler::CreateGroupByForAnySubquery
 //		comparison results	ANY subquery	ALL subquery	count		sum
 //		T.i <op> R.i		result			result			aggregate	aggregate
 //		------------------	------------	------------	---------	---------
-//		{}						false			true			0			null
-//		{false}					false			false			0			null
+//		{}						false			true		  0 or 1		null
+//		{false}					false			false		  0 or 1		null
 //		{null}					null			false			n			n
 //		{true}					true			true			n			0
 //		{null, false}			null			false			n			n
@@ -943,13 +944,13 @@ CSubqueryHandler::CreateGroupByForAnySubquery
 //		that can be simplified as follows:
 //
 //		+-Select
-//			+--Gb[T.i, T.ctid, T.gp_segment_id], c1 = count(C1), c2 = count(C2)
+//			+--Gb[T.i, T.ctid, T.gp_segment_id], c1 = count(*), c2 = count(C0)
 //			|	+---LOJ_((T.i=R.i) IS NOT FALSE)
 //			|		|---T
 //			|		+---Project
 //			|				|---R
-//			|				+--- (C1: 1, C2: case when (T.i=R.i) is null then 1 else 0 end)
-//			+--If (c1 > 0)
+//			|				+--- (C0: case when (T.i=R.i) is null then 1 else 0 end)
+//			+--If (c2 is not null)
 //				+-- if (c1 > c2)
 //				|	 +---{return TRUE}
 //				|	 +---else {return NULL}
@@ -967,9 +968,17 @@ CSubqueryHandler::CreateGroupByForAnySubquery
 //			x <op> ALL (SQ)		<==>	NOT(x <inv-op> ANY (SQ))
 //
 //		- The Gb on top of LOJ groups join results based on T.i values, and for each
-//		  group, it computes the size of the group  (count(C1)), as well as the number
+//		  group, it computes the size of the group  (count(*)), as well as the number
 //		  of NULL values in R.i. That number of NULL values is NULL when there is
-//		  no match for T.i in the LOJ.
+//		  no match for T.i in the LOJ (in that case the count may be 0 or 1, see below).
+//
+//		- The Gb may appear on top of the LOJ or as its right child. If it is on top,
+//		  the grouping columns will include a unique key of the left child and T.i.
+//		  In this case, the count(*) aggregate will return 1 for an empty result
+//		  set from the subquery, because the outer join still returns a row.
+//		  If the groupby is the right child of the LOJ, then it becomes an
+//		  aggregate (no group by columns) and count(*) will be 0 for an empty
+//		  result of the subquery.
 //
 //		- After the Gb, the optimizer generates an If operator that checks the values
 //		  of the two computed aggregates (c1 and c2) and determines what value
@@ -1007,11 +1016,16 @@ CSubqueryHandler::FCreateOuterApplyForExistOrQuant
 	CExpression *pexprPrjOrInner = NULL;
 
 	AddProjectNode(mp, pexprInner, pexprSubquery, &pexprPrjOrInner);
-	CExpression *pexprPrjList = (*pexprPrjOrInner)[1];
-	CColRef *colref = CScalarProjectElement::PopConvert((*pexprPrjList)[0]->Pop())->Pcr();
-	const CColRef *pcrSubquery = colref;
+	CColRef * colref = NULL;
+	const CColRef *pcrSubquery = NULL;
 
-	if (!fExistential)
+	if (fExistential)
+	{
+		CExpression *pexprPrjList = (*pexprPrjOrInner)[1];
+		colref = CScalarProjectElement::PopConvert((*pexprPrjList)[0]->Pop())->Pcr();
+		pcrSubquery = colref;
+	}
+	else
 	{
 		// for quantified subqueries, we are going to use <outer col> <op> <inner col> for
 		// the actual comparison, but we'll pass just <inner col> to the apply as the inner
@@ -1028,7 +1042,7 @@ CSubqueryHandler::FCreateOuterApplyForExistOrQuant
 														   pexprPrjOrInner,	// child on which to create the project
 														   colref_array,	// group by cols
 														   fExistential,
-														   colref,			// colref for existential SQ
+														   colref,			// "1" for exists or a NULL pointer
 														   pexprPredicate,	// comparison op for quantified SQ
 														   &pcrCount,		// out: count aggregate colref
 														   &pcrSum);		// out: sum aggregate colref
@@ -1543,7 +1557,7 @@ CSubqueryHandler::FRemoveAllSubquery
 //	@doc:
 //		Helper for adding a Project node with a const TRUE on top of
 //		the given expression;
-//		this is needed as part of unnesting to outer Apply
+//		this is needed as part of unnesting to outer Apply for EXISTS queries
 //
 //
 //---------------------------------------------------------------------------
@@ -1561,16 +1575,16 @@ CSubqueryHandler::AddProjectNode
 	GPOS_ASSERT(CUtils::FExistentialSubquery(pexprSubquery->Pop()) ||
 			CUtils::FQuantifiedSubquery(pexprSubquery->Pop()));
 
-	CExpression *pexprProjected = NULL;
 	if (CUtils::FExistentialSubquery(pexprSubquery->Pop()))
 	{
-		pexprProjected = CUtils::PexprScalarConstBool(mp, true /*value*/);
+		CExpression *pexprProjected = CUtils::PexprScalarConstBool(mp, true /*value*/);
+
+		*ppexprResult = CUtils::PexprAddProjection(mp, pexpr, pexprProjected);
 	}
 	else
 	{
-		pexprProjected = CUtils::PexprScalarConstBool(mp, true /*value*/);
+		*ppexprResult = pexpr;
 	}
-	*ppexprResult = CUtils::PexprAddProjection(mp, pexpr, pexprProjected);
 }
 
 
@@ -1629,14 +1643,16 @@ CSubqueryHandler::PexprScalarIf
 	}
 
 	// quantified subquery
+
+	// sum = count
 	CExpression *pexprEquality = CUtils::PexprScalarEqCmp(mp, pcrSum, pcrCount);
-	CExpression *pexprRowCountGreaterZero = CUtils::PexprScalarCmp
-														(
-														 mp,
-														 pcrCount,
-														 CUtils::PexprScalarConstInt8(mp, 0),
-														 IMDType::EcmptG
-														);
+
+	// sum is not null (this indicates that the count is > 0)
+	CExpression *pexprRowCountGreaterZero = CUtils::PexprIsNotNull
+													(
+													 mp,
+													 CUtils::PexprScalarIdent(mp, pcrSum)
+													);
 
 	mdid->AddRef();
 
@@ -1657,10 +1673,7 @@ CSubqueryHandler::PexprScalarIf
 			CUtils::PexprScalarConstBool(mp, value)
 			);
 
-	// If count(row indicator) = 0, that means that the subquery returned no rows (except
-	// maybe some rows that evaluated to "false"). The subquery evaluates to "!value". Otherwise,
-	// the result is determined by the expression in pexprScalarIf that we built above.
-	// create the outer if: if (count(...) = 0 then <inner if> else <!value>
+	// if (sum(...) is not null then <pexprScalarIf> else <!value>
 	mdid->AddRef();
 	return GPOS_NEW(mp) CExpression
 					(
