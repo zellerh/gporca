@@ -545,8 +545,8 @@ CSubqueryHandler::FGenerateCorrelatedApplyForScalarSubquery
 //			SELECT											SELECT
 //			/		|									/			|
 //			R		=			==>				INNER-APPLY			=
-//			/		|							/		|		/	|
-//			a		GrpBy						R		GrpBy	a	 x
+//				/	|							/		|		/	|
+//				a	GrpBy						R		GrpBy	a	 x
 //					/		|							/	|
 //					S	x:=sum(b)						S	x:=sum(b)
 //
