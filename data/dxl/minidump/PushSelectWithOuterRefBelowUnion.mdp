@@ -4981,7 +4981,7 @@
         </dxl:Or>
       </dxl:LogicalJoin>
     </dxl:Query>
-    <dxl:Plan Id="0" SpaceSize="19636">
+    <dxl:Plan Id="0" SpaceSize="45110">
       <dxl:GatherMotion InputSegments="0,1" OutputSegments="-1">
         <dxl:Properties>
           <dxl:Cost StartupCost="0" TotalCost="4212763332.381836" Rows="60175000.000000" Width="14"/>
@@ -4996,7 +4996,7 @@
         </dxl:ProjList>
         <dxl:Filter/>
         <dxl:SortingColumnList/>
-        <dxl:NestedLoopJoin JoinType="Inner" IndexNestedLoopJoin="false">
+        <dxl:NestedLoopJoin JoinType="Inner" IndexNestedLoopJoin="false" OuterRefAsParam="false">
           <dxl:Properties>
             <dxl:Cost StartupCost="0" TotalCost="4212351978.842773" Rows="60175000.000000" Width="14"/>
           </dxl:Properties>
@@ -5011,7 +5011,7 @@
           <dxl:Filter/>
           <dxl:JoinFilter>
             <dxl:Or>
-              <dxl:Ident ColId="56" ColName="ColRef_0056" TypeMdid="0.16.1.0"/>
+              <dxl:Ident ColId="57" ColName="ColRef_0057" TypeMdid="0.16.1.0"/>
               <dxl:Comparison ComparisonOperator="&gt;=" OperatorMdid="0.1098.1.0">
                 <dxl:Ident ColId="13" ColName="l_receiptdate" TypeMdid="0.1082.1.0"/>
                 <dxl:ConstValue TypeMdid="0.1082.1.0" IsNull="false" IsByValue="true" Value="BPb//w==" DoubleValue="-220838400000000.000000"/>
@@ -5026,8 +5026,8 @@
               <dxl:ProjElem ColId="34" Alias="month_number">
                 <dxl:Ident ColId="34" ColName="month_number" TypeMdid="0.23.1.0"/>
               </dxl:ProjElem>
-              <dxl:ProjElem ColId="56" Alias="ColRef_0056">
-                <dxl:Ident ColId="56" ColName="ColRef_0056" TypeMdid="0.16.1.0"/>
+              <dxl:ProjElem ColId="57" Alias="ColRef_0057">
+                <dxl:Ident ColId="57" ColName="ColRef_0057" TypeMdid="0.16.1.0"/>
               </dxl:ProjElem>
             </dxl:ProjList>
             <dxl:Filter/>
@@ -5040,8 +5040,8 @@
                 <dxl:ProjElem ColId="34" Alias="month_number">
                   <dxl:Ident ColId="34" ColName="month_number" TypeMdid="0.23.1.0"/>
                 </dxl:ProjElem>
-                <dxl:ProjElem ColId="56" Alias="ColRef_0056">
-                  <dxl:Ident ColId="56" ColName="ColRef_0056" TypeMdid="0.16.1.0"/>
+                <dxl:ProjElem ColId="57" Alias="ColRef_0057">
+                  <dxl:Ident ColId="57" ColName="ColRef_0057" TypeMdid="0.16.1.0"/>
                 </dxl:ProjElem>
               </dxl:ProjList>
               <dxl:Filter/>
@@ -5051,7 +5051,7 @@
                   <dxl:Cost StartupCost="0" TotalCost="100736.902344" Rows="1000.000000" Width="5"/>
                 </dxl:Properties>
                 <dxl:ProjList>
-                  <dxl:ProjElem ColId="56" Alias="ColRef_0056">
+                  <dxl:ProjElem ColId="57" Alias="ColRef_0057">
                     <dxl:SubPlan TypeMdid="0.16.1.0" SubPlanType="AnySubPlan">
                       <dxl:TestExpr>
                         <dxl:Comparison ComparisonOperator="=" OperatorMdid="0.96.1.0">
@@ -5076,7 +5076,7 @@
                             <dxl:Cost StartupCost="0" TotalCost="5.101562" Rows="2.000000" Width="5"/>
                           </dxl:Properties>
                           <dxl:ProjList>
-                            <dxl:ProjElem ColId="57" Alias="ColRef_0057">
+                            <dxl:ProjElem ColId="58" Alias="ColRef_0058">
                               <dxl:ConstValue TypeMdid="0.16.1.0" IsNull="false" IsByValue="true" Value="true"/>
                             </dxl:ProjElem>
                             <dxl:ProjElem ColId="49" Alias="?column?">
