@@ -575,6 +575,13 @@ namespace gpopt
 			static
 			BOOL FBitmapLookupSupportedPredicateOrConjunct(CExpression *pexpr);
 
+			// Check if a given comparison operator has simple behavior with respect to NULL values,
+			// meaning that it is strict (NULL operands result in NULL result) and that it never
+			// produces a NULL result on non-null operands. Note that this check may return
+			// false negatives (some operators may have simple behavior, yet this method returns false).
+			static
+			BOOL FBuiltInComparisonWithSimpleNullBehavior(IMDId *mdid);
+
 	}; // class CPredicateUtils
 }
 

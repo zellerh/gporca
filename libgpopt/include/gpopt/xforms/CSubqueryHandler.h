@@ -117,16 +117,27 @@ namespace gpopt
 				(
 				IMemoryPool *mp,
 				CExpression *pexpr,
-				CExpression *pexprSubquery,
 				CExpression **ppexprResult
 				);
+
+			static
+			CExpression *CreateGroupByForAnySubquery
+				(
+				 IMemoryPool *mp,
+				 CExpression *pexprChild,
+				 CColRefArray *colref_array,
+				 BOOL fExistential,
+				 CColRef *colref,
+				 CExpression *pexprPredicate,
+				 CColRef **pcrCount,
+				 CColRef **pcrSum
+				 );
 
 			// helper for creating an inner select expression when creating outer apply
 			static
 			CExpression *PexprInnerSelect
 				(
 				IMemoryPool *mp,
-				const CColRef *pcrInner,
 				CExpression *pexprInner,
 				CExpression *pexprPredicate
 				);
@@ -165,6 +176,7 @@ namespace gpopt
 				CExpression *pexprOuter,
 				CExpression *pexprInner,
 				CExpression *pexprSubquery,
+				CExpression *pexprPredicate,
 				BOOL fOuterRefsUnderInner,
 				CExpression **ppexprNewOuter,
 				CExpression **ppexprResidualScalar
@@ -178,6 +190,7 @@ namespace gpopt
 				CExpression *pexprOuter,
 				CExpression *pexprInner,
 				CExpression *pexprSubquery,
+				CExpression *pexprPredicate,
 				BOOL fOuterRefsUnderInner,
 				CExpression **ppexprNewOuter,
 				CExpression **ppexprResidualScalar
