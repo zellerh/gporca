@@ -584,7 +584,7 @@ CSubqueryHandler::FRemoveScalarSubqueryInternal
 	BOOL fSuccess = true;
 	if (psd->m_fValueSubquery)
 	{
-		fSuccess = FCreateOuterApply(mp, pexprOuter, pexprInner, pexprSubquery, NULL /* pexprPredicate */, psd->m_fHasOuterRefs, ppexprNewOuter, ppexprResidualScalar);
+		fSuccess = FCreateOuterApply(mp, pexprOuter, pexprInner, pexprSubquery, NULL /* pexprPredicate */, psd->m_fHasOuterRefs, ppexprNewOuter, ppexprResidualScalar, false /* not null opt for quant*/);
 		if (!fSuccess)
 		{
 			pexprInner->Release();
@@ -608,32 +608,53 @@ CSubqueryHandler::FRemoveScalarSubqueryInternal
 //	@doc:
 //		Helper for creating an inner select expression when creating
 //		outer apply;
-//		we create a select node with a <pexprPredicate> IS NOT NULL
+//		create a select node with a <pexprPredicate> IS NOT NULL
 //		predicate to allow rows where the comparision evaluates to
 //		true or NULL.
+//		We apply one optimization: If we are dealing with a not nullable
+//		column on the inner table and if the comparison operator has well-defined
+//		behavior (is strict and never returns NULL on non-NULL inputs), then
+//		we can use a regular comparison. The only way such a comparison can
+//		evaluate to NULL is for the outer column to be NULL.
+//		If we use this optimization, then we need to add another condition
+//		that handles the outer column in CSubqueryHandler::PexprScalarIf.
 //
 //---------------------------------------------------------------------------
 CExpression *
 CSubqueryHandler::PexprInnerSelect
 	(
 	IMemoryPool *mp,
+	const CColRef *pcrInner,
 	CExpression *pexprInner,
-	CExpression *pexprPredicate
+	CExpression *pexprPredicate,
+	BOOL *useNotInOptimization
 	)
 {
+	CExpression *predToUse = pexprPredicate;
+	CScalarCmp *pscalarCmp = CScalarCmp::PopConvert(pexprPredicate->Pop());
+	BOOL innerIsNullable = !CDrvdPropRelational::GetRelationalProperties(pexprInner->PdpDerive())->PcrsNotNull()->FMember(pcrInner);
+
+	*useNotInOptimization = false;
 	pexprPredicate->AddRef();
-	CExpression *pexprIsNotFalse =
-			GPOS_NEW(mp) CExpression
-				(
-				 mp,
-				 GPOS_NEW(mp) CScalarBooleanTest (mp,
-												  CScalarBooleanTest::EbtIsNotFalse),
-				 pexprPredicate
-				);
+
+	if (innerIsNullable ||
+		NULL == pscalarCmp ||
+		!CPredicateUtils::FBuiltInComparisonWithSimpleNullBehavior(pscalarCmp->MdIdOp()))
+	{
+		predToUse =
+				GPOS_NEW(mp) CExpression
+					(
+					 mp,
+					 GPOS_NEW(mp) CScalarBooleanTest (mp,
+													  CScalarBooleanTest::EbtIsNotFalse),
+					 pexprPredicate
+					);
+		*useNotInOptimization = true;
+	}
 
 	pexprInner->AddRef();
 
-	return CUtils::PexprLogicalSelect(mp, pexprInner, pexprIsNotFalse);
+	return CUtils::PexprLogicalSelect(mp, pexprInner, predToUse);
 }
 
 
@@ -1002,7 +1023,8 @@ CSubqueryHandler::FCreateOuterApplyForExistOrQuant
 	CExpression *pexprPredicate,
 	BOOL fOuterRefsUnderInner,
 	CExpression **ppexprNewOuter,
-	CExpression **ppexprResidualScalar
+	CExpression **ppexprResidualScalar,
+	BOOL notNullableInnerOptimization
 	)
 {
 	BOOL fExistential = CUtils::FExistentialSubquery(pexprSubquery->Pop());
@@ -1067,7 +1089,7 @@ CSubqueryHandler::FCreateOuterApplyForExistOrQuant
 	}
 
 	// residual scalar examines introduced columns
-	*ppexprResidualScalar = PexprScalarIf(mp, colref, pcrSum, pcrCount, pexprSubquery);
+	*ppexprResidualScalar = PexprScalarIf(mp, colref, pcrSum, pcrCount, pexprSubquery, notNullableInnerOptimization);
 
 	return true;
 }
@@ -1091,7 +1113,8 @@ CSubqueryHandler::FCreateOuterApply
 	CExpression *pexprPredicate,
 	BOOL fOuterRefsUnderInner,
 	CExpression **ppexprNewOuter,
-	CExpression **ppexprResidualScalar
+	CExpression **ppexprResidualScalar,
+	BOOL notNullableInnerOptimization
 	)
 {
 	COperator *popSubquery = pexprSubquery->Pop();
@@ -1100,7 +1123,7 @@ CSubqueryHandler::FCreateOuterApply
 
 	if (fExistential || fQuantified)
 	{
-		return FCreateOuterApplyForExistOrQuant(mp, pexprOuter, pexprInner, pexprSubquery, pexprPredicate, fOuterRefsUnderInner, ppexprNewOuter, ppexprResidualScalar);
+		return FCreateOuterApplyForExistOrQuant(mp, pexprOuter, pexprInner, pexprSubquery, pexprPredicate, fOuterRefsUnderInner, ppexprNewOuter, ppexprResidualScalar, notNullableInnerOptimization);
 	}
 
 	return FCreateOuterApplyForScalarSubquery(mp, pexprOuter, pexprInner, pexprSubquery, fOuterRefsUnderInner, ppexprNewOuter, ppexprResidualScalar);
@@ -1374,10 +1397,11 @@ CSubqueryHandler::FRemoveAnySubquery
 	CExpression *pexprSelect = CUtils::PexprLogicalSelect(mp, pexprResult, pexprPredicate);
 	BOOL fSuccess = true;
 	BOOL fUseCorrelated = false;
+	BOOL fUseNotNullOptimization = false;
 
 	if (EsqctxtValue == esqctxt)
 	{
-		CExpression *pexprNewSelect = PexprInnerSelect(mp, pexprResult, pexprPredicate);
+		CExpression *pexprNewSelect = PexprInnerSelect(mp, colref, pexprResult, pexprPredicate, &fUseNotNullOptimization);
 		CMDAccessor *md_accessor = COptCtxt::PoctxtFromTLS()->Pmda();
 		const IMDScalarOp *pmdOp = md_accessor->RetrieveScOp(pScalarSubqAny->MdIdOp());
 		const IMDFunction *pmdFunc = md_accessor->RetrieveFunc(pmdOp->FuncMdId());
@@ -1390,7 +1414,7 @@ CSubqueryHandler::FRemoveAnySubquery
 
 		if (!fUseCorrelated)
 		{
-			fSuccess = FCreateOuterApply(mp, pexprOuter, pexprSelect, pexprSubquery, pexprPredicate, fOuterRefsUnderInner, ppexprNewOuter, ppexprResidualScalar);
+			fSuccess = FCreateOuterApply(mp, pexprOuter, pexprSelect, pexprSubquery, pexprPredicate, fOuterRefsUnderInner, ppexprNewOuter, ppexprResidualScalar, fUseNotNullOptimization);
 		}
 		if (!fSuccess)
 		{
@@ -1510,6 +1534,7 @@ CSubqueryHandler::FRemoveAllSubquery
 	const CColRef *colref = CScalarSubqueryAll::PopConvert(pexprSubquery->Pop())->Pcr();
 
 	BOOL fOuterRefsUnderInner = pexprInner->HasOuterRefs();
+	BOOL fUseNotNullOptimization = false;
 	pexprInner->AddRef();
 
 	if (fOuterRefsUnderInner)
@@ -1550,14 +1575,14 @@ CSubqueryHandler::FRemoveAllSubquery
 				fUseCorrelated = true;
 		}
 
-		CExpression *pexprNewInnerSelect = PexprInnerSelect(mp, pexprInner, pexprPredicate);
+		CExpression *pexprNewInnerSelect = PexprInnerSelect(mp, colref, pexprInner, pexprPredicate, &fUseNotNullOptimization);
 
 		pexprInnerSelect->Release();
 		pexprInnerSelect = pexprNewInnerSelect;
 
 		if (!fUseCorrelated)
 		{
-			fSuccess = FCreateOuterApply(mp, pexprOuter, pexprInnerSelect, pexprSubquery, pexprPredicate, fOuterRefsUnderInner, ppexprNewOuter, ppexprResidualScalar);
+			fSuccess = FCreateOuterApply(mp, pexprOuter, pexprInnerSelect, pexprSubquery, pexprPredicate, fOuterRefsUnderInner, ppexprNewOuter, ppexprResidualScalar, fUseNotNullOptimization);
 		}
 		if (!fSuccess)
 		{
@@ -1623,7 +1648,8 @@ CSubqueryHandler::PexprScalarIf
 	CColRef *pcrBool,
 	CColRef *pcrSum,
 	CColRef *pcrCount,
-	CExpression *pexprSubquery
+	CExpression *pexprSubquery,
+	BOOL notNullableInnerOptimization
 	)
 {
 	COperator *popSubquery = pexprSubquery->Pop();
@@ -1636,6 +1662,7 @@ CSubqueryHandler::PexprScalarIf
 	GPOS_ASSERT(fExistential || fQuantified);
 	GPOS_ASSERT_IMP(fExistential, NULL != pcrBool);
 	GPOS_ASSERT_IMP(fQuantified, NULL != pcrSum && NULL != pcrCount);
+	GPOS_ASSERT_IMP(notNullableInnerOptimization, !fExistential);
 
 	CMDAccessor *md_accessor = COptCtxt::PoctxtFromTLS()->Pmda();
 	const IMDTypeBool *pmdtypebool = md_accessor->PtMDType<IMDTypeBool>();
@@ -1699,7 +1726,7 @@ CSubqueryHandler::PexprScalarIf
 	// create the outer if: if (count(...) > 0 then <inner if> else <!value>
 
 	mdid->AddRef();
-	return GPOS_NEW(mp) CExpression
+	CExpression *result = GPOS_NEW(mp) CExpression
 					(
 					mp,
 					GPOS_NEW(mp) CScalarIf(mp, mdid),
@@ -1707,6 +1734,26 @@ CSubqueryHandler::PexprScalarIf
 					pexprScalarIf,
 					CUtils::PexprScalarConstBool(mp, !value)
 					);
+
+	if (notNullableInnerOptimization)
+	{
+		// add another case/if statement that returns NULL if the outer column is null,
+		// we do this if the inner column is not nullable and if we use a well-known
+		// comparison operator
+		CExpression *pexprScalar = (*pexprSubquery)[1];
+		pexprScalar->AddRef();
+		mdid->AddRef();
+		result = GPOS_NEW(mp) CExpression
+					(
+					 mp,
+					 GPOS_NEW(mp) CScalarIf(mp, mdid),
+					 CUtils::PexprIsNull(mp, pexprScalar),
+					 result,
+					 CUtils::PexprScalarConstBool(mp, false /*value*/, true /*is_null*/)
+					);
+	}
+
+	return result;
 
 }
 
@@ -1788,7 +1835,7 @@ CSubqueryHandler::FRemoveExistentialSubquery
 	BOOL fSuccess = true;
 	if (EsqctxtValue == esqctxt)
 	{
-		fSuccess = FCreateOuterApply(mp, pexprOuter, pexprInner, pexprSubquery, NULL /* pexprPredicate */, fOuterRefsUnderInner, ppexprNewOuter, ppexprResidualScalar);
+		fSuccess = FCreateOuterApply(mp, pexprOuter, pexprInner, pexprSubquery, NULL /* pexprPredicate */, fOuterRefsUnderInner, ppexprNewOuter, ppexprResidualScalar, false);
 		if (!fSuccess)
 		{
 			pexprInner->Release();

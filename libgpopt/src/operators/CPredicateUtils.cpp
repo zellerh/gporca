@@ -2824,6 +2824,7 @@ CPredicateUtils::FBuiltInComparisonWithSimpleNullBehavior(IMDId *mdid)
 	case GPDB_BOOL_LEQ_OP:
 	case GPDB_BOOL_GT_OP:
 	case GPDB_BOOL_GEQ_OP:
+	case 98: // TODO: Make a constant for "texteq"
 		// these built-in operators have well-known behavior, they always
 		// return NULL when one of the operands is NULL and they
 		// never return NULL when both operands are not NULL

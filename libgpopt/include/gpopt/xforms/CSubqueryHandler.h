@@ -138,8 +138,10 @@ namespace gpopt
 			CExpression *PexprInnerSelect
 				(
 				IMemoryPool *mp,
+				const CColRef *pcrInner,
 				CExpression *pexprInner,
-				CExpression *pexprPredicate
+				CExpression *pexprPredicate,
+				BOOL *useNotInOptimization
 				);
 
 			// helper for creating outer apply expression for scalar subqueries
@@ -179,7 +181,8 @@ namespace gpopt
 				CExpression *pexprPredicate,
 				BOOL fOuterRefsUnderInner,
 				CExpression **ppexprNewOuter,
-				CExpression **ppexprResidualScalar
+				CExpression **ppexprResidualScalar,
+				BOOL notNullableInnerOptimization
 				);
 
 			// helper for creating outer apply expression
@@ -193,12 +196,21 @@ namespace gpopt
 				CExpression *pexprPredicate,
 				BOOL fOuterRefsUnderInner,
 				CExpression **ppexprNewOuter,
-				CExpression **ppexprResidualScalar
+				CExpression **ppexprResidualScalar,
+				BOOL notNullableInnerOptimization
 				);
 
 			// helper for creating a scalar if expression used when generating an outer apply
 			static
-			CExpression *PexprScalarIf(IMemoryPool *mp, CColRef *pcrBool, CColRef *pcrSum, CColRef *pcrCount, CExpression *pexprSubquery);
+			CExpression *PexprScalarIf
+				(
+				IMemoryPool *mp,
+				CColRef *pcrBool,
+				CColRef *pcrSum,
+				CColRef *pcrCount,
+				CExpression *pexprSubquery,
+				BOOL notNullableInnerOptimization
+				);
 
 			// helper for creating a correlated apply expression for existential subquery
 			static
