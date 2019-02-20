@@ -634,11 +634,12 @@ CSubqueryHandler::PexprInnerSelect
 	CScalarCmp *pscalarCmp = CScalarCmp::PopConvert(pexprPredicate->Pop());
 	BOOL innerIsNullable = !CDrvdPropRelational::GetRelationalProperties(pexprInner->PdpDerive())->PcrsNotNull()->FMember(pcrInner);
 
+	GPOS_ASSERT(NULL != pscalarCmp);
+
 	*useNotNullableInnerOpt = false;
 	pexprPredicate->AddRef();
 
 	if (innerIsNullable ||
-		NULL == pscalarCmp ||
 		!CPredicateUtils::FBuiltInComparisonIsVeryStrict(pscalarCmp->MdIdOp()))
 	{
 		predToUse =
@@ -866,17 +867,16 @@ CSubqueryHandler::FCreateGrpCols
 //---------------------------------------------------------------------------
 CExpression *
 CSubqueryHandler::CreateGroupByForAnySubquery
-(
- IMemoryPool *mp,
- CExpression *pexprChild,
- CColRefArray *colref_array,
- BOOL fExistential,
- CColRef *colref,
- CExpression *pexprPredicate,
- CColRef **pcrCount,
- CColRef **pcrSum
-
- )
+	(
+	 IMemoryPool *mp,
+	 CExpression *pexprChild,
+	 CColRefArray *colref_array,
+	 BOOL fExistential,
+	 CColRef *colref,
+	 CExpression *pexprPredicate,
+	 CColRef **pcrCount,
+	 CColRef **pcrSum
+	)
 {
 	GPOS_ASSERT(NULL == *pcrCount);
 	GPOS_ASSERT(NULL == *pcrSum);
