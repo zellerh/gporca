@@ -522,10 +522,10 @@ CJoinOrderDynProg::PexprJoin
 CExpression *
 CJoinOrderDynProg::PexprBestJoinOrderDP
 	(
-	CBitSet *pbs // set of elements to be joined
+	CBitSet *//pbs // set of elements to be joined
 	)
 {
-	GPOS_ASSERT(pbs);
+//	GPOS_ASSERT(pbs);
 	return NULL;
 }
 
@@ -772,6 +772,8 @@ CJoinOrderDynProg::PexprBestJoinOrder
 	SComponentArray *compArray = GPOS_NEW(m_mp) SComponentArray(m_mp);
 
 	CAutoTrace at(m_mp);
+//	CDouble minCost(0.0);
+//	SComponent *pTemp = NULL;
 	while (outerbitSetIter.Advance())
 	{
 		ULONG comp1id = outerbitSetIter.Bit();
@@ -789,11 +791,23 @@ CJoinOrderDynProg::PexprBestJoinOrder
 					compTemp->Release();
 					continue;
 				}
+//				CDouble cost = DCost(compTemp->m_pexpr);
+//				if (cost < minCost || minCost == 0.0)
+//				{
+//					CRefCount::SafeRelease(pTemp);
+//					pTemp = compTemp;
+//
+//				}
+//				else
+//				{
+//					compTemp->Release();
+//				}
 				compArray->Append(compTemp);
 			}
 		}
 	}
 
+//	compArray->Append(pTemp);
 	return compArray;
 }
 
@@ -875,15 +889,47 @@ CJoinOrderDynProg::PexprExpand()
 	}
 	SComponentArrays *pexprLevelArrays = GPOS_NEW(m_mp) SComponentArrays(m_mp);
 	SComponentArray *pexprResult = PexprBestJoinOrder(pbs);
-//	pexprResult->AddRef();
 	pexprLevelArrays->Append(pexprResult);
 	for (ULONG ul = 2; ul < m_ulComps; ul++)
 	{
 		SComponentArray *pexprLevelResult = PexprJoinOrder((*pexprLevelArrays)[ul-2]);
-//		pexprLevelResult->AddRef();
+		if (ul > 2)
+		{
+			for (ULONG k = 2; k < ul; k++)
+			{
+				ULONG idx1 = k;
+				ULONG idx2 = ul+1 - idx1;
+				SComponentArray *arr1 = (*pexprLevelArrays)[idx1-2];
+				SComponentArray *arr2 = (*pexprLevelArrays)[idx2-2];
+				for (ULONG arr1size = 0; arr1size< arr1->Size(); arr1size++)
+				{
+					SComponent *p1 = (*arr1)[arr1size];
+					
+					for (ULONG arr2size = 0; arr2size< arr2->Size(); arr2size++)
+					{
+						SComponent *p2 = (*arr2)[arr2size];
+						if (!p1->m_pbs->IsDisjoint(p2->m_pbs))
+						{
+							continue;
+						}
+						
+						SComponent *pcomb = PcompCombine(p1, p2);
+						if (CUtils::FCrossJoin(pcomb->m_pexpr))
+						{
+							pcomb->Release();
+							continue;
+						}
+						pexprLevelResult->Append(pcomb);
+					}
+				}
+			}
+		}
 		pexprLevelArrays->Append(pexprLevelResult);
 	}
 	
+#ifdef GPOS_DEBUG
+	GPOS_ASSERT(pexprResult != NULL);
+#endif
 	
 	GPOS_ASSERT(pexprResult != NULL);
 
@@ -894,7 +940,7 @@ CJoinOrderDynProg::PexprExpand()
 		CExpression *pexpr = (*pexprFinalLevel)[ul]->m_pexpr;
 		CDouble dCost = DCost(pexpr);
 		AddJoinOrder(pexpr, dCost);
-		if (ul == pexprFinalLevel->Size() -1 );
+		if (ul == pexprFinalLevel->Size()-1 )
 		{
 			pexprFinalOne = pexpr;
 			pexprFinalOne->AddRef();
@@ -913,6 +959,8 @@ CJoinOrderDynProg::PexprJoinOrder
 	)
 {
 
+//	SComponent *pTemp = NULL;
+//	CDouble minCost (0.0);
 	ULONG comp_array_size = inputCompArray->Size();
 	SComponentArray *compArray = GPOS_NEW(m_mp) SComponentArray(m_mp);
 	for (ULONG ul = 0; ul < comp_array_size ; ul++)
@@ -926,11 +974,30 @@ CJoinOrderDynProg::PexprJoinOrder
 			{
 				continue;
 			}
+			
 			SComponent *pCompTemp = PcompCombine(pcomp, base_comp);
+			if (CUtils::FCrossJoin(pCompTemp->m_pexpr))
+			{
+				pCompTemp->Release();
+				continue;
+			}
+//			CDouble cost = DCost(pCompTemp->m_pexpr);
+//			if (cost < minCost || minCost == 0.0)
+//			{
+//				CRefCount::SafeRelease(pTemp);
+//				pTemp = pCompTemp;
+//
+//			}
+//			else
+//			{
+//				pCompTemp->Release();
+//			}
 			compArray->Append(pCompTemp);
+			
 		}
 	}
-	
+//	MarkUsedEdges(pTemp);
+//	compArray->Append(pTemp);
 	return compArray;
 }
 

@@ -128,8 +128,12 @@ CXformExpandNAryJoinDynProg::Transform
 			CExpression *pexprJoinOrder = (*jodp.PdrgpexprTopK())[ul];
 			if (pexprJoinOrder != pexprResult)
 			{
-				pexprJoinOrder->AddRef();
-				pxfres->Add(pexprJoinOrder);
+				CExpression *pexprTemp = CNormalizer::PexprNormalize(mp, pexprJoinOrder);
+//				pexprJoinOrder->Release();
+//				pexprTemp->AddRef();
+				pxfres->Add(pexprTemp);
+//				pexprJoinOrder->AddRef();
+//				pxfres->Add(pexprJoinOrder);
 			}
 		}
 	}
