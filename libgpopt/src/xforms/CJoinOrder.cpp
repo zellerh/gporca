@@ -410,6 +410,7 @@ CJoinOrder::PcompCombine
 	SComponent *comp2
 	)
 {
+
 	GPOS_ASSERT(IsValidJoinCombination(comp1, comp2));
 	CBitSet *pbs = GPOS_NEW(m_mp) CBitSet(m_mp);
 	CBitSet *edge_set = GPOS_NEW(m_mp) CBitSet(m_mp);
@@ -425,6 +426,7 @@ CJoinOrder::PcompCombine
 	// of edges, making sure to separate those that are derived from LOJs
 	CExpressionArray *loj_conjuncts = GPOS_NEW(m_mp) CExpressionArray(m_mp);
 	CExpressionArray *other_conjuncts = GPOS_NEW(m_mp) CExpressionArray(m_mp);
+
 
 	for (ULONG ul = 0; ul < m_ulEdges; ul++)
 	{
@@ -446,14 +448,14 @@ CJoinOrder::PcompCombine
 				other_conjuncts->Append(pexpr);
 		}
 	}
-
+//
 	CExpression *pexprChild1 = comp1->m_pexpr;
 	CExpression *pexprChild2 = comp2->m_pexpr;
-
+//
 	CExpression *pexpr = NULL;
 	INT parent_loj_id = NON_LOJ_DEFAULT_ID;
 	EPosition position = EpSentinel;
-
+//
 	if (NULL == pexprChild1)
 	{
 		// first call to this function, we create a Select node
