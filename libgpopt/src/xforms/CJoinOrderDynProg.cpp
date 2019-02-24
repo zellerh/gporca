@@ -778,6 +778,8 @@ CJoinOrderDynProg::PexprBestJoinOrder
 	{
 		ULONG comp1id = outerbitSetIter.Bit();
 		CBitSetIter innerbitSetIter(*pbs);
+		SComponent *pTemp = NULL;
+		CDouble minCost(0.0);
 		while (innerbitSetIter.Advance())
 		{
 			ULONG comp2id = innerbitSetIter.Bit();
@@ -785,26 +787,32 @@ CJoinOrderDynProg::PexprBestJoinOrder
 			{
 				SComponent *comp1 = m_rgpcomp[comp1id];
 				SComponent *comp2 = m_rgpcomp[comp2id];
-				CJoinOrder::SComponent *compTemp = PcompCombine(comp1,comp2);
+				CJoinOrder::SComponent *compTemp = Join(comp1,comp2);
+				if (compTemp == NULL)
+				{
+					continue;
+				}
 				if(CUtils::FCrossJoin(compTemp->m_pexpr))
 				{
 					compTemp->Release();
 					continue;
 				}
-//				CDouble cost = DCost(compTemp->m_pexpr);
-//				if (cost < minCost || minCost == 0.0)
-//				{
-//					CRefCount::SafeRelease(pTemp);
-//					pTemp = compTemp;
-//
-//				}
-//				else
-//				{
-//					compTemp->Release();
-//				}
-				compArray->Append(compTemp);
+				CDouble cost = DCost(compTemp->m_pexpr);
+				if (cost < minCost || minCost == 0.0)
+				{
+					CRefCount::SafeRelease(pTemp);
+					pTemp = compTemp;
+
+				}
+				else
+				{
+					compTemp->Release();
+				}
+				
 			}
 		}
+		if (pTemp != NULL)
+			compArray->Append(pTemp);
 	}
 
 //	compArray->Append(pTemp);
@@ -901,10 +909,11 @@ CJoinOrderDynProg::PexprExpand()
 				ULONG idx2 = ul+1 - idx1;
 				SComponentArray *arr1 = (*pexprLevelArrays)[idx1-2];
 				SComponentArray *arr2 = (*pexprLevelArrays)[idx2-2];
+				CDouble minCost(0.0);
+				SComponent *pTemp = NULL;
 				for (ULONG arr1size = 0; arr1size< arr1->Size(); arr1size++)
 				{
 					SComponent *p1 = (*arr1)[arr1size];
-					
 					for (ULONG arr2size = 0; arr2size< arr2->Size(); arr2size++)
 					{
 						SComponent *p2 = (*arr2)[arr2size];
@@ -913,15 +922,34 @@ CJoinOrderDynProg::PexprExpand()
 							continue;
 						}
 						
-						SComponent *pcomb = PcompCombine(p1, p2);
+						SComponent *pcomb = Join(p1, p2);
+						if (pcomb == NULL)
+						{
+							continue;
+						}
 						if (CUtils::FCrossJoin(pcomb->m_pexpr))
 						{
 							pcomb->Release();
 							continue;
 						}
-						pexprLevelResult->Append(pcomb);
+						
+						CDouble cost = DCost(pcomb->m_pexpr);
+						if (cost < minCost || minCost == 0.0)
+						{
+							CRefCount::SafeRelease(pTemp);
+							pTemp = pcomb;
+							
+						}
+						else
+						{
+							pcomb->Release();
+						}
+						
 					}
+
 				}
+				if (pTemp != NULL)
+					pexprLevelResult->Append(pTemp);
 			}
 		}
 		pexprLevelArrays->Append(pexprLevelResult);
@@ -935,10 +963,16 @@ CJoinOrderDynProg::PexprExpand()
 
 	CExpression *pexprFinalOne = NULL;
 	SComponentArray *pexprFinalLevel = (*pexprLevelArrays)[m_ulComps-2];
+	CAutoTrace at(m_mp);
 	for (ULONG ul = 0; ul < pexprFinalLevel->Size(); ul++)
 	{
 		CExpression *pexpr = (*pexprFinalLevel)[ul]->m_pexpr;
 		CDouble dCost = DCost(pexpr);
+		CExpression *pexprNorm = CNormalizer::PexprNormalize(m_mp, pexpr);
+//		ULONG hashValue = CExpression::HashValue(pexprNorm);
+		at.Os() << "Hash Value: " << dCost << std::endl;
+		pexprNorm->DbgPrint();
+		pexprNorm->Release();
 		AddJoinOrder(pexpr, dCost);
 		if (ul == pexprFinalLevel->Size()-1 )
 		{
@@ -966,6 +1000,8 @@ CJoinOrderDynProg::PexprJoinOrder
 	for (ULONG ul = 0; ul < comp_array_size ; ul++)
 	{
 		SComponent *pcomp = (*inputCompArray)[ul];
+		SComponent *pTemp = NULL;
+		CDouble minCost(0.0);
 		
 		for (ULONG id = 0; id < m_ulComps; id++)
 		{
@@ -975,32 +1011,68 @@ CJoinOrderDynProg::PexprJoinOrder
 				continue;
 			}
 			
-			SComponent *pCompTemp = PcompCombine(pcomp, base_comp);
+			SComponent *pCompTemp = Join(pcomp, base_comp);
+			if (pCompTemp == NULL)
+			{
+				continue;
+			}
 			if (CUtils::FCrossJoin(pCompTemp->m_pexpr))
 			{
 				pCompTemp->Release();
 				continue;
 			}
-//			CDouble cost = DCost(pCompTemp->m_pexpr);
-//			if (cost < minCost || minCost == 0.0)
-//			{
-//				CRefCount::SafeRelease(pTemp);
-//				pTemp = pCompTemp;
-//
-//			}
-//			else
-//			{
-//				pCompTemp->Release();
-//			}
-			compArray->Append(pCompTemp);
+			
+			
+			CDouble cost = DCost(pCompTemp->m_pexpr);
+			if (cost < minCost || minCost == 0.0)
+			{
+				CRefCount::SafeRelease(pTemp);
+				pTemp = pCompTemp;
+
+			}
+			else
+			{
+				pCompTemp->Release();
+			}
+			
 			
 		}
+		compArray->Append(pTemp);
 	}
 //	MarkUsedEdges(pTemp);
 //	compArray->Append(pTemp);
 	return compArray;
 }
 
+CJoinOrder::SComponent *
+CJoinOrderDynProg::Join
+(
+ SComponent *comp1,
+ SComponent *comp2
+)
+{
+
+	CExpression *pexprPred = PexprBuildPred(comp1->m_pbs, comp2->m_pbs);
+	
+	if (pexprPred == NULL)
+		return NULL;
+
+	CExpression *pexprLeft = comp1->m_pexpr;
+	CExpression *pexprRight = comp2->m_pexpr;
+	pexprLeft->AddRef();
+	pexprRight->AddRef();
+	CExpression *pexprJoin = CUtils::PexprLogicalJoin<CLogicalInnerJoin>(m_mp, pexprLeft, pexprRight, pexprPred);
+	
+	CBitSet *pbs = GPOS_NEW(m_mp) CBitSet(m_mp, *(comp1->m_pbs));
+	pbs->Union(comp2->m_pbs);
+	
+	CBitSet *edge_set = GPOS_NEW(m_mp) CBitSet(m_mp);
+	edge_set->Union(comp1->m_edge_set);
+	edge_set->Union(comp2->m_edge_set);
+	SComponent *pcomp = GPOS_NEW(m_mp) SComponent(pexprJoin, pbs, edge_set);
+	
+	return pcomp;
+}
 
 //---------------------------------------------------------------------------
 //	@function:
