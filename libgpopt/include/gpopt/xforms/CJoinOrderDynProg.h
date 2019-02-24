@@ -151,6 +151,13 @@ namespace gpopt
 		
 		SComponentArray *
 		PexprJoinOrder(SComponentArray *compArray);
+		
+		SComponent *
+		Join
+		(
+		 SComponent *comp1,
+		 SComponent *comp2
+		 );
 
 			// return a subset of the given set covered by one or more edges
 			CBitSet *PbsCovered(CBitSet *pbsInput);
