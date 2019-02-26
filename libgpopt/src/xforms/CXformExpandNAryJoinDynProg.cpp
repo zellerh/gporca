@@ -115,26 +115,14 @@ CXformExpandNAryJoinDynProg::Transform
 	CJoinOrderDynProg jodp(mp, pdrgpexpr, pdrgpexprPreds);
 	CExpression *pexprResult = jodp.PexprExpand();
 
-	if (NULL != pexprResult)
+	const ULONG UlTopKJoinOrders = jodp.PdrgpexprTopK()->Size();
+	for (ULONG ul = 0; ul < UlTopKJoinOrders; ul++)
 	{
-		// normalize resulting expression
-		CExpression *pexprNormalized = CNormalizer::PexprNormalize(mp, pexprResult);
-		pexprResult->Release();
-		pxfres->Add(pexprNormalized);
-
-		const ULONG UlTopKJoinOrders = jodp.PdrgpexprTopK()->Size();
-		for (ULONG ul = 0; ul < UlTopKJoinOrders; ul++)
+		CExpression *pexprJoinOrder = (*jodp.PdrgpexprTopK())[ul];
+		if (pexprJoinOrder != pexprResult)
 		{
-			CExpression *pexprJoinOrder = (*jodp.PdrgpexprTopK())[ul];
-			if (pexprJoinOrder != pexprResult)
-			{
-				CExpression *pexprTemp = CNormalizer::PexprNormalize(mp, pexprJoinOrder);
-//				pexprJoinOrder->Release();
-//				pexprTemp->AddRef();
-				pxfres->Add(pexprTemp);
-//				pexprJoinOrder->AddRef();
-//				pxfres->Add(pexprJoinOrder);
-			}
+			CExpression *pexprTemp = CNormalizer::PexprNormalize(mp, pexprJoinOrder);
+			pxfres->Add(pexprTemp);
 		}
 	}
 }
