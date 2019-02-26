@@ -140,24 +140,13 @@ namespace gpopt
 			// join expressions in the given set
 			CExpression *PexprJoin(CBitSet *pbs);
 
-			// find best join order for given component using dynamic programming
-			CExpression *PexprBestJoinOrderDP(CBitSet *pbs);
-
-			// find best join order for given component
-			SComponentArray *PexprBestJoinOrder(CBitSet *pbs);
-
 			// generate cross product for the given components
 			CExpression *PexprCross(CBitSet *pbs);
 		
-		SComponentArray *
-		PexprJoinOrder(SComponentArray *compArray);
+			SComponentArray *
+			GetJoinCompArray(SComponentArray *compArray, SComponentArray *compArray2);
 		
-		SComponent *
-		Join
-		(
-		 SComponent *comp1,
-		 SComponent *comp2
-		 );
+			SComponent *JoinComp(SComponent *comp1, SComponent *comp2);
 
 			// return a subset of the given set covered by one or more edges
 			CBitSet *PbsCovered(CBitSet *pbsInput);
@@ -174,14 +163,6 @@ namespace gpopt
 
 			// add expression to cost map
 			void InsertExpressionCost(CExpression *pexpr, CDouble dCost, BOOL fValidateInsert);
-
-			// generate all subsets of the given array of elements
-			static
-			void GenerateSubsets(IMemoryPool *mp, CBitSet *pbsCurrent, ULONG *pulElems, ULONG size, ULONG ulIndex, CBitSetArray *pdrgpbsSubsets);
-
-			// driver of subset generation
-			static
-			CBitSetArray *PdrgpbsSubsets(IMemoryPool *mp, CBitSet *pbs);
 
 		public:
 
