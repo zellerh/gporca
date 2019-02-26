@@ -608,7 +608,7 @@ CSubqueryHandler::FRemoveScalarSubqueryInternal
 //	@doc:
 //		Helper for creating an inner select expression when creating
 //		outer apply;
-//		create a select node with a <pexprPredicate> IS NOT NULL
+//		create a select node with a <pexprPredicate> IS NOT FALSE
 //		predicate to allow rows where the comparision evaluates to
 //		true or NULL.
 //		We apply one optimization: If we are dealing with a not nullable
@@ -1424,7 +1424,7 @@ CSubqueryHandler::FRemoveAnySubquery
 		{
 			fSuccess = FCreateOuterApply(mp, pexprOuter, pexprSelect, pexprSubquery, pexprPredicate, fOuterRefsUnderInner, ppexprNewOuter, ppexprResidualScalar, fUseNotNullableInnerOpt);
 		}
-		if (!fSuccess)
+		if (!fSuccess || fUseCorrelated)
 		{
 			pexprSelect->Release();
 			fSuccess = FCreateCorrelatedApplyForExistOrQuant(mp, pexprOuter, pexprSubquery, esqctxt, ppexprNewOuter, ppexprResidualScalar);
@@ -1559,11 +1559,6 @@ CSubqueryHandler::FRemoveAllSubquery
 		return fSuccess;
 	}
 
-	if (m_fEnforceCorrelatedApply)
-	{
-		return FCreateCorrelatedApplyForExistOrQuant(mp, pexprOuter, pexprSubquery, esqctxt, ppexprNewOuter, ppexprResidualScalar);
-	}
-
 	CExpression *pexprInversePred = CXformUtils::PexprInversePred(mp, pexprSubquery);
 	// generate a select with the inverse predicate as the selection predicate
 	// TODO: Handle the case where pexprInversePred == NULL
@@ -1594,7 +1589,7 @@ CSubqueryHandler::FRemoveAllSubquery
 		{
 			fSuccess = FCreateOuterApply(mp, pexprOuter, pexprInnerSelect, pexprSubquery, pexprPredicate, fOuterRefsUnderInner, ppexprNewOuter, ppexprResidualScalar, fUseNotNullOptimization);
 		}
-		if (!fSuccess)
+		if (!fSuccess || fUseCorrelated)
 		{
 			pexprInnerSelect->Release();
 			fSuccess = FCreateCorrelatedApplyForExistOrQuant(mp, pexprOuter, pexprSubquery, esqctxt, ppexprNewOuter, ppexprResidualScalar);
