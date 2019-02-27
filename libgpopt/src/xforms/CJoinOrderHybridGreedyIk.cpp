@@ -29,7 +29,7 @@
 
 using namespace gpopt;
 
-#define GPOPT_DP_JOIN_ORDERING_TOPK	25
+#define GPOPT_DP_JOIN_ORDERING_TOPK	10
 
 //---------------------------------------------------------------------------
 //	@function:
@@ -763,19 +763,23 @@ CJoinOrderHybridGreedyIk::PexprExpand()
 	}
 	join_comp_all_levels->Append(base_comps);
 
-	for (ULONG prev_lvl_idx = 0; prev_lvl_idx < m_ulComps - 1; prev_lvl_idx++)
+	for (ULONG current_join_level = 1; current_join_level < m_ulComps; current_join_level++)
 	{
-		SComponentArray *comps_array = (*join_comp_all_levels)[prev_lvl_idx];
-		SComponentArray *current_lvl_join_comps = GetJoinCompArray(comps_array, base_comps);
-		if (prev_lvl_idx > 2)
+		ULONG prev_level = current_join_level - 1;
+		BOOL avoid_duplicates = prev_level == 0 ? true: false;
+		SComponentArray *comps_array = (*join_comp_all_levels)[prev_level];
+		SComponentArray *current_lvl_join_comps = GetJoinCompArray(comps_array, base_comps, avoid_duplicates);
+		if (current_join_level > 2)
 		{
-			for (ULONG k = 2; k < prev_lvl_idx; k++)
+			for (ULONG k = 2; k < current_join_level; k++)
 			{
 				ULONG comps_idx = k - 1;
-				ULONG other_comps_idx = prev_lvl_idx - comps_idx;
+				ULONG other_comps_idx = current_join_level - comps_idx - 1;
+				if (comps_idx > other_comps_idx)
+					break;
 				SComponentArray *comps = (*join_comp_all_levels)[comps_idx];
 				SComponentArray *other_comps = (*join_comp_all_levels)[other_comps_idx];
-				SComponentArray *bushy_join_comps = GetJoinCompArray(comps, other_comps);
+				SComponentArray *bushy_join_comps = GetJoinCompArray(comps, other_comps, comps_idx == other_comps_idx);
 				for (ULONG ul = 0; ul < bushy_join_comps->Size(); ul++)
 				{
 					SComponent *bushy_join_comp = (*bushy_join_comps)[ul];
@@ -804,7 +808,8 @@ CJoinOrderHybridGreedyIk::SComponentArray *
 CJoinOrderHybridGreedyIk::GetJoinCompArray
 	(
 	SComponentArray *prev_lvl_comps,
-	SComponentArray *other_comps
+	SComponentArray *other_comps,
+	BOOL same_level
 	)
 {
 	ULONG comps_size = prev_lvl_comps->Size();
@@ -817,8 +822,11 @@ CJoinOrderHybridGreedyIk::GetJoinCompArray
 		CDouble min_cost(0.0);
 		SComponent *best_cross_join_comp = NULL;
 		CDouble min_cross_cost(0.0);
+		ULONG offset = 0;
+		if (same_level)
+			offset = ul+1;
 		
-		for (ULONG id = 0; id < other_comps_size; id++)
+		for (ULONG id = offset; id < other_comps_size; id++)
 		{
 			SComponent *other_comp = (*other_comps)[id];
 			if (!comp->m_pbs->IsDisjoint(other_comp->m_pbs))
@@ -850,13 +858,17 @@ CJoinOrderHybridGreedyIk::GetJoinCompArray
 		if (NULL != best_join_comp)
 		{
 			InsertExpressionCost(best_join_comp->m_pexpr, min_cost, false);
+			best_join_comp->AddRef();
 			result_comps->Append(best_join_comp);
 		}
 		else if (NULL != best_cross_join_comp)
 		{
 			InsertExpressionCost(best_cross_join_comp->m_pexpr, min_cross_cost, false);
+			best_cross_join_comp->AddRef();
 			result_comps->Append(best_cross_join_comp);
 		}
+		CRefCount::SafeRelease(best_cross_join_comp);
+		CRefCount::SafeRelease(best_join_comp);
 	}
 	return result_comps;
 }
@@ -868,7 +880,6 @@ CJoinOrderHybridGreedyIk::JoinComp
  SComponent *comp2
 )
 {
-
 	CExpression *pexprPred = PexprBuildPred(comp1->m_pbs, comp2->m_pbs);
 
 	CExpression *pexprLeft = comp1->m_pexpr;
