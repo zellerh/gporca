@@ -522,38 +522,42 @@ CJoinOrderHybridGreedyIk::DCost
 	GPOS_ASSERT(NULL != pexpr);
 
 	CDouble *pd = m_phmexprcost->Find(pexpr);
+	
 	if (NULL != pd)
 	{
 		// stop recursion if cost was already cashed
 		return *pd;
 	}
+	
+	DeriveStats(pexpr);
+	CDouble rows = pexpr->Pstats()->Rows();
+//
+//	CDouble dCost(0.0);
+//	const ULONG arity = pexpr->Arity();
+//	if (0 == arity)
+//	{
+//		// leaf operator, use its estimated number of rows as cost
+//		dCost = CDouble(pexpr->Pstats()->Rows());
+//	}
+//	else
+//	{
+//		// inner join operator, sum-up cost of its children
+//		DOUBLE rgdRows[2] = {0.0,  0.0};
+//		for (ULONG ul = 0; ul < arity - 1; ul++)
+//		{
+//			CExpression *pexprChild = (*pexpr)[ul];
+//
+//			// call function recursively to find child cost
+//			dCost = dCost + DCost(pexprChild);
+//			DeriveStats(pexprChild);
+//			rgdRows[ul] = pexprChild->Pstats()->Rows().Get();
+//		}
+//
+//		// add inner join local cost
+//		dCost = dCost + (rgdRows[0] + rgdRows[1]);
+//	}
 
-	CDouble dCost(0.0);
-	const ULONG arity = pexpr->Arity();
-	if (0 == arity)
-	{
-		// leaf operator, use its estimated number of rows as cost
-		dCost = CDouble(pexpr->Pstats()->Rows());
-	}
-	else
-	{
-		// inner join operator, sum-up cost of its children
-		DOUBLE rgdRows[2] = {0.0,  0.0};
-		for (ULONG ul = 0; ul < arity - 1; ul++)
-		{
-			CExpression *pexprChild = (*pexpr)[ul];
-
-			// call function recursively to find child cost
-			dCost = dCost + DCost(pexprChild);
-			DeriveStats(pexprChild);
-			rgdRows[ul] = pexprChild->Pstats()->Rows().Get();
-		}
-
-		// add inner join local cost
-		dCost = dCost + (rgdRows[0] + rgdRows[1]);
-	}
-
-	return dCost;
+	return rows;
 }
 
 
