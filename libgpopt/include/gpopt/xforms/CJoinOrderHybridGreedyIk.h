@@ -144,7 +144,7 @@ namespace gpopt
 			CExpression *PexprCross(CBitSet *pbs);
 		
 			SComponentArray *
-			GetJoinCompArray(SComponentArray *compArray, SComponentArray *compArray2);
+			GetJoinCompArray(SComponentArray *compArray, SComponentArray *compArray2, BOOL same_level);
 		
 			SComponent *JoinComp(SComponent *comp1, SComponent *comp2);
 
