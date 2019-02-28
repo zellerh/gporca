@@ -216,7 +216,7 @@ namespace gpopt
 				ExfLeftOuterJoinWithInnerSelect2IndexGetApply,
 				ExfExpandNAryJoinGreedy,
 				ExfEagerAgg,
-				ExfExpandNAryJoinHybridGreedyIk,
+				ExfExpandNAryJoinDynamicProg,
 				ExfInvalid,
 				ExfSentinel = ExfInvalid
 			};
