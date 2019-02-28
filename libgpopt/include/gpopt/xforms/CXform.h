@@ -217,6 +217,7 @@ namespace gpopt
 				ExfExpandNAryJoinGreedy,
 				ExfEagerAgg,
 				ExfExpandNAryJoinDynamicProg,
+				ExfExpandNAryJoinDynamicProg2,
 				ExfInvalid,
 				ExfSentinel = ExfInvalid
 			};
