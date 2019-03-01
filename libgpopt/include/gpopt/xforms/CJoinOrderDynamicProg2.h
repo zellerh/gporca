@@ -105,9 +105,10 @@ namespace gpopt
 			// hash map from component to best join order
 			typedef CHashMap<CBitSet, CExpressionArray, UlHashBitSet, FEqualBitSet,
 			CleanupRelease<CBitSet>, CleanupRelease<CExpressionArray> > BitSetToExpressionArrayMap;
-		
-		
 
+		// hash map from component to best join order
+		typedef CHashMapIter<CBitSet, CExpressionArray, UlHashBitSet, FEqualBitSet,
+		CleanupRelease<CBitSet>, CleanupRelease<CExpressionArray> > BitSetToExpressionArrayMapIter;
 			// hash map from component pair to connecting edges
 			typedef CHashMap<SComponentPair, CExpression, SComponentPair::HashValue, SComponentPair::Equals,
 				CleanupRelease<SComponentPair>, CleanupRelease<CExpression> > ComponentPairToExpressionMap;
@@ -167,7 +168,37 @@ namespace gpopt
 			// add expression to cost map
 			void InsertExpressionCost(CExpression *pexpr, CDouble dCost, BOOL fValidateInsert);
 		
-			BitSetToExpressionMap *SearchJoinOrder(CBitSetArray *pbsFirst, CBitSetArray *pbsSecond, BOOL same_level);
+			BitSetToExpressionArrayMap *SearchJoinOrder(CBitSetArray *pbsFirst, CBitSetArray *pbsSecond, BOOL same_level);
+		
+		BitSetToExpressionMap*
+		GetCheapest
+		(
+		 BitSetToExpressionArrayMap *bit_exprarray_map
+		 );
+		
+		void
+		AddExprAlternativeToBitSetMap
+		(
+		 CBitSet *pbs,
+		 CExpression *expr,
+		 BitSetToExpressionArrayMap *bitsetToExprArray
+		 );
+		
+		BitSetToExpressionArrayMap *
+		MergeAlternatives
+		(
+		 BitSetToExpressionMap *map1,
+		 BitSetToExpressionMap *map2
+		 );
+		
+		void
+		InsertExpressionCost
+		(
+		 CExpression *pexpr,
+		 CDouble dCost,
+		 BOOL fValidateInsert, // if true, insertion must succeed
+		 ExpressionToCostMap *phmexprcost
+		 );
 		
 		
 		CExpression *
