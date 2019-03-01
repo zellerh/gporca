@@ -744,7 +744,7 @@ CJoinOrderDynamicProg2::SearchJoinOrder
 	ULONG pbsSecondSize = pbsSecond->Size();
 	BitSetToExpressionArrayMap *bitsetToExprArray = GPOS_NEW(m_mp) BitSetToExpressionArrayMap(m_mp);
 
-	CAutoTrace at(m_mp);
+//	CAutoTrace at(m_mp);
 	for (ULONG ul = 0; ul < pbsFirstSize; ul++)
 	{
 		CBitSet *pbsOuter = (*pbsFirst)[ul];
@@ -770,7 +770,7 @@ CJoinOrderDynamicProg2::SearchJoinOrder
 			{
 				continue;
 			}
-			at.Os() << "Combination: " << *pbsOuter << ": " << *pbsInner << std::endl;
+//			at.Os() << "Combination: " << *pbsOuter << ": " << *pbsInner << std::endl;
 			CExpression *result_expr = JoinComp(pbsOuter, pbsInner);
 //			if (NULL == result_expr)
 //				continue;
