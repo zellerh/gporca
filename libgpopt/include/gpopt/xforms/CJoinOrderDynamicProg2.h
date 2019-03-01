@@ -207,6 +207,27 @@ namespace gpopt
 		 CBitSet *pbsFirst,
 		 CBitSet *pbsSecond
 		 );
+		
+		void
+		AddExprFromMap
+		(
+		 BitSetToExpressionArrayMap *bit_expr_map
+		 );
+		
+		BitSetToExpressionArrayMap *
+		MergeAlternatives
+		(
+		 BitSetToExpressionArrayMap *map_a,
+		 BitSetToExpressionArrayMap *map_b
+		 );
+		
+		
+		void
+		AddExprArrayAlternativesToMap
+		(
+		 BitSetToExpressionArrayMap *final_map,
+		 BitSetToExpressionArrayMap *mapToAdd
+		 );
 
 		public:
 
