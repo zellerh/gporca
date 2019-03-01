@@ -683,8 +683,8 @@ CJoinOrderDynamicProg2::JoinComp
 	
 	if (NULL == pexprScalar)
 	{
-//		pexprScalar = CPredicateUtils::PexprConjunction(m_mp, NULL /*pdrgpexpr*/);
-		return NULL;
+		pexprScalar = CPredicateUtils::PexprConjunction(m_mp, NULL /*pdrgpexpr*/);
+//		return NULL;
 	}
 	else
 	{
@@ -747,11 +747,18 @@ CJoinOrderDynamicProg2::SearchJoinOrder
 	CAutoTrace at(m_mp);
 	for (ULONG ul = 0; ul < pbsFirstSize; ul++)
 	{
-		CBitSet *pbsBest = NULL;
-		CDouble minCost (0.0);
 		CBitSet *pbsOuter = (*pbsFirst)[ul];
-		CBitSet *pbsResult = GPOS_NEW(m_mp) CBitSet(m_mp, *pbsOuter);
+
+		CBitSet *pbsBest = NULL;
 		CExpression *best_expr = NULL;
+		CDouble minCost (0.0);
+		CBitSet *pbsResult = GPOS_NEW(m_mp) CBitSet(m_mp, *pbsOuter);
+		
+//		CBitSet *pbsCrossBest = NULL;
+//		CExpression *best_cross_expr = NULL;
+//		CDouble minCrossCost (0.0);
+//		CBitSet *pbsCrossResult = GPOS_NEW(m_mp) CBitSet(m_mp, *pbsOuter);
+
 		ULONG offset = 0;
 		if (same_level)
 			offset = ul+1;
@@ -765,8 +772,9 @@ CJoinOrderDynamicProg2::SearchJoinOrder
 			}
 			at.Os() << "Combination: " << *pbsOuter << ": " << *pbsInner << std::endl;
 			CExpression *result_expr = JoinComp(pbsOuter, pbsInner);
-			if (result_expr == NULL)
-				continue;
+//			if (NULL == result_expr)
+//				continue;
+//			BOOL is_cross_join = CUtils::FCrossJoin(result_expr);
 			CDouble dCost = DCost(result_expr);
 			if (dCost < minCost || minCost == 0.0)
 			{
@@ -775,13 +783,20 @@ CJoinOrderDynamicProg2::SearchJoinOrder
 				best_expr= result_expr;
 				minCost = dCost;
 			}
+//			else if (is_cross_join && (dCost < minCrossCost || minCrossCost == 0.0))
+//			{
+//				pbsCrossBest = pbsInner;
+//				CRefCount::SafeRelease(best_cross_expr);
+//				best_cross_expr = result_expr;
+//				minCrossCost = dCost;
+//			}
 			else
 			{
 				result_expr->Release();
 			}
 		}
 		
-		if (pbsBest != NULL)
+		if (NULL != pbsBest)
 		{
 			pbsBest->AddRef();
 			pbsResult->Union(pbsBest);
@@ -791,9 +806,22 @@ CJoinOrderDynamicProg2::SearchJoinOrder
 			
 			best_expr->Release();
 		}
+//		if (NULL != pbsCrossBest)
+//		{
+//			pbsCrossBest->AddRef();
+//			pbsCrossResult->Union(pbsCrossBest);
+//
+//			AddExprAlternativeToBitSetMap(pbsCrossResult, best_cross_expr, bitsetToExprArray);
+//			InsertExpressionCost(best_cross_expr, minCrossCost, false);
+//
+//			best_cross_expr->Release();
+//		}
 		pbsResult->Release();
+//		pbsCrossResult->Release();
 		
 		CRefCount::SafeRelease(pbsBest);
+//		CRefCount::SafeRelease(pbsCrossBest);
+
 	}
 	return bitsetToExprArray;
 }
@@ -976,6 +1004,7 @@ CJoinOrderDynamicProg2::PexprExpand()
 		else
 		{
 			BitSetToExpressionMap *cheapest_map = GetCheapest(all_maps);
+
 			BitSetToExpressionMapIter iter(cheapest_map);
 			CBitSetArray *array = GPOS_NEW(m_mp) CBitSetArray(m_mp);
 			while (iter.Advance())
@@ -999,7 +1028,7 @@ CJoinOrderDynamicProg2::PexprExpand()
 			cheapest_map->Release();
 			join_levels->Append(array);
 		}
-		
+		all_maps->Release();
 		CRefCount::SafeRelease(bushy_maps);
 		bit_exprarray_map->Release();
 	}
