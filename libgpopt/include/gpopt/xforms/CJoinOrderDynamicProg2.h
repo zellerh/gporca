@@ -221,12 +221,24 @@ namespace gpopt
 		 BitSetToExpressionArrayMap *map_b
 		 );
 		
+		CBitSetArray *
+		GetThisLevelArray
+		(
+		 BitSetToExpressionMap *cheapset_map
+		 );
 		
 		void
 		AddExprArrayAlternativesToMap
 		(
 		 BitSetToExpressionArrayMap *final_map,
 		 BitSetToExpressionArrayMap *mapToAdd
+		 );
+		
+		BitSetToExpressionArrayMap *
+		GetBushyMaps
+		(
+		 ULONG level,
+		 CBitSetArrays *join_levels
 		 );
 
 		public:
