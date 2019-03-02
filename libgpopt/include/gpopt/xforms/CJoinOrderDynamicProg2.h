@@ -158,13 +158,13 @@ namespace gpopt
 			// add expression to cost map
 			void InsertExpressionCost(CExpression *pexpr, CDouble dCost, BOOL fValidateInsert);
 
-			BitSetToExpressionArrayMap *SearchJoinOrder(CBitSetArray *pbsFirst, CBitSetArray *pbsSecond, BOOL same_level);
+			BitSetToExpressionArrayMap *SearchJoinOrder(CBitSetArray *pbsFirst, CBitSetArray *pbsSecond, BOOL same_level, BOOL allow_cross_joins=false);
 
 			BitSetToExpressionMap *GetCheapest(BitSetToExpressionArrayMap *bit_exprarray_map);
 
 			void AddExprAlternativeToBitSetMap(CBitSet *pbs, CExpression *expr, BitSetToExpressionArrayMap *bitsetToExprArray);
 
-			CExpression *JoinComp(CBitSet *pbsFirst, CBitSet *pbsSecond);
+			CExpression *JoinComp(CBitSet *pbsFirst, CBitSet *pbsSecond, BOOL allow_cross_joins);
 		
 			void AddExprFromMap(BitSetToExpressionArrayMap *bit_expr_map);
 

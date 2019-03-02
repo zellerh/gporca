@@ -519,7 +519,8 @@ CExpression *
 CJoinOrderDynamicProg2::JoinComp
 (
  CBitSet *pbsFirst,
- CBitSet *pbsSecond
+ CBitSet *pbsSecond,
+ BOOL allow_cross_joins
  )
 {
 //
@@ -527,6 +528,8 @@ CJoinOrderDynamicProg2::JoinComp
 	
 	if (NULL == pexprScalar)
 	{
+		if (!allow_cross_joins)
+			return NULL;
 		pexprScalar = CPredicateUtils::PexprConjunction(m_mp, NULL /*pdrgpexpr*/);
 	}
 	else
@@ -577,7 +580,8 @@ CJoinOrderDynamicProg2::SearchJoinOrder
 	(
 	 CBitSetArray *pbsFirst,
 	 CBitSetArray *pbsSecond,
-	 BOOL same_level
+	 BOOL same_level,
+	 BOOL allow_cross_joins
  )
 {
 	GPOS_ASSERT(pbsFirst);
@@ -596,11 +600,6 @@ CJoinOrderDynamicProg2::SearchJoinOrder
 		CExpression *best_expr = NULL;
 		CDouble minCost (0.0);
 		CBitSet *pbsResult = GPOS_NEW(m_mp) CBitSet(m_mp, *pbsOuter);
-		
-		CBitSet *pbsCrossBest = NULL;
-		CExpression *best_cross_expr = NULL;
-		CDouble minCrossCost (0.0);
-		CBitSet *pbsCrossResult = GPOS_NEW(m_mp) CBitSet(m_mp, *pbsOuter);
 
 		ULONG offset = 0;
 		if (same_level)
@@ -614,11 +613,12 @@ CJoinOrderDynamicProg2::SearchJoinOrder
 				continue;
 			}
 //			at.Os() << "Combination: " << *pbsOuter << ": " << *pbsInner << std::endl;
-			CExpression *result_expr = JoinComp(pbsOuter, pbsInner);
-			BOOL is_cross_join = CUtils::FCrossJoin(result_expr);
+			CExpression *result_expr = JoinComp(pbsOuter, pbsInner, allow_cross_joins);
+			if (result_expr == NULL && !allow_cross_joins)
+				continue;
 			
 			CDouble dCost = DCost(result_expr);
-			if (!is_cross_join && (dCost < minCost || minCost == 0.0))
+			if (dCost < minCost || minCost == 0.0)
 			{
 				pbsInner->AddRef();
 				CRefCount::SafeRelease(pbsBest);
@@ -626,15 +626,6 @@ CJoinOrderDynamicProg2::SearchJoinOrder
 				CRefCount::SafeRelease(best_expr);
 				best_expr= result_expr;
 				minCost = dCost;
-			}
-			else if (is_cross_join && (dCost < minCrossCost || minCrossCost == 0.0))
-			{
-				pbsInner->AddRef();
-				CRefCount::SafeRelease(pbsCrossBest);
-				pbsCrossBest = pbsInner;
-				CRefCount::SafeRelease(best_cross_expr);
-				best_cross_expr = result_expr;
-				minCrossCost = dCost;
 			}
 			else
 			{
@@ -650,22 +641,10 @@ CJoinOrderDynamicProg2::SearchJoinOrder
 			InsertExpressionCost(best_expr, minCost, false);
 			
 			best_expr->Release();
-			CRefCount::SafeRelease(best_cross_expr);
-		}
-		else if (NULL != pbsCrossBest)
-		{
-			pbsCrossResult->Union(pbsCrossBest);
-
-			AddExprAlternativeToBitSetMap(pbsCrossResult, best_cross_expr, bitsetToExprArray);
-			InsertExpressionCost(best_cross_expr, minCrossCost, false);
-
-			best_cross_expr->Release();
 		}
 		pbsResult->Release();
-		pbsCrossResult->Release();
 		
 		CRefCount::SafeRelease(pbsBest);
-		CRefCount::SafeRelease(pbsCrossBest);
 
 	}
 	return bitsetToExprArray;
@@ -822,6 +801,11 @@ CJoinOrderDynamicProg2::PexprExpand()
 		BOOL base_level = previous_level == 0 ? true: false;
 		BitSetToExpressionArrayMap *bit_exprarray_map = SearchJoinOrder(prev_lev_comps, base_comps, base_level);
 		BitSetToExpressionArrayMap *bushy_maps = GetBushyMaps(level, join_levels);
+		if (bit_exprarray_map->Size() == 0 && bushy_maps->Size() == 0)
+		{
+			bit_exprarray_map->Release();
+			bit_exprarray_map = SearchJoinOrder(prev_lev_comps, base_comps, base_level, true /* allow_cross_joins */);
+		}
 
 		BitSetToExpressionArrayMap *all_maps = MergeAlternatives(bit_exprarray_map, bushy_maps);
 		if (level == m_ulComps - 1)
