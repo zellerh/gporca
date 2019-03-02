@@ -732,17 +732,14 @@ CJoinOrderDynamicProg2::AddExprFromMap
 	)
 {
 	BitSetToExpressionArrayMapIter iter(bit_expr_map);
-	CAutoTrace at(m_mp);
 
 	while (iter.Advance())
 	{
 		const CExpressionArray *childs = iter.Value();
-		at.Os() << "Final Number of alternatives:" << childs->Size() << std::endl;
 		for (ULONG ul = 0; ul < childs->Size(); ul++)
 		{
 			CExpression *pexpr = (*childs)[ul];
 			CDouble dCost = DCost(pexpr);
-			at.Os() << "Cost: " << dCost << std::endl;
 			AddJoinOrder(pexpr, dCost);
 		}
 	}
@@ -875,7 +872,6 @@ CJoinOrderDynamicProg2::GetCheapest
 			}
 		}
 		CBitSet *pbsNew = GPOS_NEW(m_mp) CBitSet(m_mp, *pbs);
-		at.Os() << "BitSet: " << *pbsNew << "Num of alternatives: " << exprs->Size() << std::endl;
 		best_expr->AddRef();
 		cheapest_map->Insert(pbsNew, best_expr);
 	}
