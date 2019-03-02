@@ -158,23 +158,23 @@ namespace gpopt
 			// add expression to cost map
 			void InsertExpressionCost(CExpression *pexpr, CDouble dCost, BOOL fValidateInsert);
 
-			BitSetToExpressionArrayMap *SearchJoinOrder(CBitSetArray *pbsFirst, CBitSetArray *pbsSecond, BOOL same_level, BOOL allow_cross_joins=false);
+			BitSetToExpressionArrayMap *SearchJoinOrders(CBitSetArray *pbsFirst, CBitSetArray *pbsSecond, BOOL same_level, BOOL allow_cross_joins=false);
 
-			BitSetToExpressionMap *GetCheapest(BitSetToExpressionArrayMap *bit_exprarray_map);
+			BitSetToExpressionMap *GetCheapestJoinExprForBitSet(BitSetToExpressionArrayMap *bit_exprarray_map);
 
-			void AddExprAlternativeToBitSetMap(CBitSet *pbs, CExpression *expr, BitSetToExpressionArrayMap *bitsetToExprArray);
+			void AddJoinExprAlternativeForBitSet(CBitSet *pbs, CExpression *expr, BitSetToExpressionArrayMap *bitsetToExprArray);
 
-			CExpression *JoinComp(CBitSet *pbsFirst, CBitSet *pbsSecond, BOOL allow_cross_joins);
+			CExpression *GetJoinExpr(CBitSet *pbsFirst, CBitSet *pbsSecond, BOOL allow_cross_joins);
 		
-			void AddExprFromMap(BitSetToExpressionArrayMap *bit_expr_map);
+			void AddJoinExprFromMap(BitSetToExpressionArrayMap *bit_expr_map);
 
-			BitSetToExpressionArrayMap *MergeAlternatives(BitSetToExpressionArrayMap *map_a, BitSetToExpressionArrayMap *map_b);
+			BitSetToExpressionArrayMap *MergeJoinExprsForBitSet(BitSetToExpressionArrayMap *map, BitSetToExpressionArrayMap *other_map);
 
-			CBitSetArray *GetThisLevelArray(BitSetToExpressionMap *cheapset_map);
+			CBitSetArray *GetJoinExprBitSets(BitSetToExpressionMap *cheapset_map);
 
-			void AddExprArrayAlternativesToMap(BitSetToExpressionArrayMap *final_map, BitSetToExpressionArrayMap *mapToAdd);
+			void AddJoinExprsForBitSet(BitSetToExpressionArrayMap *result_map, BitSetToExpressionArrayMap *candidate_map);
 
-			BitSetToExpressionArrayMap *GetBushyMaps(ULONG level, CBitSetArrays *join_levels);
+			BitSetToExpressionArrayMap *SearchBushyJoinOrders(ULONG level, CBitSetArrays *join_levels);
 
 		public:
 
