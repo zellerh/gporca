@@ -97,6 +97,9 @@ namespace gpopt
 			// hash map from component to best join order
 			typedef CHashMap<CBitSet, CExpression, UlHashBitSet, FEqualBitSet,
 				CleanupRelease<CBitSet>, CleanupRelease<CExpression> > BitSetToExpressionMap;
+		
+		typedef CHashMapIter<CBitSet, CExpression, UlHashBitSet, FEqualBitSet,
+		CleanupRelease<CBitSet>, CleanupRelease<CExpression> > BitSetToExpressionMapIter;
 
 			// hash map from component pair to connecting edges
 			typedef CHashMap<SComponentPair, CExpression, SComponentPair::HashValue, SComponentPair::Equals,

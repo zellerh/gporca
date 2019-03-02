@@ -137,7 +137,6 @@ CJoinOrderDynamicProg2::CJoinOrderDynamicProg2
 	m_phmbsexpr = GPOS_NEW(mp) BitSetToExpressionMap(mp);
 	m_phmexprcost = GPOS_NEW(mp) ExpressionToCostMap(mp);
 	m_pdrgpexprTopKOrders = GPOS_NEW(mp) CExpressionArray(mp);
-	m_bitsetToExprArray = GPOS_NEW(mp) BitSetToExpressionArrayMap(mp);
 	m_pexprDummy = GPOS_NEW(mp) CExpression(mp, GPOS_NEW(mp) CPatternLeaf(mp));
 
 #ifdef GPOS_DEBUG
@@ -169,7 +168,6 @@ CJoinOrderDynamicProg2::~CJoinOrderDynamicProg2()
 	m_phmexprcost->Release();
 	m_pdrgpexprTopKOrders->Release();
 	m_pexprDummy->Release();
-	m_bitsetToExprArray->Release();
 #endif // GPOS_DEBUG
 }
 
@@ -344,41 +342,6 @@ CJoinOrderDynamicProg2::PexprPred
 
 //---------------------------------------------------------------------------
 //	@function:
-//		CJoinOrderDynamicProg2::PexprJoin
-//
-//	@doc:
-//		Join expressions in the given two sets
-//
-//---------------------------------------------------------------------------
-CExpression *
-CJoinOrderDynamicProg2::PexprJoin
-	(
-	CBitSet *pbsFst,
-	CBitSet *pbsSnd
-	)
-{
-	GPOS_ASSERT(NULL != pbsFst);
-	GPOS_ASSERT(NULL != pbsSnd);
-
-	CExpression *pexprFst = PexprLookup(pbsFst);
-	GPOS_ASSERT(NULL != pexprFst);
-
-	CExpression *pexprSnd = PexprLookup(pbsSnd);
-	GPOS_ASSERT(NULL != pexprSnd);
-
-	CExpression *pexprScalar = PexprPred(pbsFst, pbsSnd);
-	GPOS_ASSERT(NULL != pexprScalar);
-
-	pexprFst->AddRef();
-	pexprSnd->AddRef();
-	pexprScalar->AddRef();
-
-	return CUtils::PexprLogicalJoin<CLogicalInnerJoin>(m_mp, pexprFst, pexprSnd, pexprScalar);
-}
-
-
-//---------------------------------------------------------------------------
-//	@function:
 //		CJoinOrderDynamicProg2::DeriveStats
 //
 //	@doc:
@@ -439,94 +402,6 @@ CJoinOrderDynamicProg2::InsertExpressionCost
 	GPOS_ASSERT(fInserted);
 }
 
-void
-CJoinOrderDynamicProg2::InsertExpressionCost
-(
- CExpression *pexpr,
- CDouble dCost,
- BOOL fValidateInsert, // if true, insertion must succeed
- ExpressionToCostMap *phmexprcost
-)
-{
-	GPOS_ASSERT(NULL != pexpr);
-	
-	if (m_pexprDummy == pexpr)
-	{
-		// ignore dummy expression
-		return;
-	}
-	
-	if (!fValidateInsert && NULL != phmexprcost->Find(pexpr))
-	{
-		// expression already exists in cost map
-		return;
-	}
-	
-	pexpr->AddRef();
-#ifdef GPOS_DEBUG
-	BOOL fInserted =
-#endif // GPOS_DEBUG
-	phmexprcost->Insert(pexpr, GPOS_NEW(m_mp) CDouble(dCost));
-	GPOS_ASSERT(fInserted);
-}
-
-
-//---------------------------------------------------------------------------
-//	@function:
-//		CJoinOrderDynamicProg2::PexprJoin
-//
-//	@doc:
-//		Join expressions in the given set
-//
-//---------------------------------------------------------------------------
-CExpression *
-CJoinOrderDynamicProg2::PexprJoin
-	(
-	CBitSet *pbs
-	)
-{
-	GPOS_ASSERT(2 == pbs->Size());
-
-	CBitSetIter bsi(*pbs);
-	(void) bsi.Advance();
-	ULONG ulCompFst = bsi.Bit();
-	(void) bsi.Advance();
-	ULONG ulCompSnd = bsi.Bit();
-	GPOS_ASSERT(!bsi.Advance());
-
-	CBitSet *pbsFst = GPOS_NEW(m_mp) CBitSet(m_mp);
-	(void) pbsFst->ExchangeSet(ulCompFst);
-	CBitSet *pbsSnd = GPOS_NEW(m_mp) CBitSet(m_mp);
-	(void) pbsSnd->ExchangeSet(ulCompSnd);
-	CExpression *pexprScalar = PexprPred(pbsFst, pbsSnd);
-	pbsFst->Release();
-	pbsSnd->Release();
-
-	if (NULL == pexprScalar)
-	{
-		return NULL;
-	}
-
-	CExpression *pexprLeft = m_rgpcomp[ulCompFst]->m_pexpr;
-	CExpression *pexprRight = m_rgpcomp[ulCompSnd]->m_pexpr;
-	pexprLeft->AddRef();
-	pexprRight->AddRef();
-	pexprScalar->AddRef();
-	CExpression *pexprJoin =
-		CUtils::PexprLogicalJoin<CLogicalInnerJoin>(m_mp, pexprLeft, pexprRight, pexprScalar);
-
-	DeriveStats(pexprJoin);
-	// store solution in DP table
-	pbs->AddRef();
-#ifdef GPOS_DEBUG
-	BOOL fInserted =
-#endif // GPOS_DEBUG
-		m_phmbsexpr->Insert(pbs, pexprJoin);
-	GPOS_ASSERT(fInserted);
-
-	return pexprJoin;
-}
-
 //---------------------------------------------------------------------------
 //	@function:
 //		CJoinOrderDynamicProg2::DCost
@@ -576,42 +451,11 @@ CJoinOrderDynamicProg2::DCost
 		}
 
 		// add inner join local cost
-		dCost = dCost + (rgdRows[0] + rgdRows[1]);
+		dCost = (dCost + (rgdRows[0] + rgdRows[1]));
 	}
 
 	return dCost;
 }
-
-
-//---------------------------------------------------------------------------
-//	@function:
-//		CJoinOrderDynamicProg2::PbsCovered
-//
-//	@doc:
-//		Return a subset of the given set covered by one or more edges
-//
-//---------------------------------------------------------------------------
-CBitSet *
-CJoinOrderDynamicProg2::PbsCovered
-	(
-	CBitSet *pbsInput
-	)
-{
-	GPOS_ASSERT(NULL != pbsInput);
-	CBitSet *pbs = GPOS_NEW(m_mp) CBitSet(m_mp);
-
-	for (ULONG ul = 0; ul < m_ulEdges; ul++)
-	{
-		SEdge *pedge = m_rgpedge[ul];
-		if (pbsInput->ContainsAll(pedge->m_pbs))
-		{
-			pbs->Union(pedge->m_pbs);
-		}
-	}
-
-	return pbs;
-}
-
 
 //---------------------------------------------------------------------------
 //	@function:
@@ -684,7 +528,6 @@ CJoinOrderDynamicProg2::JoinComp
 	if (NULL == pexprScalar)
 	{
 		pexprScalar = CPredicateUtils::PexprConjunction(m_mp, NULL /*pdrgpexpr*/);
-//		return NULL;
 	}
 	else
 	{
@@ -882,65 +725,6 @@ CJoinOrderDynamicProg2::MergeAlternatives
 	return result;
 }
 
-CJoinOrderDynamicProg2::BitSetToExpressionArrayMap *
-CJoinOrderDynamicProg2::MergeAlternatives
-	(
-	BitSetToExpressionMap *map_a,
-	BitSetToExpressionMap *map_b
-	)
-{
-	BitSetToExpressionArrayMap *result = GPOS_NEW(m_mp) BitSetToExpressionArrayMap(m_mp);
-	
-	BitSetToExpressionMapIter iter1(map_a);
-	while (iter1.Advance())
-	{
-		const CBitSet *pbs = iter1.Key();
-		CBitSet *pbsNew = GPOS_NEW(m_mp) CBitSet(m_mp, *pbs);
-		
-		const CExpression *child = iter1.Value();
-		COperator *popLogical = child->Pop();
-		CExpressionArray *childs = child->PdrgPexpr();
-		childs->AddRef();
-		popLogical->AddRef();
-		CExpression *new_expr = GPOS_NEW(m_mp) CExpression(m_mp, popLogical, childs);
-		
-		CExpressionArray *resultarray = GPOS_NEW(m_mp) CExpressionArray(m_mp);
-		resultarray->Append(new_expr);
-		result->Insert(pbsNew, resultarray);
-	}
-	
-	BitSetToExpressionMapIter iter2(map_b);
-	while (iter2.Advance())
-	{
-		const CBitSet *pbs = iter2.Key();
-		CExpressionArray *existing_array = result->Find(pbs);
-		if (NULL == existing_array)
-		{
-			CBitSet *pbsNew = GPOS_NEW(m_mp) CBitSet(m_mp, *pbs);
-			const CExpression *child = iter2.Value();
-			COperator *popLogical = child->Pop();
-			CExpressionArray *childs = child->PdrgPexpr();
-			childs->AddRef();
-			popLogical->AddRef();
-			CExpression *new_expr = GPOS_NEW(m_mp) CExpression(m_mp, popLogical, childs);
-			CExpressionArray *resultarray = GPOS_NEW(m_mp) CExpressionArray(m_mp);
-			resultarray->Append(new_expr);
-			result->Insert(pbsNew, resultarray);
-		}
-		else
-		{
-			const CExpression *child = iter2.Value();
-			COperator *popLogical = child->Pop();
-			CExpressionArray *childs = child->PdrgPexpr();
-			childs->AddRef();
-			popLogical->AddRef();
-			CExpression *new_expr = GPOS_NEW(m_mp) CExpression(m_mp, popLogical, childs);
-			existing_array->Append(new_expr);
-		}
-	}
-	return result;
-}
-
 void
 CJoinOrderDynamicProg2::AddExprFromMap
 	(
@@ -953,6 +737,7 @@ CJoinOrderDynamicProg2::AddExprFromMap
 	while (iter.Advance())
 	{
 		const CExpressionArray *childs = iter.Value();
+		at.Os() << "Final Number of alternatives:" << childs->Size() << std::endl;
 		for (ULONG ul = 0; ul < childs->Size(); ul++)
 		{
 			CExpression *pexpr = (*childs)[ul];
@@ -1072,6 +857,7 @@ CJoinOrderDynamicProg2::GetCheapest
 {
 	BitSetToExpressionMap *cheapest_map = GPOS_NEW(m_mp) BitSetToExpressionMap(m_mp);
 	BitSetToExpressionArrayMapIter iter(bit_exprarray_map);
+	CAutoTrace at(m_mp);
 	while (iter.Advance())
 	{
 		const CBitSet *pbs = iter.Key();
@@ -1089,6 +875,7 @@ CJoinOrderDynamicProg2::GetCheapest
 			}
 		}
 		CBitSet *pbsNew = GPOS_NEW(m_mp) CBitSet(m_mp, *pbs);
+		at.Os() << "BitSet: " << *pbsNew << "Num of alternatives: " << exprs->Size() << std::endl;
 		best_expr->AddRef();
 		cheapest_map->Insert(pbsNew, best_expr);
 	}

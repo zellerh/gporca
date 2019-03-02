@@ -106,9 +106,10 @@ namespace gpopt
 			typedef CHashMap<CBitSet, CExpressionArray, UlHashBitSet, FEqualBitSet,
 			CleanupRelease<CBitSet>, CleanupRelease<CExpressionArray> > BitSetToExpressionArrayMap;
 
-		// hash map from component to best join order
-		typedef CHashMapIter<CBitSet, CExpressionArray, UlHashBitSet, FEqualBitSet,
-		CleanupRelease<CBitSet>, CleanupRelease<CExpressionArray> > BitSetToExpressionArrayMapIter;
+			// hash map from component to best join order
+			typedef CHashMapIter<CBitSet, CExpressionArray, UlHashBitSet, FEqualBitSet,
+			CleanupRelease<CBitSet>, CleanupRelease<CExpressionArray> > BitSetToExpressionArrayMapIter;
+		
 			// hash map from component pair to connecting edges
 			typedef CHashMap<SComponentPair, CExpression, SComponentPair::HashValue, SComponentPair::Equals,
 				CleanupRelease<SComponentPair>, CleanupRelease<CExpression> > ComponentPairToExpressionMap;
@@ -125,8 +126,6 @@ namespace gpopt
 
 			// dynamic programming table
 			BitSetToExpressionMap *m_phmbsexpr;
-		
-			BitSetToExpressionArrayMap *m_bitsetToExprArray;
 
 			// map of expressions to its cost
 			ExpressionToCostMap *m_phmexprcost;
@@ -146,15 +145,6 @@ namespace gpopt
 			// extract predicate joining the two given sets
 			CExpression *PexprPred(CBitSet *pbsFst, CBitSet *pbsSnd);
 
-			// join expressions in the given two sets
-			CExpression *PexprJoin(CBitSet *pbsFst, CBitSet *pbsSnd);
-
-			// join expressions in the given set
-			CExpression *PexprJoin(CBitSet *pbs);
-
-			// return a subset of the given set covered by one or more edges
-			CBitSet *PbsCovered(CBitSet *pbsInput);
-
 			// add given join order to best results
 			void AddJoinOrder(CExpression *pexprJoin, CDouble dCost);
 
@@ -167,79 +157,24 @@ namespace gpopt
 
 			// add expression to cost map
 			void InsertExpressionCost(CExpression *pexpr, CDouble dCost, BOOL fValidateInsert);
-		
+
 			BitSetToExpressionArrayMap *SearchJoinOrder(CBitSetArray *pbsFirst, CBitSetArray *pbsSecond, BOOL same_level);
+
+			BitSetToExpressionMap *GetCheapest(BitSetToExpressionArrayMap *bit_exprarray_map);
+
+			void AddExprAlternativeToBitSetMap(CBitSet *pbs, CExpression *expr, BitSetToExpressionArrayMap *bitsetToExprArray);
+
+			CExpression *JoinComp(CBitSet *pbsFirst, CBitSet *pbsSecond);
 		
-		BitSetToExpressionMap*
-		GetCheapest
-		(
-		 BitSetToExpressionArrayMap *bit_exprarray_map
-		 );
-		
-		void
-		AddExprAlternativeToBitSetMap
-		(
-		 CBitSet *pbs,
-		 CExpression *expr,
-		 BitSetToExpressionArrayMap *bitsetToExprArray
-		 );
-		
-		BitSetToExpressionArrayMap *
-		MergeAlternatives
-		(
-		 BitSetToExpressionMap *map1,
-		 BitSetToExpressionMap *map2
-		 );
-		
-		void
-		InsertExpressionCost
-		(
-		 CExpression *pexpr,
-		 CDouble dCost,
-		 BOOL fValidateInsert, // if true, insertion must succeed
-		 ExpressionToCostMap *phmexprcost
-		 );
-		
-		
-		CExpression *
-		JoinComp
-		(
-		 CBitSet *pbsFirst,
-		 CBitSet *pbsSecond
-		 );
-		
-		void
-		AddExprFromMap
-		(
-		 BitSetToExpressionArrayMap *bit_expr_map
-		 );
-		
-		BitSetToExpressionArrayMap *
-		MergeAlternatives
-		(
-		 BitSetToExpressionArrayMap *map_a,
-		 BitSetToExpressionArrayMap *map_b
-		 );
-		
-		CBitSetArray *
-		GetThisLevelArray
-		(
-		 BitSetToExpressionMap *cheapset_map
-		 );
-		
-		void
-		AddExprArrayAlternativesToMap
-		(
-		 BitSetToExpressionArrayMap *final_map,
-		 BitSetToExpressionArrayMap *mapToAdd
-		 );
-		
-		BitSetToExpressionArrayMap *
-		GetBushyMaps
-		(
-		 ULONG level,
-		 CBitSetArrays *join_levels
-		 );
+			void AddExprFromMap(BitSetToExpressionArrayMap *bit_expr_map);
+
+			BitSetToExpressionArrayMap *MergeAlternatives(BitSetToExpressionArrayMap *map_a, BitSetToExpressionArrayMap *map_b);
+
+			CBitSetArray *GetThisLevelArray(BitSetToExpressionMap *cheapset_map);
+
+			void AddExprArrayAlternativesToMap(BitSetToExpressionArrayMap *final_map, BitSetToExpressionArrayMap *mapToAdd);
+
+			BitSetToExpressionArrayMap *GetBushyMaps(ULONG level, CBitSetArrays *join_levels);
 
 		public:
 
