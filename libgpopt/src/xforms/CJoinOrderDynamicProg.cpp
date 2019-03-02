@@ -887,11 +887,6 @@ CJoinOrderDynamicProg::JoinComp
 	pexprLeft->AddRef();
 	pexprRight->AddRef();
 	CExpression *pexprJoin = CUtils::PexprLogicalJoin<CLogicalInnerJoin>(m_mp, pexprLeft, pexprRight, pexprPred);
-    CDouble dcost = DCost(pexprJoin);
-    at.Os() << "Combination: {" << *(comp1->m_pbs) << "--" << *(comp2->m_pbs) << "}" << "Cost: " << dcost.Get() << std::endl;
-    at.Os() << "Left Expr:" << (*pexprLeft) << std::endl;
-    at.Os() << "Right Expr:" << (*pexprRight) << std::endl;
-
 	
 	CBitSet *pbs = GPOS_NEW(m_mp) CBitSet(m_mp, *(comp1->m_pbs));
 	pbs->Union(comp2->m_pbs);
