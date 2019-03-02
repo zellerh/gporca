@@ -434,24 +434,25 @@ CJoinOrderDynamicProgramming::DCost
 	if (0 == arity)
 	{
 		// leaf operator, use its estimated number of rows as cost
-		dCost = CDouble(pexpr->Pstats()->Rows());
+		dCost = CDouble(pexpr->Pstats()->Rows()) * CDouble(pexpr->Pstats()->Width());
 	}
 	else
 	{
 		// inner join operator, sum-up cost of its children
-		DOUBLE rgdRows[2] = {0.0,  0.0};
+//		DOUBLE rgdRows[2] = {0.0,  0.0};
 		for (ULONG ul = 0; ul < arity - 1; ul++)
 		{
 			CExpression *pexprChild = (*pexpr)[ul];
 
 			// call function recursively to find child cost
 			dCost = dCost + DCost(pexprChild);
-			DeriveStats(pexprChild);
-			rgdRows[ul] = pexprChild->Pstats()->Rows().Get();
+//			DeriveStats(pexprChild);
+//			rgdRows[ul] = pexprChild->Pstats()->Rows().Get();
 		}
 
+		DeriveStats(pexpr);
 		// add inner join local cost
-		dCost = (dCost + (rgdRows[0] + rgdRows[1]));
+		dCost = dCost + CDouble(pexpr->Pstats()->Rows()) * CDouble(pexpr->Pstats()->Width());
 	}
 
 	return dCost;
