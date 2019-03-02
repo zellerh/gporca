@@ -250,6 +250,7 @@ CJoinOrderDP::PexprLookup
 	CBitSet *pbs
 	)
 {
+	pbs->DbgPrint();
 	// if set has size 1, return expression directly
 	if (1 == pbs->Size())
 	{
@@ -523,6 +524,9 @@ CJoinOrderDP::PexprBestJoinOrderDP
 
 	CBitSetArray *pdrgpbsSubsets = PdrgpbsSubsets(m_mp, pbs);
 	const ULONG ulSubsets = pdrgpbsSubsets->Size();
+	CAutoTrace at(m_mp);
+	at.Os() << "Current BitSet: " << *pbs << std::endl;
+	ULONG num_of_combination = 0;
 	for (ULONG ul = 0; ul < ulSubsets; ul++)
 	{
 		CBitSet *pbsCurrent = (*pdrgpbsSubsets)[ul];
@@ -543,7 +547,7 @@ CJoinOrderDP::PexprBestJoinOrderDP
 				// this gives a better solution for the input set
 				CExpression *pexprJoin = PexprJoin(pbsCurrent, pbsRemaining);
 				CDouble dCost = DCost(pexprJoin);
-
+				++num_of_combination;
 				if (NULL == pexprResult || dCost < dMinCost)
 				{
 					// this is the first solution, or we found a better solution
@@ -571,6 +575,12 @@ CJoinOrderDP::PexprBestJoinOrderDP
 		m_pexprDummy->AddRef();
 		pexprResult = m_pexprDummy;
 	}
+	at.Os() << "Num of different alternatives: " << num_of_combination << std::endl;
+	pbs->DbgPrint();
+	at.Os() << "Cost: " << dMinCost << std::endl;
+//	pexprResult->DbgPrint();
+	
+
 
 	DeriveStats(pexprResult);
 	pbs->AddRef();
@@ -580,6 +590,18 @@ CJoinOrderDP::PexprBestJoinOrderDP
 		m_phmbsexpr->Insert(pbs, pexprResult);
 	GPOS_ASSERT(fInserted);
 
+	if (pbs->Size() == m_ulComps)
+	{
+		at.Os() << "Final" << std::endl;
+		BitSetToExpressionMapIter iter(m_phmbsexpr);
+		while (iter.Advance())
+		{
+			const CBitSet *pbs = iter.Key();
+			CBitSet *pbsNew = GPOS_NEW(m_mp) CBitSet(m_mp, *pbs);
+			pbsNew->DbgPrint();
+			pbsNew->Release();
+		}
+	}
 	// add expression cost to cost map
 	InsertExpressionCost(pexprResult, dMinCost, false /*fValidateInsert*/);
 
@@ -905,6 +927,7 @@ CJoinOrderDP::PexprBestJoinOrder
 	// if set has size 2, there is only one possible solution
 	if (2 == pbs->Size())
 	{
+		pbs->DbgPrint();
 		return PexprJoin(pbs);
 	}
 
