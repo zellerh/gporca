@@ -3,7 +3,7 @@
 //	Copyright (C) 2013 EMC Corp.
 //
 //	@filename:
-//		CXformExpandNAryJoinDynamicProg2.cpp
+//		CXformExpandNAryJoinDynamicProgramming.cpp
 //
 //	@doc:
 //		Implementation of n-ary join expansion using dynamic programming
@@ -17,9 +17,9 @@
 #include "gpopt/operators/ops.h"
 #include "gpopt/operators/CNormalizer.h"
 #include "gpopt/operators/CPredicateUtils.h"
-#include "gpopt/xforms/CXformExpandNAryJoinDynamicProg2.h"
+#include "gpopt/xforms/CXformExpandNAryJoinDynamicProgramming.h"
 #include "gpopt/xforms/CXformUtils.h"
-#include "gpopt/xforms/CJoinOrderDynamicProg2.h"
+#include "gpopt/xforms/CJoinOrderDynamicProgramming.h"
 
 
 
@@ -28,13 +28,13 @@ using namespace gpopt;
 
 //---------------------------------------------------------------------------
 //	@function:
-//		CXformExpandNAryJoinDynamicProg2::CXformExpandNAryJoinDynamicProg2
+//		CXformExpandNAryJoinDynamicProgramming::CXformExpandNAryJoinDynamicProgramming
 //
 //	@doc:
 //		Ctor
 //
 //---------------------------------------------------------------------------
-CXformExpandNAryJoinDynamicProg2::CXformExpandNAryJoinDynamicProg2
+CXformExpandNAryJoinDynamicProgramming::CXformExpandNAryJoinDynamicProgramming
 	(
 	IMemoryPool *mp
 	)
@@ -55,14 +55,14 @@ CXformExpandNAryJoinDynamicProg2::CXformExpandNAryJoinDynamicProg2
 
 //---------------------------------------------------------------------------
 //	@function:
-//		CXformExpandNAryJoinDynamicProg2::Exfp
+//		CXformExpandNAryJoinDynamicProgramming::Exfp
 //
 //	@doc:
 //		Compute xform promise for a given expression handle
 //
 //---------------------------------------------------------------------------
 CXform::EXformPromise
-CXformExpandNAryJoinDynamicProg2::Exfp
+CXformExpandNAryJoinDynamicProgramming::Exfp
 	(
 	CExpressionHandle &exprhdl
 	)
@@ -74,7 +74,7 @@ CXformExpandNAryJoinDynamicProg2::Exfp
 
 //---------------------------------------------------------------------------
 //	@function:
-//		CXformExpandNAryJoinDynamicProg2::Transform
+//		CXformExpandNAryJoinDynamicProgramming::Transform
 //
 //	@doc:
 //		Actual transformation of n-ary join to cluster of inner joins using
@@ -82,7 +82,7 @@ CXformExpandNAryJoinDynamicProg2::Exfp
 //
 //---------------------------------------------------------------------------
 void
-CXformExpandNAryJoinDynamicProg2::Transform
+CXformExpandNAryJoinDynamicProgramming::Transform
 	(
 	CXformContext *pxfctxt,
 	CXformResult *pxfres,
@@ -112,7 +112,7 @@ CXformExpandNAryJoinDynamicProg2::Transform
 	CExpressionArray *pdrgpexprPreds = CPredicateUtils::PdrgpexprConjuncts(mp, pexprScalar);
 
 	// create join order using dynamic programming
-	CJoinOrderDynamicProg2 jodp(mp, pdrgpexpr, pdrgpexprPreds);
+	CJoinOrderDynamicProgramming jodp(mp, pdrgpexpr, pdrgpexprPreds);
 	CExpression *pexprResult = jodp.PexprExpand();
 
 	const ULONG UlTopKJoinOrders = jodp.PdrgpexprTopK()->Size();

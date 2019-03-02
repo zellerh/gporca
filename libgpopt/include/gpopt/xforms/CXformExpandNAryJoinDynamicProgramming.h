@@ -3,14 +3,14 @@
 //	Copyright (C) 2013 EMC Corp.
 //
 //	@filename:
-//		CXformExpandNAryJoinDynamicProg2.h
+//		CXformExpandNAryJoinDynamicProgramming.h
 //
 //	@doc:
 //		Expand n-ary join into series of binary joins using dynamic
 //		programming
 //---------------------------------------------------------------------------
-#ifndef GPOPT_CXformExpandNAryJoinDynamicProg2_H
-#define GPOPT_CXformExpandNAryJoinDynamicProg2_H
+#ifndef GPOPT_CXformExpandNAryJoinDynamicProgramming_H
+#define GPOPT_CXformExpandNAryJoinDynamicProgramming_H
 
 #include "gpos/base.h"
 #include "gpopt/xforms/CXformExploration.h"
@@ -21,44 +21,44 @@ namespace gpopt
 
 	//---------------------------------------------------------------------------
 	//	@class:
-	//		CXformExpandNAryJoinDynamicProg2
+	//		CXformExpandNAryJoinDynamicProgramming
 	//
 	//	@doc:
 	//		Expand n-ary join into series of binary joins using dynamic
 	//		programming
 	//
 	//---------------------------------------------------------------------------
-	class CXformExpandNAryJoinDynamicProg2 : public CXformExploration
+	class CXformExpandNAryJoinDynamicProgramming : public CXformExploration
 	{
 
 		private:
 
 			// private copy ctor
-			CXformExpandNAryJoinDynamicProg2(const CXformExpandNAryJoinDynamicProg2 &);
+			CXformExpandNAryJoinDynamicProgramming(const CXformExpandNAryJoinDynamicProgramming &);
 
 		public:
 
 			// ctor
 			explicit
-			CXformExpandNAryJoinDynamicProg2(IMemoryPool *mp);
+			CXformExpandNAryJoinDynamicProgramming(IMemoryPool *mp);
 
 			// dtor
 			virtual
-			~CXformExpandNAryJoinDynamicProg2()
+			~CXformExpandNAryJoinDynamicProgramming()
 			{}
 
 			// ident accessors
 			virtual
 			EXformId Exfid() const
 			{
-				return ExfExpandNAryJoinDynamicProg2;
+				return ExfExpandNAryJoinDynamicProgramming;
 			}
 
 			// return a string for xform name
 			virtual
 			const CHAR *SzId() const
 			{
-				return "CXformExpandNAryJoinDynamicProg2";
+				return "CXformExpandNAryJoinDynamicProgramming";
 			}
 
 			// compute xform promise for a given expression handle
@@ -80,11 +80,11 @@ namespace gpopt
 					CExpression *pexpr
 					) const;
 
-	}; // class CXformExpandNAryJoinDynamicProg2
+	}; // class CXformExpandNAryJoinDynamicProgramming
 
 }
 
 
-#endif // !GPOPT_CXformExpandNAryJoinDynamicProg2_H
+#endif // !GPOPT_CXformExpandNAryJoinDynamicProgramming_H
 
 // EOF
