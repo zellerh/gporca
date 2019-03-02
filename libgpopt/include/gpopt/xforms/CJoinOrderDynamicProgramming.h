@@ -158,23 +158,23 @@ namespace gpopt
 			// add expression to cost map
 			void InsertExpressionCost(CExpression *pexpr, CDouble dCost, BOOL fValidateInsert);
 
-			BitSetToExpressionArrayMap *SearchJoinOrders(CBitSetArray *pbsFirst, CBitSetArray *pbsSecond, BOOL same_level, BOOL allow_cross_joins=false);
+			BitSetToExpressionArrayMap *SearchJoinOrders(CBitSetArray *join_pair_bitsets, CBitSetArray *other_join_pair_bitsets, BOOL same_level_join_pairs, BOOL allow_cross_joins=false);
 
 			BitSetToExpressionMap *GetCheapestJoinExprForBitSet(BitSetToExpressionArrayMap *bit_exprarray_map);
 
-			void AddJoinExprAlternativeForBitSet(CBitSet *pbs, CExpression *expr, BitSetToExpressionArrayMap *bitsetToExprArray);
+			void AddJoinExprAlternativeForBitSet(CBitSet *join_bitset, CExpression *join_expr, BitSetToExpressionArrayMap *map);
 
-			CExpression *GetJoinExpr(CBitSet *pbsFirst, CBitSet *pbsSecond, BOOL allow_cross_joins);
+			CExpression *GetJoinExpr(CBitSet *left_child, CBitSet *right_child, BOOL allow_cross_joins);
 		
-			void AddJoinExprFromMap(BitSetToExpressionArrayMap *bit_expr_map);
+			void AddJoinExprFromMap(BitSetToExpressionArrayMap *bitset_joinexpr_map);
 
 			BitSetToExpressionArrayMap *MergeJoinExprsForBitSet(BitSetToExpressionArrayMap *map, BitSetToExpressionArrayMap *other_map);
 
-			CBitSetArray *GetJoinExprBitSets(BitSetToExpressionMap *cheapset_map);
+			CBitSetArray *GetJoinExprBitSets(BitSetToExpressionMap *join_expr_map);
 
 			void AddJoinExprsForBitSet(BitSetToExpressionArrayMap *result_map, BitSetToExpressionArrayMap *candidate_map);
 
-			BitSetToExpressionArrayMap *SearchBushyJoinOrders(ULONG level, CBitSetArrays *join_levels);
+			BitSetToExpressionArrayMap *SearchBushyJoinOrders(ULONG current_level, CBitSetArrays *join_levels);
 
 		public:
 
