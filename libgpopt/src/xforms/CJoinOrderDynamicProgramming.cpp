@@ -801,7 +801,7 @@ CJoinOrderDynamicProgramming::PexprExpand()
 		BOOL base_level = previous_level == 0 ? true: false;
 		BitSetToExpressionArrayMap *bit_exprarray_map = SearchJoinOrder(prev_lev_comps, base_comps, base_level);
 		BitSetToExpressionArrayMap *bushy_maps = GetBushyMaps(level, join_levels);
-		if (bit_exprarray_map->Size() == 0 && bushy_maps->Size() == 0)
+		if (bit_exprarray_map->Size() == 0 && NULL == bushy_maps)
 		{
 			bit_exprarray_map->Release();
 			bit_exprarray_map = SearchJoinOrder(prev_lev_comps, base_comps, base_level, true /* allow_cross_joins */);
