@@ -3,13 +3,13 @@
 //	Copyright (C) 2013 EMC Corp.
 //
 //	@filename:
-//		CJoinOrderDynamicProg2.h
+//		CJoinOrderDynamicProgramming.h
 //
 //	@doc:
 //		Dynamic programming-based join order generation
 //---------------------------------------------------------------------------
-#ifndef GPOPT_CJoinOrderDynamicProg2_H
-#define GPOPT_CJoinOrderDynamicProg2_H
+#ifndef GPOPT_CJoinOrderDynamicProgramming_H
+#define GPOPT_CJoinOrderDynamicProgramming_H
 
 #include "gpos/base.h"
 #include "gpos/common/CHashMap.h"
@@ -26,13 +26,13 @@ namespace gpopt
 
 	//---------------------------------------------------------------------------
 	//	@class:
-	//		CJoinOrderDynamicProg2
+	//		CJoinOrderDynamicProgramming
 	//
 	//	@doc:
 	//		Helper class for creating join orders using dynamic programming
 	//
 	//---------------------------------------------------------------------------
-	class CJoinOrderDynamicProg2 : public CJoinOrder
+	class CJoinOrderDynamicProgramming : public CJoinOrder
 	{
 
 		private:
@@ -179,7 +179,7 @@ namespace gpopt
 		public:
 
 			// ctor
-			CJoinOrderDynamicProg2
+			CJoinOrderDynamicProgramming
 				(
 				IMemoryPool *mp,
 				CExpressionArray *pdrgpexprComponents,
@@ -188,7 +188,7 @@ namespace gpopt
 
 			// dtor
 			virtual
-			~CJoinOrderDynamicProg2();
+			~CJoinOrderDynamicProgramming();
 
 			// main handler
 			virtual
@@ -204,10 +204,10 @@ namespace gpopt
 			virtual
 			IOstream &OsPrint(IOstream &) const;
 
-	}; // class CJoinOrderDynamicProg2
+	}; // class CJoinOrderDynamicProgramming
 
 }
 
-#endif // !GPOPT_CJoinOrderDynamicProg2_H
+#endif // !GPOPT_CJoinOrderDynamicProgramming_H
 
 // EOF

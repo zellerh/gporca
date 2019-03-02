@@ -70,7 +70,7 @@
 #include "gpopt/xforms/CXformExpandNAryJoinGreedy.h"
 #include "gpopt/xforms/CXformExpandNAryJoinDP.h"
 #include "gpopt/xforms/CXformExpandNAryJoinDynamicProg.h"
-#include "gpopt/xforms/CXformExpandNAryJoinDynamicProg2.h"
+#include "gpopt/xforms/CXformExpandNAryJoinDynamicProgramming.h"
 #include "gpopt/xforms/CXformJoinSwap.h"
 #include "gpopt/xforms/CXformSemiJoinSemiJoinSwap.h"
 #include "gpopt/xforms/CXformSemiJoinAntiSemiJoinSwap.h"

@@ -80,7 +80,7 @@ CLogicalNAryJoin::PxfsCandidates
 //    (void) xform_set->ExchangeSet(CXform::ExfExpandNAryJoinDP);
 //    (void) xform_set->ExchangeSet(CXform::ExfExpandNAryJoinGreedy);
 //    (void) xform_set->ExchangeSet(CXform::ExfExpandNAryJoinDynamicProg);
-	(void) xform_set->ExchangeSet(CXform::ExfExpandNAryJoinDynamicProg2);
+	(void) xform_set->ExchangeSet(CXform::ExfExpandNAryJoinDynamicProgramming);
 
 	return xform_set;
 }

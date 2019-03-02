@@ -291,7 +291,7 @@ CXformFactory::Instantiate()
 	Add(GPOS_NEW(m_mp) CXformExpandNAryJoinGreedy(m_mp));
 	Add(GPOS_NEW(m_mp) CXformEagerAgg(m_mp));
 	Add(GPOS_NEW(m_mp) CXformExpandNAryJoinDynamicProg(m_mp));
-	Add(GPOS_NEW(m_mp) CXformExpandNAryJoinDynamicProg2(m_mp));
+	Add(GPOS_NEW(m_mp) CXformExpandNAryJoinDynamicProgramming(m_mp));
 
 	GPOS_ASSERT(NULL != m_rgpxf[CXform::ExfSentinel - 1] &&
 				"Not all xforms have been instantiated");
