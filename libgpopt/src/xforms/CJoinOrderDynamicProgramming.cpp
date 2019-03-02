@@ -3,7 +3,7 @@
 //	Copyright (C) 2013 EMC Corp.
 //
 //	@filename:
-//		CJoinOrderDynamicProg2.cpp
+//		CJoinOrderDynamicProgramming.cpp
 //
 //	@doc:
 //		Implementation of dynamic programming-based join order generation
@@ -23,7 +23,7 @@
 #include "gpopt/operators/ops.h"
 #include "gpopt/operators/CPredicateUtils.h"
 #include "gpopt/operators/CNormalizer.h"
-#include "gpopt/xforms/CJoinOrderDynamicProg2.h"
+#include "gpopt/xforms/CJoinOrderDynamicProgramming.h"
 
 #include "gpopt/exception.h"
 
@@ -39,7 +39,7 @@ using namespace gpopt;
 //		Ctor
 //
 //---------------------------------------------------------------------------
-CJoinOrderDynamicProg2::SComponentPair::SComponentPair
+CJoinOrderDynamicProgramming::SComponentPair::SComponentPair
 	(
 	CBitSet *pbsFst,
 	CBitSet *pbsSnd
@@ -56,14 +56,14 @@ CJoinOrderDynamicProg2::SComponentPair::SComponentPair
 
 //---------------------------------------------------------------------------
 //	@function:
-//		CJoinOrderDynamicProg2::SComponentPair::HashValue
+//		CJoinOrderDynamicProgramming::SComponentPair::HashValue
 //
 //	@doc:
 //		Hash function
 //
 //---------------------------------------------------------------------------
 ULONG
-CJoinOrderDynamicProg2::SComponentPair::HashValue
+CJoinOrderDynamicProgramming::SComponentPair::HashValue
 	(
 	const SComponentPair *pcomppair
 	)
@@ -80,14 +80,14 @@ CJoinOrderDynamicProg2::SComponentPair::HashValue
 
 //---------------------------------------------------------------------------
 //	@function:
-//		CJoinOrderDynamicProg2::SComponentPair::Equals
+//		CJoinOrderDynamicProgramming::SComponentPair::Equals
 //
 //	@doc:
 //		Equality function
 //
 //---------------------------------------------------------------------------
 BOOL
-CJoinOrderDynamicProg2::SComponentPair::Equals
+CJoinOrderDynamicProgramming::SComponentPair::Equals
 	(
 	const SComponentPair *pcomppairFst,
 	const SComponentPair *pcomppairSnd
@@ -103,13 +103,13 @@ CJoinOrderDynamicProg2::SComponentPair::Equals
 
 //---------------------------------------------------------------------------
 //	@function:
-//		CJoinOrderDynamicProg2::SComponentPair::~SComponentPair
+//		CJoinOrderDynamicProgramming::SComponentPair::~SComponentPair
 //
 //	@doc:
 //		Dtor
 //
 //---------------------------------------------------------------------------
-CJoinOrderDynamicProg2::SComponentPair::~SComponentPair()
+CJoinOrderDynamicProgramming::SComponentPair::~SComponentPair()
 {
 	m_pbsFst->Release();
 	m_pbsSnd->Release();
@@ -118,13 +118,13 @@ CJoinOrderDynamicProg2::SComponentPair::~SComponentPair()
 
 //---------------------------------------------------------------------------
 //	@function:
-//		CJoinOrderDynamicProg2::CJoinOrderDynamicProg2
+//		CJoinOrderDynamicProgramming::CJoinOrderDynamicProgramming
 //
 //	@doc:
 //		Ctor
 //
 //---------------------------------------------------------------------------
-CJoinOrderDynamicProg2::CJoinOrderDynamicProg2
+CJoinOrderDynamicProgramming::CJoinOrderDynamicProgramming
 	(
 	IMemoryPool *mp,
 	CExpressionArray *pdrgpexprComponents,
@@ -151,13 +151,13 @@ CJoinOrderDynamicProg2::CJoinOrderDynamicProg2
 
 //---------------------------------------------------------------------------
 //	@function:
-//		CJoinOrderDynamicProg2::~CJoinOrderDynamicProg2
+//		CJoinOrderDynamicProgramming::~CJoinOrderDynamicProgramming
 //
 //	@doc:
 //		Dtor
 //
 //---------------------------------------------------------------------------
-CJoinOrderDynamicProg2::~CJoinOrderDynamicProg2()
+CJoinOrderDynamicProgramming::~CJoinOrderDynamicProgramming()
 {
 #ifdef GPOS_DEBUG
 	// in optimized build, we flush-down memory pools without leak checking,
@@ -174,14 +174,14 @@ CJoinOrderDynamicProg2::~CJoinOrderDynamicProg2()
 
 //---------------------------------------------------------------------------
 //	@function:
-//		CJoinOrderDynamicProg2::AddJoinOrder
+//		CJoinOrderDynamicProgramming::AddJoinOrder
 //
 //	@doc:
 //		Add given join order to top k join orders
 //
 //---------------------------------------------------------------------------
 void
-CJoinOrderDynamicProg2::AddJoinOrder
+CJoinOrderDynamicProgramming::AddJoinOrder
 	(
 	CExpression *pexprJoin,
 	CDouble dCost
@@ -238,14 +238,14 @@ CJoinOrderDynamicProg2::AddJoinOrder
 
 //---------------------------------------------------------------------------
 //	@function:
-//		CJoinOrderDynamicProg2::PexprLookup
+//		CJoinOrderDynamicProgramming::PexprLookup
 //
 //	@doc:
 //		Lookup best join order for given set
 //
 //---------------------------------------------------------------------------
 CExpression *
-CJoinOrderDynamicProg2::PexprLookup
+CJoinOrderDynamicProgramming::PexprLookup
 	(
 	CBitSet *pbs
 	)
@@ -266,14 +266,14 @@ CJoinOrderDynamicProg2::PexprLookup
 
 //---------------------------------------------------------------------------
 //	@function:
-//		CJoinOrderDynamicProg2::PexprPred
+//		CJoinOrderDynamicProgramming::PexprPred
 //
 //	@doc:
 //		Extract predicate joining the two given sets
 //
 //---------------------------------------------------------------------------
 CExpression *
-CJoinOrderDynamicProg2::PexprPred
+CJoinOrderDynamicProgramming::PexprPred
 	(
 	CBitSet *pbsFst,
 	CBitSet *pbsSnd
@@ -342,14 +342,14 @@ CJoinOrderDynamicProg2::PexprPred
 
 //---------------------------------------------------------------------------
 //	@function:
-//		CJoinOrderDynamicProg2::DeriveStats
+//		CJoinOrderDynamicProgramming::DeriveStats
 //
 //	@doc:
 //		Derive stats on given expression
 //
 //---------------------------------------------------------------------------
 void
-CJoinOrderDynamicProg2::DeriveStats
+CJoinOrderDynamicProgramming::DeriveStats
 	(
 	CExpression *pexpr
 	)
@@ -366,14 +366,14 @@ CJoinOrderDynamicProg2::DeriveStats
 
 //---------------------------------------------------------------------------
 //	@function:
-//		CJoinOrderDynamicProg2::InsertExpressionCost
+//		CJoinOrderDynamicProgramming::InsertExpressionCost
 //
 //	@doc:
 //		Add expression to cost map
 //
 //---------------------------------------------------------------------------
 void
-CJoinOrderDynamicProg2::InsertExpressionCost
+CJoinOrderDynamicProgramming::InsertExpressionCost
 	(
 	CExpression *pexpr,
 	CDouble dCost,
@@ -404,7 +404,7 @@ CJoinOrderDynamicProg2::InsertExpressionCost
 
 //---------------------------------------------------------------------------
 //	@function:
-//		CJoinOrderDynamicProg2::DCost
+//		CJoinOrderDynamicProgramming::DCost
 //
 //	@doc:
 //		Primitive costing of join expressions;
@@ -414,7 +414,7 @@ CJoinOrderDynamicProg2::InsertExpressionCost
 //
 //---------------------------------------------------------------------------
 CDouble
-CJoinOrderDynamicProg2::DCost
+CJoinOrderDynamicProgramming::DCost
 	(
 	CExpression *pexpr
 	)
@@ -459,14 +459,14 @@ CJoinOrderDynamicProg2::DCost
 
 //---------------------------------------------------------------------------
 //	@function:
-//		CJoinOrderDynamicProg2::PexprBuildPred
+//		CJoinOrderDynamicProgramming::PexprBuildPred
 //
 //	@doc:
 //		Build predicate connecting the two given sets
 //
 //---------------------------------------------------------------------------
 CExpression *
-CJoinOrderDynamicProg2::PexprBuildPred
+CJoinOrderDynamicProgramming::PexprBuildPred
 	(
 	CBitSet *pbsFst,
 	CBitSet *pbsSnd
@@ -516,7 +516,7 @@ CJoinOrderDynamicProg2::PexprBuildPred
 }
 
 CExpression *
-CJoinOrderDynamicProg2::JoinComp
+CJoinOrderDynamicProgramming::JoinComp
 (
  CBitSet *pbsFirst,
  CBitSet *pbsSecond,
@@ -550,7 +550,7 @@ CJoinOrderDynamicProg2::JoinComp
 
 
 void
-CJoinOrderDynamicProg2::AddExprAlternativeToBitSetMap
+CJoinOrderDynamicProgramming::AddExprAlternativeToBitSetMap
 	(
 	CBitSet *pbs,
 	CExpression *expr,
@@ -575,8 +575,8 @@ CJoinOrderDynamicProg2::AddExprAlternativeToBitSetMap
 	}
 }
 
-CJoinOrderDynamicProg2::BitSetToExpressionArrayMap *
-CJoinOrderDynamicProg2::SearchJoinOrder
+CJoinOrderDynamicProgramming::BitSetToExpressionArrayMap *
+CJoinOrderDynamicProgramming::SearchJoinOrder
 	(
 	 CBitSetArray *pbsFirst,
 	 CBitSetArray *pbsSecond,
@@ -651,7 +651,7 @@ CJoinOrderDynamicProg2::SearchJoinOrder
 }
 
 void
-CJoinOrderDynamicProg2::AddExprArrayAlternativesToMap
+CJoinOrderDynamicProgramming::AddExprArrayAlternativesToMap
 (
 	BitSetToExpressionArrayMap *final_map,
  	BitSetToExpressionArrayMap *mapToAdd
@@ -691,8 +691,8 @@ CJoinOrderDynamicProg2::AddExprArrayAlternativesToMap
 	}
 }
 
-CJoinOrderDynamicProg2::BitSetToExpressionArrayMap *
-CJoinOrderDynamicProg2::MergeAlternatives
+CJoinOrderDynamicProgramming::BitSetToExpressionArrayMap *
+CJoinOrderDynamicProgramming::MergeAlternatives
 	(
 	 BitSetToExpressionArrayMap *map_a,
 	 BitSetToExpressionArrayMap *map_b
@@ -705,7 +705,7 @@ CJoinOrderDynamicProg2::MergeAlternatives
 }
 
 void
-CJoinOrderDynamicProg2::AddExprFromMap
+CJoinOrderDynamicProgramming::AddExprFromMap
 	(
 	BitSetToExpressionArrayMap *bit_expr_map
 	)
@@ -725,7 +725,7 @@ CJoinOrderDynamicProg2::AddExprFromMap
 }
 
 CBitSetArray *
-CJoinOrderDynamicProg2::GetThisLevelArray
+CJoinOrderDynamicProgramming::GetThisLevelArray
 	(
 	BitSetToExpressionMap *cheapest_map
 	)
@@ -753,8 +753,8 @@ CJoinOrderDynamicProg2::GetThisLevelArray
 	return array;
 }
 
-CJoinOrderDynamicProg2::BitSetToExpressionArrayMap *
-CJoinOrderDynamicProg2::GetBushyMaps
+CJoinOrderDynamicProgramming::BitSetToExpressionArrayMap *
+CJoinOrderDynamicProgramming::GetBushyMaps
 	(
 	ULONG level,
 	CBitSetArrays *join_levels
@@ -782,7 +782,7 @@ CJoinOrderDynamicProg2::GetBushyMaps
 }
 
 CExpression *
-CJoinOrderDynamicProg2::PexprExpand()
+CJoinOrderDynamicProgramming::PexprExpand()
 {
 	CBitSetArray *base_comps = GPOS_NEW(m_mp) CBitSetArray(m_mp);
 	CBitSetArrays *join_levels = GPOS_NEW(m_mp) CBitSetArrays(m_mp);
@@ -830,8 +830,8 @@ CJoinOrderDynamicProg2::PexprExpand()
 
 
 
-CJoinOrderDynamicProg2::BitSetToExpressionMap*
-CJoinOrderDynamicProg2::GetCheapest
+CJoinOrderDynamicProgramming::BitSetToExpressionMap*
+CJoinOrderDynamicProgramming::GetCheapest
 	(
 	BitSetToExpressionArrayMap *bit_exprarray_map
 	)
@@ -864,14 +864,14 @@ CJoinOrderDynamicProg2::GetCheapest
 
 //---------------------------------------------------------------------------
 //	@function:
-//		CJoinOrderDynamicProg2::OsPrint
+//		CJoinOrderDynamicProgramming::OsPrint
 //
 //	@doc:
 //		Print created join order
 //
 //---------------------------------------------------------------------------
 IOstream &
-CJoinOrderDynamicProg2::OsPrint
+CJoinOrderDynamicProgramming::OsPrint
 	(
 	IOstream &os
 	)
