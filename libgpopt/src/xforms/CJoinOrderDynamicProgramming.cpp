@@ -585,8 +585,8 @@ CJoinOrderDynamicProgramming::SearchJoinOrders
 	BOOL allow_cross_joins
 	)
 {
-	GPOS_ASSERT(join_pairs_bitsets);
-	GPOS_ASSERT(other_join_pairs_bitsets);
+	GPOS_ASSERT(join_pair_bitsets);
+	GPOS_ASSERT(other_join_pair_bitsets);
 
 	ULONG join_pairs_size = join_pair_bitsets->Size();
 	ULONG other_join_pairs_size = other_join_pair_bitsets->Size();
