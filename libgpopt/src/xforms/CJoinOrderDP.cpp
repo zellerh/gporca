@@ -29,7 +29,7 @@
 
 using namespace gpopt;
 
-#define GPOPT_DP_JOIN_ORDERING_TOPK	10
+#define GPOPT_DP_JOIN_ORDERING_TOPK	20
 
 //---------------------------------------------------------------------------
 //	@function:
@@ -523,6 +523,7 @@ CJoinOrderDP::PexprBestJoinOrderDP
 
 	CBitSetArray *pdrgpbsSubsets = PdrgpbsSubsets(m_mp, pbs);
 	const ULONG ulSubsets = pdrgpbsSubsets->Size();
+//	ULONG counter = 0;
 	for (ULONG ul = 0; ul < ulSubsets; ul++)
 	{
 		CBitSet *pbsCurrent = (*pdrgpbsSubsets)[ul];
@@ -543,6 +544,7 @@ CJoinOrderDP::PexprBestJoinOrderDP
 				// this gives a better solution for the input set
 				CExpression *pexprJoin = PexprJoin(pbsCurrent, pbsRemaining);
 				CDouble dCost = DCost(pexprJoin);
+//				++counter;
 				if (NULL == pexprResult || dCost < dMinCost)
 				{
 					// this is the first solution, or we found a better solution
@@ -570,6 +572,9 @@ CJoinOrderDP::PexprBestJoinOrderDP
 		m_pexprDummy->AddRef();
 		pexprResult = m_pexprDummy;
 	}
+//	pbs->DbgPrint();
+//	CAutoTrace at(m_mp);
+//	at.Os() << "counter: " << counter << std::endl;
 	
 
 
@@ -906,6 +911,7 @@ CJoinOrderDP::PexprBestJoinOrder
 	// if set has size 2, there is only one possible solution
 	if (2 == pbs->Size())
 	{
+//		pbs->DbgPrint();
 		return PexprJoin(pbs);
 	}
 
