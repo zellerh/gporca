@@ -572,7 +572,9 @@ CJoinOrderDynamicProgramming::AddJoinExprAlternativeForBitSet
 		CExpressionArray *exprs = GPOS_NEW(m_mp) CExpressionArray(m_mp);
 		exprs->Append(join_expr);
 		join_bitset->AddRef();
-		map->Insert(join_bitset, exprs);
+		BOOL success = map->Insert(join_bitset, exprs);
+		if (!success)
+			raise(1);
 	}
 }
 
@@ -596,10 +598,10 @@ CJoinOrderDynamicProgramming::SearchJoinOrders
 	{
 		CBitSet *left_bitset = (*join_pair_bitsets)[join_pair_id];
 
-		CBitSet *best_right_bitset = NULL;
-		CExpression *best_join_expr = NULL;
+//		CBitSet *best_right_bitset = NULL;
+//		CExpression *best_join_expr = NULL;
 		CDouble min_join_cost (0.0);
-		CBitSet *best_join_bitset = GPOS_NEW(m_mp) CBitSet(m_mp, *left_bitset);
+
 
 		// if pairs from the same level, start from the next
 		// entry to avoid duplicate join combinations
@@ -611,45 +613,28 @@ CJoinOrderDynamicProgramming::SearchJoinOrders
 
 		for (ULONG other_pair_id = other_pair_start_id; other_pair_id < other_join_pairs_size; other_pair_id++)
 		{
+			CBitSet *best_join_bitset = GPOS_NEW(m_mp) CBitSet(m_mp, *left_bitset);
 			CBitSet *right_bitset = (*other_join_pair_bitsets)[other_pair_id];
 			if (!left_bitset->IsDisjoint(right_bitset))
 			{
+				best_join_bitset->Release();
 				continue;
 			}
 
 			CExpression *join_expr = GetJoinExpr(left_bitset, right_bitset, allow_cross_joins);
 			if (join_expr == NULL && !allow_cross_joins)
+			{
+				best_join_bitset->Release();
 				continue;
+			}
 
 			CDouble join_cost = DCost(join_expr);
-			if (join_cost < min_join_cost || min_join_cost == 0.0)
-			{
-				right_bitset->AddRef();
-				CRefCount::SafeRelease(best_right_bitset);
-				best_right_bitset = right_bitset;
-				CRefCount::SafeRelease(best_join_expr);
-				best_join_expr = join_expr;
-				min_join_cost = join_cost;
-			}
-			else
-			{
-				join_expr->Release();
-			}
+			best_join_bitset->Union(right_bitset);
+			AddJoinExprAlternativeForBitSet(best_join_bitset, join_expr, join_pairs_map);
+			InsertExpressionCost(join_expr, join_cost, false);
+			join_expr->Release();
+			best_join_bitset->Release();
 		}
-		
-		if (NULL != best_right_bitset)
-		{
-			best_join_bitset->Union(best_right_bitset);
-			
-			AddJoinExprAlternativeForBitSet(best_join_bitset, best_join_expr, join_pairs_map);
-			InsertExpressionCost(best_join_expr, min_join_cost, false);
-			
-			best_join_expr->Release();
-		}
-		best_join_bitset->Release();
-		
-		CRefCount::SafeRelease(best_right_bitset);
-
 	}
 	return join_pairs_map;
 }
@@ -751,7 +736,11 @@ CJoinOrderDynamicProgramming::GetJoinExprBitSets
 		
 		join_bitsets->Append(join_bitset_entry);
 		join_bitset_entry->AddRef();
+#ifdef GPOS_DEBUG
+		BOOL success =
+#endif
 		m_phmbsexpr->Insert(join_bitset_entry, join_expr_entry);
+		GPOS_ASSERT(success);
 	}
 	return join_bitsets;
 }
@@ -814,6 +803,8 @@ CJoinOrderDynamicProgramming::PexprExpand()
 		if (current_join_level == m_ulComps - 1)
 		{
 			AddJoinExprFromMap(all_join_exprs_map);
+			BitSetToExpressionMap *cheapest_bitset_join_expr_map = GetCheapestJoinExprForBitSet(all_join_exprs_map);
+			cheapest_bitset_join_expr_map->Release();
 		}
 		else
 		{
@@ -841,6 +832,7 @@ CJoinOrderDynamicProgramming::GetCheapestJoinExprForBitSet
 {
 	BitSetToExpressionMap *cheapest_join_map = GPOS_NEW(m_mp) BitSetToExpressionMap(m_mp);
 	BitSetToExpressionArrayMapIter iter(bitset_exprs_map);
+	
 	while (iter.Advance())
 	{
 		const CBitSet *join_bitset = iter.Key();
@@ -858,6 +850,9 @@ CJoinOrderDynamicProgramming::GetCheapestJoinExprForBitSet
 			}
 		}
 		CBitSet *join_bitset_entry = GPOS_NEW(m_mp) CBitSet(m_mp, *join_bitset);
+		join_bitset_entry->DbgPrint();
+		CAutoTrace at(m_mp);
+		at.Os() << "Size: " << join_exprs->Size() << std::endl;
 		best_join_expr->AddRef();
 		cheapest_join_map->Insert(join_bitset_entry, best_join_expr);
 	}
