@@ -598,11 +598,6 @@ CJoinOrderDynamicProgramming::SearchJoinOrders
 	{
 		CBitSet *left_bitset = (*join_pair_bitsets)[join_pair_id];
 
-//		CBitSet *best_right_bitset = NULL;
-//		CExpression *best_join_expr = NULL;
-		CDouble min_join_cost (0.0);
-
-
 		// if pairs from the same level, start from the next
 		// entry to avoid duplicate join combinations
 		// i.e a join b and b join a, just try one
@@ -640,6 +635,21 @@ CJoinOrderDynamicProgramming::SearchJoinOrders
 }
 
 void
+CJoinOrderDynamicProgramming::AddExprs
+	(
+	const CExpressionArray *candidate_join_exprs,
+	CExpressionArray *result_join_exprs
+	)
+{
+	for (ULONG ul = 0; ul < candidate_join_exprs->Size(); ul++)
+	{
+		CExpression *join_expr = (*candidate_join_exprs)[ul];
+		join_expr->AddRef();
+		result_join_exprs->Append(join_expr);
+	}
+}
+
+void
 CJoinOrderDynamicProgramming::AddJoinExprsForBitSet
 	(
 	BitSetToExpressionArrayMap *result_map,
@@ -660,22 +670,12 @@ CJoinOrderDynamicProgramming::AddJoinExprsForBitSet
 			CBitSet *join_bitset_entry = GPOS_NEW(m_mp) CBitSet(m_mp, *join_bitset);
 			const CExpressionArray *candidate_join_exprs = iter.Value();
 			CExpressionArray *join_exprs = GPOS_NEW(m_mp) CExpressionArray(m_mp);
-			for (ULONG ul = 0; ul < candidate_join_exprs->Size(); ul++)
-			{
-				CExpression *join_expr = (*candidate_join_exprs)[ul];
-				join_expr->AddRef();
-				join_exprs->Append(join_expr);
-			}
+			AddExprs(candidate_join_exprs, join_exprs);
 			result_map->Insert(join_bitset_entry, join_exprs);
 		}
 		else
 		{
-			for (ULONG id = 0; id < candidate_join_exprs->Size(); id++)
-			{
-				CExpression *join_expr = (*candidate_join_exprs)[id];
-				join_expr->AddRef();
-				existing_join_exprs->Append(join_expr);
-			}
+			AddExprs(candidate_join_exprs, existing_join_exprs);
 		}
 	}
 }

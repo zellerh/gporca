@@ -176,6 +176,8 @@ namespace gpopt
 
 			BitSetToExpressionArrayMap *SearchBushyJoinOrders(ULONG current_level, CBitSetArrays *join_levels);
 
+			void AddExprs(const CExpressionArray *candidate_join_exprs, CExpressionArray *result_join_exprs);
+
 		public:
 
 			// ctor
