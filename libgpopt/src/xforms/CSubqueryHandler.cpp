@@ -612,8 +612,8 @@ CSubqueryHandler::FRemoveScalarSubqueryInternal
 //		predicate to allow rows where the comparision evaluates to
 //		true or NULL.
 //		We apply one optimization: If we are dealing with a not nullable
-//		column on the inner table and if the comparison operator has well-defined
-//		behavior (is strict and never returns NULL on non-NULL inputs), then
+//		column on the inner table and if the comparison operator is "very
+//		strict" (is strict and never returns NULL on non-NULL inputs), then
 //		we can use a regular comparison. The only way such a comparison can
 //		evaluate to NULL is for the outer column to be NULL.
 //		If we use this optimization, then we need to add another condition
@@ -841,7 +841,7 @@ CSubqueryHandler::FCreateGrpCols
 }
 //---------------------------------------------------------------------------
 //	@function:
-//		CSubqueryHandler::CreateGroupByForAnySubquery
+//		CSubqueryHandler::CreateGroupByNode
 //
 //	@doc:
 //		Given a <child>, a <colref>, an initial list of grouping columns
@@ -866,7 +866,7 @@ CSubqueryHandler::FCreateGrpCols
 //		the count and sum aggregates.
 //---------------------------------------------------------------------------
 CExpression *
-CSubqueryHandler::CreateGroupByForAnySubquery
+CSubqueryHandler::CreateGroupByNode
 	(
 	 IMemoryPool *mp,
 	 CExpression *pexprChild,
@@ -915,6 +915,7 @@ CSubqueryHandler::CreateGroupByForAnySubquery
 		const IMDType *pmdtypeSum = md_accessor->RetrieveType(popSum->MdidType());
 		*pcrSum = col_factory->PcrCreate(pmdtypeSum, popSum->TypeModifier());
 		CExpression *pexprPrjElemSum = CUtils::PexprScalarProjectElement(mp, *pcrSum, pexprSum);
+
 		pexprPrjList = GPOS_NEW(mp) CExpression(mp, GPOS_NEW(mp) CScalarProjectList(mp), pexprPrjElemCount, pexprPrjElemSum);
 	}
 
@@ -944,18 +945,18 @@ CSubqueryHandler::CreateGroupByForAnySubquery
 //		{TRUE, FALSE, NULL) based on the semantics of the subquery. This depends on
 //		the comparison result of T.i with all the qualifying rows of R:
 //
-//		set of													(see below)
-//		comparison results	ANY subquery	ALL subquery	count		sum
-//		T.i <op> R.i		result			result			aggregate	aggregate
-//		------------------	------------	------------	---------	---------
-//		{}						false			true			0			null
-//		{false}					false			false			0			null
-//		{null}					null			false			n			n
-//		{true}					true			true			n			0
-//		{null, false}			null			false			n			n
-//		{null, true}			true			null			n			<n
-//		{false, true}			true			false			n			0
-//		{null, false, true}		true			false			n			0
+//		set of                                               (see below)
+//		comparison results  ANY subquery  ALL subquery  count      sum
+//		T.i <op> R.i        result        result        aggregate  aggregate
+//		------------------  ------------  ------------  ---------  ---------
+//		{}                     false         true           0        null
+//		{false}                false         false          0        null
+//		{null}                 null          false          n         n
+//		{true}                 true          true           n         0
+//		{null, false}          null          false          n         n
+//		{null, true}           true          null           n        <n
+//		{false, true}          true          false          n         0
+//		{null, false, true}    true          false          n         0
 //
 //		For example, for an = ANY subquery:
 //			- if T.i=1 and R.i = {1,2,3}, return TRUE
@@ -1065,14 +1066,14 @@ CSubqueryHandler::FCreateOuterApplyForExistOrQuant
 
 	if (fGbOnInner)
 	{
-		CExpression *pexprGb = CreateGroupByForAnySubquery(mp,
-														   pexprPrjInner,	// child on which to create the project
-														   colref_array,	// group by cols
-														   fExistential,
-														   colref,			// "true"
-														   pexprPredicate,	// comparison op for quantified SQ
-														   &pcrCount,		// out: count aggregate colref
-														   &pcrSum);		// out: sum aggregate colref
+		CExpression *pexprGb = CreateGroupByNode(mp,
+												 pexprPrjInner,	// child on which to create the project
+												 colref_array,	// group by cols
+												 fExistential,
+												 colref,			// "true"
+												 pexprPredicate,	// comparison op for quantified SQ
+												 &pcrCount,		// out: count aggregate colref
+												 &pcrSum);		// out: sum aggregate colref
 
 		// generate an outer apply between outer expression and a group by on inner expression
 		*ppexprNewOuter = CUtils::PexprLogicalApply<CLogicalLeftOuterApply>(mp, pexprOuter, pexprGb, pcrSubquery, COperator::EopScalarSubquery);
@@ -1082,14 +1083,14 @@ CSubqueryHandler::FCreateOuterApplyForExistOrQuant
 		// generate an outer apply between outer expression and the new project expression
 		CExpression *result = CUtils::PexprLogicalApply<CLogicalLeftOuterApply>(mp, pexprOuter, pexprPrjInner, pcrSubquery, COperator::EopScalarSubquery);
 
-		*ppexprNewOuter = CreateGroupByForAnySubquery(mp,
-													  result,
-													  colref_array,
-													  fExistential,
-													  colref,
-													  pexprPredicate,
-													  &pcrCount,
-													  &pcrSum);
+		*ppexprNewOuter = CreateGroupByNode(mp,
+											result,
+											colref_array,
+											fExistential,
+											colref,
+											pexprPredicate,
+											&pcrCount,
+											&pcrSum);
 	}
 
 	// residual scalar examines introduced columns
@@ -1408,9 +1409,17 @@ CSubqueryHandler::FRemoveAnySubquery
 		CExpression *pexprNewSelect = PexprInnerSelect(mp, colref, pexprResult, pexprPredicate, &fUseNotNullableInnerOpt);
 		CMDAccessor *md_accessor = COptCtxt::PoctxtFromTLS()->Pmda();
 		const IMDScalarOp *pmdOp = md_accessor->RetrieveScOp(pScalarSubqAny->MdIdOp());
+		// function attributes of the comparison operator itself
+		// TODO: Synthesize the function attibutes of general operators, like
+		//       CScalarSubqueryAny/All, CScalarCmp, CScalarOp by providing a
+		//       PfpDerive() method in these classes.
+		//       Once we do that, we can remove the line below and related code.
 		const IMDFunction *pmdFunc = md_accessor->RetrieveFunc(pmdOp->FuncMdId());
+		// function attributes for the children of the subquery
+		CDrvdPropScalar *pdpscalar = CDrvdPropScalar::GetDrvdScalarProps(pexprSubquery->PdpDerive());
 
-		if (IMDFunction::EfsVolatile == pmdFunc->GetFuncStability())
+		if (IMDFunction::EfsVolatile == pmdFunc->GetFuncStability() ||
+			IMDFunction::EfsVolatile == pdpscalar->Pfp()->Efs())
 		{
 			// the non-correlated plan would evaluate the comparison operation twice
 			// per outer row, that is not a good idea when the operation is volatile

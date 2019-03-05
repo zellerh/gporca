@@ -1619,10 +1619,10 @@
         </dxl:And>
       </dxl:LogicalJoin>
     </dxl:Query>
-    <dxl:Plan Id="0" SpaceSize="965421">
+    <dxl:Plan Id="0" SpaceSize="1012481">
       <dxl:GatherMotion InputSegments="0,1,2" OutputSegments="-1">
         <dxl:Properties>
-          <dxl:Cost StartupCost="0" TotalCost="2586.396142" Rows="7.196002" Width="56"/>
+          <dxl:Cost StartupCost="0" TotalCost="2586.395379" Rows="4.410933" Width="56"/>
         </dxl:Properties>
         <dxl:ProjList>
           <dxl:ProjElem ColId="0" Alias="t1a">
@@ -1672,7 +1672,7 @@
         <dxl:SortingColumnList/>
         <dxl:HashJoin JoinType="Inner">
           <dxl:Properties>
-            <dxl:Cost StartupCost="0" TotalCost="2586.394640" Rows="7.196002" Width="56"/>
+            <dxl:Cost StartupCost="0" TotalCost="2586.394458" Rows="4.410933" Width="56"/>
           </dxl:Properties>
           <dxl:ProjList>
             <dxl:ProjElem ColId="0" Alias="a">

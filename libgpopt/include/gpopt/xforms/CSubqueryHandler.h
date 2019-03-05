@@ -120,8 +120,9 @@ namespace gpopt
 				CExpression **ppexprResult
 				);
 
+			// helper for creating a groupby node above or below the apply
 			static
-			CExpression *CreateGroupByForAnySubquery
+			CExpression *CreateGroupByNode
 				(
 				 IMemoryPool *mp,
 				 CExpression *pexprChild,
