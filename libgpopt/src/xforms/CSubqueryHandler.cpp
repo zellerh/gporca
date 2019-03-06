@@ -946,7 +946,7 @@ CSubqueryHandler::CreateGroupByNode
 //		the comparison result of T.i with all the qualifying rows of R:
 //
 //		set of                                               (see below)
-//		comparison results  ANY subquery  ALL subquery  count      sum
+//		comparison results  ANY subquery  ALL subquery  C3: count  C4: sum
 //		T.i <op> R.i        result        result        aggregate  aggregate
 //		------------------  ------------  ------------  ---------  ---------
 //		{}                     false         true           0        null
@@ -956,7 +956,7 @@ CSubqueryHandler::CreateGroupByNode
 //		{null, false}          null          false          n         n
 //		{null, true}           true          null           n        <n
 //		{false, true}          true          false          n         0
-//		{null, false, true}    true          false          n         0
+//		{null, false, true}    true          false          n        <n
 //
 //		For example, for an = ANY subquery:
 //			- if T.i=1 and R.i = {1,2,3}, return TRUE
@@ -970,25 +970,33 @@ CSubqueryHandler::CreateGroupByNode
 //		that can be simplified as follows:
 //
 //		+-Select
-//			+--Gb[T.i, T.ctid, T.gp_segment_id], C3 = count(C0), C4 = count(C1)
-//			|	|---Project
-//			|	|	+---LOApply
-//			|	|		|---T
-//			|	|		+---Select ((T.i=R.i) IS NOT FALSE)
-//			|	|			+---Project
-//			|	|				|---R
-//			|	|				+--- (C0: constant(true))
-//			|	+---- (C1: case when (T.i=R.i) is null then 1 else 0 end)
+//			+--Gb[T.i, T.ctid, T.gp_segment_id], C3 = count(C0), C4 = sum(C1)
+//			|	+---Project
+//			|		|---LOApply
+//			|		|	|---T
+//			|		|	+---Select ((T.i=R.i) IS NOT FALSE)
+//			|		|		+---Project
+//			|		|			|---R
+//			|		|			+--- (C0: constant(true))
+//			|		+---- (C1: case when (T.i=R.i) is null then 1 else 0 end)
 //			+--If (C3 > 0)
-//				+-- if (C3 > C4)
+//				|-- if (C3 > C4)
 //				|	 +---{return TRUE}
 //				|	 +---else {return NULL}
 //				+---{return FALSE}
 //
+//		Note: The picture shows the groupby above the LOApply, but the groupby can
+//			  also appear as the inner child of the LOApply
+//
 //		The reasoning behind this alternative is the following:
 //
+//		- Meaning of the two aggregate columns, C2, C3:
+//			C3: The number of rows in the subquery that evaluate to NULL or true
+//				(NULL means 0 such rows)
+//			C4: Number of rows in the subquery that evaluate to NULL
+//
 //		- LOApply will return T.i values along with their matching R.i values, along
-//		  with a boolean "true" that will be turned into a NULL when the subquery
+//		  with a boolean "true" (C0) that will be turned into a NULL when the subquery
 //		  is empty.
 //		  The LOApply will also join a T tuple with any R tuple if R.i <op> T.i is NULL,
 //		  but it will eliminate all the rows where T.i <op> R.i is FALSE. The table
