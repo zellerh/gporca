@@ -33,91 +33,6 @@ using namespace gpopt;
 
 //---------------------------------------------------------------------------
 //	@function:
-//		CJoinOrderDP::SComponentPair::SComponentPair
-//
-//	@doc:
-//		Ctor
-//
-//---------------------------------------------------------------------------
-CJoinOrderDynamicProgramming::SComponentPair::SComponentPair
-	(
-	CBitSet *pbsFst,
-	CBitSet *pbsSnd
-	)
-	:
-	m_pbsFst(pbsFst),
-	m_pbsSnd(pbsSnd)
-{
-	GPOS_ASSERT(NULL != pbsFst);
-	GPOS_ASSERT(NULL != pbsSnd);
-	GPOS_ASSERT(pbsFst->IsDisjoint(pbsSnd));
-}
-
-
-//---------------------------------------------------------------------------
-//	@function:
-//		CJoinOrderDynamicProgramming::SComponentPair::HashValue
-//
-//	@doc:
-//		Hash function
-//
-//---------------------------------------------------------------------------
-ULONG
-CJoinOrderDynamicProgramming::SComponentPair::HashValue
-	(
-	const SComponentPair *pcomppair
-	)
-{
-	GPOS_ASSERT(NULL != pcomppair);
-
-	return CombineHashes
-			(
-			pcomppair->m_pbsFst->HashValue(),
-			pcomppair->m_pbsSnd->HashValue()
-			);
-}
-
-
-//---------------------------------------------------------------------------
-//	@function:
-//		CJoinOrderDynamicProgramming::SComponentPair::Equals
-//
-//	@doc:
-//		Equality function
-//
-//---------------------------------------------------------------------------
-BOOL
-CJoinOrderDynamicProgramming::SComponentPair::Equals
-	(
-	const SComponentPair *pcomppairFst,
-	const SComponentPair *pcomppairSnd
-	)
-{
-	GPOS_ASSERT(NULL != pcomppairFst);
-	GPOS_ASSERT(NULL != pcomppairSnd);
-
-	return pcomppairFst->m_pbsFst->Equals(pcomppairSnd->m_pbsFst) &&
-		pcomppairFst->m_pbsSnd->Equals(pcomppairSnd->m_pbsSnd);
-}
-
-
-//---------------------------------------------------------------------------
-//	@function:
-//		CJoinOrderDynamicProgramming::SComponentPair::~SComponentPair
-//
-//	@doc:
-//		Dtor
-//
-//---------------------------------------------------------------------------
-CJoinOrderDynamicProgramming::SComponentPair::~SComponentPair()
-{
-	m_pbsFst->Release();
-	m_pbsSnd->Release();
-}
-
-
-//---------------------------------------------------------------------------
-//	@function:
 //		CJoinOrderDynamicProgramming::CJoinOrderDynamicProgramming
 //
 //	@doc:
@@ -133,10 +48,9 @@ CJoinOrderDynamicProgramming::CJoinOrderDynamicProgramming
 	:
 	CJoinOrder(mp, pdrgpexprComponents, pdrgpexprConjuncts, false /* m_include_loj_childs */)
 {
-	m_phmcomplink = GPOS_NEW(mp) ComponentPairToExpressionMap(mp);
 	m_phmbsexpr = GPOS_NEW(mp) BitSetToExpressionMap(mp);
 	m_phmexprcost = GPOS_NEW(mp) ExpressionToCostMap(mp);
-	m_pdrgpexprTopKOrders = GPOS_NEW(mp) CExpressionArray(mp);
+	m_topKOrders = GPOS_NEW(mp) CExpressionArray(mp);
 	m_pexprDummy = GPOS_NEW(mp) CExpression(mp, GPOS_NEW(mp) CPatternLeaf(mp));
 
 #ifdef GPOS_DEBUG
@@ -163,10 +77,10 @@ CJoinOrderDynamicProgramming::~CJoinOrderDynamicProgramming()
 	// in optimized build, we flush-down memory pools without leak checking,
 	// we can save time in optimized build by skipping all de-allocations here,
 	// we still have all de-llocations enabled in debug-build to detect any possible leaks
-	m_phmcomplink->Release();
+//	m_phmcomplink->Release();
 	m_phmbsexpr->Release();
 	m_phmexprcost->Release();
-	m_pdrgpexprTopKOrders->Release();
+	m_topKOrders->Release();
 	m_pexprDummy->Release();
 #endif // GPOS_DEBUG
 }
@@ -174,24 +88,24 @@ CJoinOrderDynamicProgramming::~CJoinOrderDynamicProgramming()
 
 //---------------------------------------------------------------------------
 //	@function:
-//		CJoinOrderDynamicProgramming::AddJoinOrder
+//		CJoinOrderDynamicProgramming::AddJoinOrderToTopK
 //
 //	@doc:
 //		Add given join order to top k join orders
 //
 //---------------------------------------------------------------------------
 void
-CJoinOrderDynamicProgramming::AddJoinOrder
+CJoinOrderDynamicProgramming::AddJoinOrderToTopK
 	(
 	CExpression *pexprJoin,
 	CDouble dCost
 	)
 {
 	GPOS_ASSERT(NULL != pexprJoin);
-	GPOS_ASSERT(NULL != m_pdrgpexprTopKOrders);
+	GPOS_ASSERT(NULL != m_topKOrders);
 
 	// length of the array will not be more than 10
-	INT ulResults = m_pdrgpexprTopKOrders->Size();
+	INT ulResults = m_topKOrders->Size();
 	INT iReplacePos = -1;
 	BOOL fAddJoinOrder = false;
 	if (ulResults < GPOPT_DP_JOIN_ORDERING_TOPK)
@@ -205,7 +119,7 @@ CJoinOrderDynamicProgramming::AddJoinOrder
 		// we have stored K expressions, evict worst expression
 		for (INT ul = 0; ul < ulResults; ul++)
 		{
-			CExpression *pexpr = (*m_pdrgpexprTopKOrders)[ul];
+			CExpression *pexpr = (*m_topKOrders)[ul];
 			CDouble *pd = m_phmexprcost->Find(pexpr);
 			GPOS_ASSERT(NULL != pd);
 
@@ -224,11 +138,11 @@ CJoinOrderDynamicProgramming::AddJoinOrder
 		pexprJoin->AddRef();
 		if (iReplacePos > -1)
 		{
-			m_pdrgpexprTopKOrders->Replace((ULONG) iReplacePos, pexprJoin);
+			m_topKOrders->Replace((ULONG) iReplacePos, pexprJoin);
 		}
 		else
 		{
-			m_pdrgpexprTopKOrders->Append(pexprJoin);
+			m_topKOrders->Append(pexprJoin);
 		}
 
 		InsertExpressionCost(pexprJoin, dCost, false /*fValidateInsert*/);
@@ -289,24 +203,26 @@ CJoinOrderDynamicProgramming::PexprPred
 	}
 
 	CExpression *pexprPred = NULL;
-	SComponentPair *pcomppair = NULL;
+	//SComponentPair *pcomppair = NULL;
 
+	// TODO: We probably don't need to check this
+	/*
 	// lookup link map
 	for (ULONG ul = 0; ul < 2; ul++)
 	{
 		pbsFst->AddRef();
 		pbsSnd->AddRef();
-		pcomppair = GPOS_NEW(m_mp) SComponentPair(pbsFst, pbsSnd);
-		pexprPred = m_phmcomplink->Find(pcomppair);
-		if (NULL != pexprPred)
-		{
-			pcomppair->Release();
-			if (m_pexprDummy == pexprPred)
+		//pcomppair = GPOS_NEW(m_mp) SComponentPair(pbsFst, pbsSnd);
+		//pexprPred = m_phmcomplink->Find(pcomppair);
+		//if (NULL != pexprPred)
+		//{
+			//pcomppair->Release();
+			//if (m_pexprDummy == pexprPred)
 			{
 				return NULL;
 			}
 			return pexprPred;
-		}
+		//}
 
 		// try again after swapping sets
 		if (0 == ul)
@@ -315,21 +231,22 @@ CJoinOrderDynamicProgramming::PexprPred
 			std::swap(pbsFst, pbsSnd);
 		}
 	}
+	 */
 
 	// could not find link in the map, construct it from edge set
 	pexprPred = PexprBuildPred(pbsFst, pbsSnd);
 	if (NULL == pexprPred)
 	{
-		m_pexprDummy->AddRef();
+		// m_pexprDummy->AddRef();
 		pexprPred = m_pexprDummy;
 	}
 
 	// store predicate in link map
 #ifdef GPOS_DEBUG
-	BOOL fInserted =
+	//BOOL fInserted =
 #endif // GPOS_DEBUG
-		m_phmcomplink->Insert(pcomppair, pexprPred);
-	GPOS_ASSERT(fInserted);
+	//	m_phmcomplink->Insert(pcomppair, pexprPred);
+	//GPOS_ASSERT(fInserted);
 
 	if (m_pexprDummy != pexprPred)
 	{
@@ -533,10 +450,6 @@ CJoinOrderDynamicProgramming::GetJoinExpr
 
 		scalar_expr = CPredicateUtils::PexprConjunction(m_mp, NULL /*pdrgpexpr*/);
 	}
-	else
-	{
-		scalar_expr->AddRef();
-	}
 
 	CExpression *left_expr = PexprLookup(left_child);
 	CExpression *right_expr = PexprLookup(right_child);
@@ -583,7 +496,6 @@ CJoinOrderDynamicProgramming::SearchJoinOrders
 	(
 	CBitSetArray *join_pair_bitsets,
 	CBitSetArray *other_join_pair_bitsets,
-	BOOL same_level_join_pairs,
 	BOOL allow_cross_joins
 	)
 {
@@ -603,7 +515,7 @@ CJoinOrderDynamicProgramming::SearchJoinOrders
 		// i.e a join b and b join a, just try one
 		// commutativity will take care of the other
 		ULONG other_pair_start_id = 0;
-		if (same_level_join_pairs)
+		if (join_pair_bitsets == other_join_pair_bitsets)
 			other_pair_start_id = join_pair_id + 1;
 
 		for (ULONG other_pair_id = other_pair_start_id; other_pair_id < other_join_pairs_size; other_pair_id++)
@@ -694,7 +606,7 @@ CJoinOrderDynamicProgramming::MergeJoinExprsForBitSet
 }
 
 void
-CJoinOrderDynamicProgramming::AddJoinExprFromMap
+CJoinOrderDynamicProgramming::AddJoinExprFromMapToTopK
 	(
 	BitSetToExpressionArrayMap *bitset_joinexpr_map
 	)
@@ -708,7 +620,7 @@ CJoinOrderDynamicProgramming::AddJoinExprFromMap
 		{
 			CExpression *join_expr = (*join_exprs)[id];
 			CDouble join_cost = DCost(join_expr);
-			AddJoinOrder(join_expr, join_cost);
+			AddJoinOrderToTopK(join_expr, join_cost);
 		}
 	}
 }
@@ -745,6 +657,15 @@ CJoinOrderDynamicProgramming::GetJoinExprBitSets
 	return join_bitsets;
 }
 
+//---------------------------------------------------------------------------
+//	@function:
+//		CJoinOrderDynamicProgramming::SearchBushyJoinOrders
+//
+//	@doc:
+//		Generate all bushy join trees of level current_level,
+//		given an array of an array of bit sets (components), arranged by level
+//
+//---------------------------------------------------------------------------
 CJoinOrderDynamicProgramming::BitSetToExpressionArrayMap *
 CJoinOrderDynamicProgramming::SearchBushyJoinOrders
 	(
@@ -753,17 +674,22 @@ CJoinOrderDynamicProgramming::SearchBushyJoinOrders
 	)
 {
 	BitSetToExpressionArrayMap *final_bushy_join_exprs_map = NULL;
-	if (current_level > 2)
+
+	// join trees of level 3 and below are never bushy
+	if (current_level > 3)
 	{
-		for (ULONG k = 2; k < current_level; k++)
+		// try all joins of bitsets of level x and y, where
+		// x + y = current_level and x > 1 and y > 1
+		for (ULONG k = 3; k <= current_level; k++)
 		{
 			ULONG join_level = k - 1;
-			ULONG other_join_level = current_level - join_level - 1;
+			ULONG other_join_level = current_level - join_level;
 			if (join_level > other_join_level)
+				// we've already considered the commutated join
 				break;
 			CBitSetArray *join_bitsets = (*join_levels)[join_level];
 			CBitSetArray *other_join_bitsets = (*join_levels)[other_join_level];
-			BitSetToExpressionArrayMap *bitset_bushy_join_exprs_map = SearchJoinOrders(join_bitsets, other_join_bitsets, join_level == other_join_level);
+			BitSetToExpressionArrayMap *bitset_bushy_join_exprs_map = SearchJoinOrders(join_bitsets, other_join_bitsets);
 			BitSetToExpressionArrayMap *interim_map = final_bushy_join_exprs_map;
 			final_bushy_join_exprs_map = MergeJoinExprsForBitSet(bitset_bushy_join_exprs_map, interim_map);
 			CRefCount::SafeRelease(interim_map);
@@ -776,38 +702,52 @@ CJoinOrderDynamicProgramming::SearchBushyJoinOrders
 CExpression *
 CJoinOrderDynamicProgramming::PexprExpand()
 {
-	CBitSetArray *base_relations_bitsets = GPOS_NEW(m_mp) CBitSetArray(m_mp);
+	CBitSetArray *non_join_vertex_bitsets = GPOS_NEW(m_mp) CBitSetArray(m_mp);
 	CBitSetArrays *join_level_bitsets = GPOS_NEW(m_mp) CBitSetArrays(m_mp);
+	// put a NULL entry at index 0, because there are no 0-way joins
+	join_level_bitsets->Append(GPOS_NEW(m_mp) CBitSetArray(m_mp));
+	// put the "non join vertices", the nodes of the join tree that
+	// are not joins themselves, at the first level
 	for (ULONG relation_id = 0; relation_id < m_ulComps; relation_id++)
 	{
-		CBitSet *base_relation_bitset = GPOS_NEW(m_mp) CBitSet(m_mp);
-		base_relation_bitset->ExchangeSet(relation_id);
-		base_relations_bitsets->Append(base_relation_bitset);
+		CBitSet *non_join_vertex_bitset = GPOS_NEW(m_mp) CBitSet(m_mp);
+		non_join_vertex_bitset->ExchangeSet(relation_id);
+		non_join_vertex_bitsets->Append(non_join_vertex_bitset);
 	}
-	join_level_bitsets->Append(base_relations_bitsets);
+	join_level_bitsets->Append(non_join_vertex_bitsets);
 
-	for (ULONG current_join_level = 1; current_join_level < m_ulComps; current_join_level++)
+	for (ULONG current_join_level = 2; current_join_level <= m_ulComps; current_join_level++)
 	{
 		ULONG previous_level = current_join_level - 1;
 		CBitSetArray *prev_lev_comps = (*join_level_bitsets)[previous_level];
-		BOOL base_relations_level = previous_level == 0 ? true: false;
-		BitSetToExpressionArrayMap *bitset_join_exprs_map = SearchJoinOrders(prev_lev_comps, base_relations_bitsets, base_relations_level);
+		// build linear "current_join_level" joins, with a "previous_level"-way join on one side and a non-join vertex on the other side
+		BitSetToExpressionArrayMap *bitset_join_exprs_map = SearchJoinOrders(prev_lev_comps, non_join_vertex_bitsets);
+		// build bushy trees - joins between two other joins
 		BitSetToExpressionArrayMap *bitset_bushy_join_exprs_map = SearchBushyJoinOrders(current_join_level, join_level_bitsets);
+
 		if (bitset_join_exprs_map->Size() == 0 && (NULL == bitset_bushy_join_exprs_map || bitset_bushy_join_exprs_map->Size() == 0))
 		{
 			bitset_join_exprs_map->Release();
-			bitset_join_exprs_map = SearchJoinOrders(prev_lev_comps, base_relations_bitsets, base_relations_level, true /* allow_cross_joins */);
+			bitset_join_exprs_map = SearchJoinOrders(prev_lev_comps, non_join_vertex_bitsets, true /* allow_cross_joins */);
 		}
 
+		// A set of different components/bit sets, each with a set of equivalent expressions,
+		// for current_join_level
 		BitSetToExpressionArrayMap *all_join_exprs_map = MergeJoinExprsForBitSet(bitset_join_exprs_map, bitset_bushy_join_exprs_map);
-		if (current_join_level == m_ulComps - 1)
+		if (current_join_level == m_ulComps)
 		{
-			AddJoinExprFromMap(all_join_exprs_map);
+			// merge these expressions into our top K list
+			AddJoinExprFromMapToTopK(all_join_exprs_map);
 			BitSetToExpressionMap *cheapest_bitset_join_expr_map = GetCheapestJoinExprForBitSet(all_join_exprs_map);
 			cheapest_bitset_join_expr_map->Release();
 		}
 		else
 		{
+			// iterate over all_join_exprs_map:
+			// - for each bitset:
+			//   -- add that bitset to join_expr_bitsets
+			//   -- add the cheapest expression from its bitset array
+			//      to the bitset to expression map, m_phmbsexpr
 			BitSetToExpressionMap *cheapest_bitset_join_expr_map = GetCheapestJoinExprForBitSet(all_join_exprs_map);
 			CBitSetArray *join_expr_bitsets = GetJoinExprBitSets(cheapest_bitset_join_expr_map);
 			cheapest_bitset_join_expr_map->Release();
@@ -824,6 +764,15 @@ CJoinOrderDynamicProgramming::PexprExpand()
 
 
 
+//---------------------------------------------------------------------------
+//	@function:
+//		CJoinOrderDynamicProgramming::GetCheapestJoinExprForBitSet
+//
+//	@doc:
+//		Convert a BitSetToExpressionArrayMap to a BitSetToExpressionMap
+//		by selecting the cheapest expression from each array
+//
+//---------------------------------------------------------------------------
 CJoinOrderDynamicProgramming::BitSetToExpressionMap *
 CJoinOrderDynamicProgramming::GetCheapestJoinExprForBitSet
 	(
