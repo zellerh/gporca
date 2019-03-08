@@ -100,6 +100,7 @@ CXformExpandNAryJoinDynamicProgramming::Transform
 	const ULONG arity = pexpr->Arity();
 	GPOS_ASSERT(arity >= 3);
 
+	// Make an expression array with all the FIXMEchilds (onewayjoin/child/leaf)
 	CExpressionArray *pdrgpexpr = GPOS_NEW(mp) CExpressionArray(mp);
 	for (ULONG ul = 0; ul < arity - 1; ul++)
 	{
@@ -108,6 +109,8 @@ CXformExpandNAryJoinDynamicProgramming::Transform
 		pdrgpexpr->Append(pexprChild);
 	}
 
+	// Make an expression array with all the join conditions, one entry for
+	// every conjunct (ANDed condition)
 	CExpression *pexprScalar = (*pexpr)[arity - 1];
 	CExpressionArray *pdrgpexprPreds = CPredicateUtils::PdrgpexprConjuncts(mp, pexprScalar);
 
@@ -115,6 +118,7 @@ CXformExpandNAryJoinDynamicProgramming::Transform
 	CJoinOrderDynamicProgramming jodp(mp, pdrgpexpr, pdrgpexprPreds);
 	CExpression *pexprResult = jodp.PexprExpand();
 
+	// Retrieve top K join orders from jodp and add as alternatives
 	const ULONG UlTopKJoinOrders = jodp.PdrgpexprTopK()->Size();
 	for (ULONG ul = 0; ul < UlTopKJoinOrders; ul++)
 	{

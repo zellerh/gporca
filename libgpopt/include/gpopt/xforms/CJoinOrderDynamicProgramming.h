@@ -37,37 +37,6 @@ namespace gpopt
 
 		private:
 
-			//---------------------------------------------------------------------------
-			//	@struct:
-			//		SComponentPair
-			//
-			//	@doc:
-			//		Struct to capture a pair of components
-			//
-			//---------------------------------------------------------------------------
-			struct SComponentPair : public CRefCount
-			{
-				// first component
-				CBitSet *m_pbsFst;
-
-				// second component
-				CBitSet *m_pbsSnd;
-
-				// ctor
-				SComponentPair(CBitSet *pbsFst, CBitSet *pbsSnd);
-
-				// dtor
-				~SComponentPair();
-
-				// hashing function
-				static
-				ULONG HashValue(const SComponentPair *pcomppair);
-
-				// equality function
-				static
-				BOOL Equals(const SComponentPair *pcomppairFst, const SComponentPair *pcomppairSnd);
-			};
-
 			// hashing function
 			static
 			ULONG UlHashBitSet
@@ -109,10 +78,7 @@ namespace gpopt
 			// hash map from component to best join order
 			typedef CHashMapIter<CBitSet, CExpressionArray, UlHashBitSet, FEqualBitSet,
 			CleanupRelease<CBitSet>, CleanupRelease<CExpressionArray> > BitSetToExpressionArrayMapIter;
-		
-			// hash map from component pair to connecting edges
-			typedef CHashMap<SComponentPair, CExpression, SComponentPair::HashValue, SComponentPair::Equals,
-				CleanupRelease<SComponentPair>, CleanupRelease<CExpression> > ComponentPairToExpressionMap;
+
 
 			// hash map from expression to cost of best join order
 			typedef CHashMap<CExpression, CDouble, CExpression::HashValue, CUtils::Equals,
@@ -121,8 +87,6 @@ namespace gpopt
 			// dynamic array of bitsets
 			typedef CDynamicPtrArray<CBitSetArray, CleanupRelease> CBitSetArrays;
 
-			// lookup table for links
-			ComponentPairToExpressionMap *m_phmcomplink;
 
 			// dynamic programming table
 			BitSetToExpressionMap *m_phmbsexpr;
@@ -131,7 +95,7 @@ namespace gpopt
 			ExpressionToCostMap *m_phmexprcost;
 
 			// array of top-k join expression
-			CExpressionArray *m_pdrgpexprTopKOrders;
+			CExpressionArray *m_topKOrders;
 
 			// dummy expression to used for non-joinable components
 			CExpression *m_pexprDummy;
@@ -146,7 +110,7 @@ namespace gpopt
 			CExpression *PexprPred(CBitSet *pbsFst, CBitSet *pbsSnd);
 
 			// add given join order to best results
-			void AddJoinOrder(CExpression *pexprJoin, CDouble dCost);
+			void AddJoinOrderToTopK(CExpression *pexprJoin, CDouble dCost);
 
 			// compute cost of given join expression
 			CDouble DCost(CExpression *pexpr);
@@ -158,7 +122,7 @@ namespace gpopt
 			// add expression to cost map
 			void InsertExpressionCost(CExpression *pexpr, CDouble dCost, BOOL fValidateInsert);
 
-			BitSetToExpressionArrayMap *SearchJoinOrders(CBitSetArray *join_pair_bitsets, CBitSetArray *other_join_pair_bitsets, BOOL same_level_join_pairs, BOOL allow_cross_joins=false);
+			BitSetToExpressionArrayMap *SearchJoinOrders(CBitSetArray *join_pair_bitsets, CBitSetArray *other_join_pair_bitsets, BOOL allow_cross_joins=false);
 
 			BitSetToExpressionMap *GetCheapestJoinExprForBitSet(BitSetToExpressionArrayMap *bit_exprarray_map);
 
@@ -166,7 +130,7 @@ namespace gpopt
 
 			CExpression *GetJoinExpr(CBitSet *left_child, CBitSet *right_child, BOOL allow_cross_joins);
 		
-			void AddJoinExprFromMap(BitSetToExpressionArrayMap *bitset_joinexpr_map);
+			void AddJoinExprFromMapToTopK(BitSetToExpressionArrayMap *bitset_joinexpr_map);
 
 			BitSetToExpressionArrayMap *MergeJoinExprsForBitSet(BitSetToExpressionArrayMap *map, BitSetToExpressionArrayMap *other_map);
 
@@ -199,7 +163,7 @@ namespace gpopt
 			// best join orders
 			CExpressionArray *PdrgpexprTopK() const
 			{
-				return m_pdrgpexprTopKOrders;
+				return m_topKOrders;
 			}
 
 			// print function
