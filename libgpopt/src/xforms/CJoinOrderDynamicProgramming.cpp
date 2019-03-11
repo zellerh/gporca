@@ -325,9 +325,12 @@ CJoinOrderDynamicProgramming::InsertExpressionCost
 //
 //	@doc:
 //		Primitive costing of join expressions;
-//		cost of a join expression is the summation of the costs of its
-//		children plus its local cost;
-//		cost of a leaf expression is the estimated number of rows
+//		Cost of a join expression is the "internal data flow" of the join
+//		tree, the sum of all the rows flowing from the leaf nodes up to
+//		the root. This does not include the number of result rows of joins,
+//		for a simple reason: To compare two equivalent joins, we would have
+//		to derive the stats twice, which would be expensive and run the risk
+//		that we get different rowcounts.
 //
 //---------------------------------------------------------------------------
 CDouble
@@ -351,25 +354,27 @@ CJoinOrderDynamicProgramming::DCost
 	if (0 == arity)
 	{
 		// leaf operator, use its estimated number of rows as cost
-		dCost = CDouble(pexpr->Pstats()->Rows()) * CDouble(pexpr->Pstats()->Width());
+		dCost = CDouble(pexpr->Pstats()->Rows()); // TODO: Use width: * CDouble(pexpr->Pstats()->Width());
 	}
 	else
 	{
 		// inner join operator, sum-up cost of its children
-//		DOUBLE rgdRows[2] = {0.0,  0.0};
-		for (ULONG ul = 0; ul < arity - 1; ul++)
+		GPOS_ASSERT(2 < arity);
+		for (ULONG ul = 0; ul < 2; ul++)
 		{
 			CExpression *pexprChild = (*pexpr)[ul];
 
 			// call function recursively to find child cost
+			// (not including the result rowcount)
 			dCost = dCost + DCost(pexprChild);
-//			DeriveStats(pexprChild);
-//			rgdRows[ul] = pexprChild->Pstats()->Rows().Get();
+			// Derive statistics for the child and add the cost of producing
+			// the child's output - but only if the child is not a leaf
+			if (0 < pexprChild->Arity())
+				{
+					DeriveStats(pexprChild);
+					dCost = dCost + pexprChild->Pstats()->Rows().Get(); // later, use width as well
+				}
 		}
-
-		DeriveStats(pexpr);
-		// add inner join local cost
-		dCost = dCost + CDouble(pexpr->Pstats()->Rows()) * CDouble(pexpr->Pstats()->Width());
 	}
 
 	return dCost;
