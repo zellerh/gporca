@@ -100,6 +100,9 @@ namespace gpopt
 			// dummy expression to used for non-joinable components
 			CExpression *m_pexprDummy;
 
+			IMemoryPool *m_mp;
+		    ULONG m_ties;
+
 			// build expression linking given components
 			CExpression *PexprBuildPred(CBitSet *pbsFst, CBitSet *pbsSnd);
 

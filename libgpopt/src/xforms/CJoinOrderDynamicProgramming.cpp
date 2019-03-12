@@ -29,7 +29,7 @@
 
 using namespace gpopt;
 
-#define GPOPT_DP_JOIN_ORDERING_TOPK	20
+#define GPOPT_DP_JOIN_ORDERING_TOPK	1
 
 //---------------------------------------------------------------------------
 //	@function:
@@ -52,6 +52,8 @@ CJoinOrderDynamicProgramming::CJoinOrderDynamicProgramming
 	m_phmexprcost = GPOS_NEW(mp) ExpressionToCostMap(mp);
 	m_topKOrders = GPOS_NEW(mp) CExpressionArray(mp);
 	m_pexprDummy = GPOS_NEW(mp) CExpression(mp, GPOS_NEW(mp) CPatternLeaf(mp));
+	m_mp = mp;
+	m_ties = 0;
 
 #ifdef GPOS_DEBUG
 	for (ULONG ul = 0; ul < m_ulComps; ul++)
@@ -82,6 +84,10 @@ CJoinOrderDynamicProgramming::~CJoinOrderDynamicProgramming()
 	m_phmexprcost->Release();
 	m_topKOrders->Release();
 	m_pexprDummy->Release();
+	CAutoTrace at(m_mp);
+
+	at.Os() << "Number of ties:" << m_ties << std::endl;
+
 #endif // GPOS_DEBUG
 }
 
@@ -797,6 +803,8 @@ CJoinOrderDynamicProgramming::GetCheapestJoinExprForBitSet
 		{
 			CExpression *join_expr = (*join_exprs)[id];
 			CDouble join_cost = DCost(join_expr);
+			if (join_cost == min_join_cost && min_join_cost > 0.0)
+				m_ties++;
 			if (min_join_cost == 0.0 || join_cost < min_join_cost)
 			{
 				best_join_expr = join_expr;
