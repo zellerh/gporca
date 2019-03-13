@@ -29,7 +29,7 @@
 
 using namespace gpopt;
 
-#define GPOPT_DP_JOIN_ORDERING_TOPK	1
+#define GPOPT_DP_JOIN_ORDERING_TOPK	10
 
 //---------------------------------------------------------------------------
 //	@function:
@@ -365,22 +365,37 @@ CJoinOrderDynamicProgramming::DCost
 	else
 	{
 		// inner join operator, sum-up cost of its children
-		GPOS_ASSERT(2 < arity);
-		for (ULONG ul = 0; ul < 2; ul++)
+		DOUBLE rgdRows[2] = {0.0,  0.0};
+		for (ULONG ul = 0; ul < arity - 1; ul++)
 		{
 			CExpression *pexprChild = (*pexpr)[ul];
 
 			// call function recursively to find child cost
-			// (not including the result rowcount)
 			dCost = dCost + DCost(pexprChild);
-			// Derive statistics for the child and add the cost of producing
-			// the child's output - but only if the child is not a leaf
-			if (0 < pexprChild->Arity())
-				{
-					DeriveStats(pexprChild);
-					dCost = dCost + pexprChild->Pstats()->Rows().Get(); // later, use width as well
-				}
+			DeriveStats(pexprChild);
+			rgdRows[ul] = pexprChild->Pstats()->Rows().Get();
 		}
+
+		// add inner join local cost
+		DeriveStats(pexpr);
+		dCost = dCost + (rgdRows[0] + rgdRows[1]) + pexpr->Pstats()->Rows();
+//		// inner join operator, sum-up cost of its children
+//		GPOS_ASSERT(2 < arity);
+//		for (ULONG ul = 0; ul < 2; ul++)
+//		{
+//			CExpression *pexprChild = (*pexpr)[ul];
+//
+//			// call function recursively to find child cost
+//			// (not including the result rowcount)
+//			dCost = dCost + DCost(pexprChild);
+//			// Derive statistics for the child and add the cost of producing
+//			// the child's output - but only if the child is not a leaf
+//			if (0 < pexprChild->Arity())
+//				{
+//					DeriveStats(pexprChild);
+//					dCost = dCost + pexprChild->Pstats()->Rows().Get(); // later, use width as well
+//				}
+//		}
 	}
 
 	return dCost;
@@ -812,7 +827,7 @@ CJoinOrderDynamicProgramming::GetCheapestJoinExprForBitSet
 			}
 		}
 		CBitSet *join_bitset_entry = GPOS_NEW(m_mp) CBitSet(m_mp, *join_bitset);
-		join_bitset_entry->DbgPrint();
+		// join_bitset_entry->DbgPrint();
 		CAutoTrace at(m_mp);
 		at.Os() << "Size: " << join_exprs->Size() << std::endl;
 		best_join_expr->AddRef();
