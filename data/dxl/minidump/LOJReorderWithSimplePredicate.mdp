@@ -1540,10 +1540,10 @@
         </dxl:LogicalJoin>
       </dxl:LogicalSelect>
     </dxl:Query>
-    <dxl:Plan Id="0" SpaceSize="218">
+    <dxl:Plan Id="0" SpaceSize="202">
       <dxl:GatherMotion InputSegments="0,1,2" OutputSegments="-1">
         <dxl:Properties>
-          <dxl:Cost StartupCost="0" TotalCost="1293.182446" Rows="1.998000" Width="36"/>
+          <dxl:Cost StartupCost="0" TotalCost="1293.182464" Rows="2.100222" Width="36"/>
         </dxl:Properties>
         <dxl:ProjList>
           <dxl:ProjElem ColId="0" Alias="a">
@@ -1578,7 +1578,7 @@
         <dxl:SortingColumnList/>
         <dxl:HashJoin JoinType="Inner">
           <dxl:Properties>
-            <dxl:Cost StartupCost="0" TotalCost="1293.182178" Rows="1.998000" Width="36"/>
+            <dxl:Cost StartupCost="0" TotalCost="1293.182182" Rows="2.100222" Width="36"/>
           </dxl:Properties>
           <dxl:ProjList>
             <dxl:ProjElem ColId="0" Alias="a">
