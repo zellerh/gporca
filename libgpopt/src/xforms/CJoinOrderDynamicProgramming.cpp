@@ -829,7 +829,6 @@ CJoinOrderDynamicProgramming::GetCheapestJoinExprForBitSet
 		CBitSet *join_bitset_entry = GPOS_NEW(m_mp) CBitSet(m_mp, *join_bitset);
 		// join_bitset_entry->DbgPrint();
 		CAutoTrace at(m_mp);
-		at.Os() << "Size: " << join_exprs->Size() << std::endl;
 		best_join_expr->AddRef();
 		cheapest_join_map->Insert(join_bitset_entry, best_join_expr);
 	}
