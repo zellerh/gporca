@@ -91,7 +91,7 @@ def main():
     parser.add_option("--cxxflags", dest="cxxflags")
     parser.add_option("--output_dir", dest="output_dir", default="install")
     parser.add_option("--32", dest="thirty_two_bit", default=False)
-    parser.add_option("--skip_tests", dest="skip_tests", default=False)
+    parser.add_option("--skip_tests", action="store_true", dest="skip_tests", default=False)
 
     (options, args) = parser.parse_args()
     # install deps for building
