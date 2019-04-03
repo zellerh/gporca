@@ -72,8 +72,6 @@ def ccache_env():
 
 
 def run_tests():
-    if skip_tests:
-        return 0
     return subprocess.call(["ctest",
                             "--output-on-failure",
                             "-j" + str(num_cpus()),
@@ -109,7 +107,8 @@ def main():
     status = make()
     if status:
         return status
-    status = run_tests()
+    if not options.skip_tests:
+        status = run_tests()
     if status:
         return status
     status = install()
