@@ -686,6 +686,7 @@ CJoinOrderDP::DCost
 	CExpression *pexpr
 	)
 {
+	// code from CJoinOrderDynamicProgramming::DCost substituted here
 	GPOS_CHECK_STACK_SIZE;
 	GPOS_ASSERT(NULL != pexpr);
 
@@ -701,25 +702,27 @@ CJoinOrderDP::DCost
 	if (0 == arity)
 	{
 		// leaf operator, use its estimated number of rows as cost
-		dCost = CDouble(pexpr->Pstats()->Rows());
+		dCost = CDouble(pexpr->Pstats()->Rows()); // TODO: Use width: * CDouble(pexpr->Pstats()->Width());
 	}
 	else
 	{
 		// inner join operator, sum-up cost of its children
-		DOUBLE rgdRows[2] = {0.0,  0.0};
-		for (ULONG ul = 0; ul < arity - 1; ul++)
+		GPOS_ASSERT(2 < arity);
+		for (ULONG ul = 0; ul < 2; ul++)
 		{
 			CExpression *pexprChild = (*pexpr)[ul];
 
 			// call function recursively to find child cost
+			// (not including the result rowcount)
 			dCost = dCost + DCost(pexprChild);
-			DeriveStats(pexprChild);
-			rgdRows[ul] = pexprChild->Pstats()->Rows().Get();
+			// Derive statistics for the child and add the cost of producing
+			// the child's output - but only if the child is not a leaf
+			if (0 < pexprChild->Arity())
+			{
+				DeriveStats(pexprChild);
+				dCost = dCost + pexprChild->Pstats()->Rows().Get(); // later, use width as well
+			}
 		}
-
-		// add inner join local cost
-		DeriveStats(pexpr);
-		dCost = dCost + (rgdRows[0] + rgdRows[1]) + pexpr->Pstats()->Rows();
 	}
 
 	return dCost;
