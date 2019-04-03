@@ -72,6 +72,8 @@ def ccache_env():
 
 
 def run_tests():
+    if skip_tests:
+        return 0
     return subprocess.call(["ctest",
                             "--output-on-failure",
                             "-j" + str(num_cpus()),
@@ -89,6 +91,7 @@ def main():
     parser.add_option("--cxxflags", dest="cxxflags")
     parser.add_option("--output_dir", dest="output_dir", default="install")
     parser.add_option("--32", dest="thirty_two_bit", default=False)
+    parser.add_option("--skip_tests", dest="skip_tests", default=False)
 
     (options, args) = parser.parse_args()
     # install deps for building
@@ -106,9 +109,9 @@ def main():
     status = make()
     if status:
         return status
-    #status = run_tests()
-    #if status:
-    #    return status
+    status = run_tests()
+    if status:
+        return status
     status = install()
     if status:
         return status

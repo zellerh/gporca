@@ -188,6 +188,7 @@ jobs:
     params:
       build_type: RelWithDebInfo
       outputDirectory: build_and_test/install
+      skip_tests: true
   - put: bin_orca_centos5_release
     params:
       from: package_tarball/bin_orca_centos5_release.tar.gz

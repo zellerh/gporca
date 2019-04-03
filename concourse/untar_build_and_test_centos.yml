@@ -20,3 +20,4 @@ run:
 params:
   build_type:
   outputDirectory:
+  skip_tests:
