@@ -29,7 +29,7 @@
 
 using namespace gpopt;
 
-#define GPOPT_DP_JOIN_ORDERING_TOPK	20
+#define GPOPT_DP_JOIN_ORDERING_TOPK	10
 
 //---------------------------------------------------------------------------
 //	@function:
