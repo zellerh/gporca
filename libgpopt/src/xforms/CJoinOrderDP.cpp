@@ -718,8 +718,7 @@ CJoinOrderDP::DCost
 		}
 
 		// add inner join local cost
-		DeriveStats(pexpr);
-		dCost = dCost + (rgdRows[0] + rgdRows[1]) + pexpr->Pstats()->Rows();
+		dCost = dCost + (rgdRows[0] + rgdRows[1]);
 	}
 
 	return dCost;
