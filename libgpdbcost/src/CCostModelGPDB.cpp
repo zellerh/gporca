@@ -1395,6 +1395,7 @@ CCostModelGPDB::CostBitmapTableScan
 		// child is Bitmap AND/OR, or we use Multi column index
 		const CDouble dInitScan = pcmgpdb->GetCostModelParams()->PcpLookup(CCostModelParamsGPDB::EcpInitScanFactor)->Get();
 		const CDouble dIndexFilterCostUnit = pcmgpdb->GetCostModelParams()->PcpLookup(CCostModelParamsGPDB::EcpIndexFilterCostUnit)->Get();
+		const CDouble dInitRebind = 0.07;
 
 		GPOS_ASSERT(0 < dIndexFilterCostUnit);
 		GPOS_ASSERT(0 < dInitScan);
@@ -1403,10 +1404,14 @@ CCostModelGPDB::CostBitmapTableScan
 		// the dominant factor in costing Index Scan so we are using it in our model. Also we are giving
 		// Bitmap Scan a start up cost similar to Sequential Scan.
 
-		// TODO: ; 2017-11-14; use proper start up cost value.
 		// Conceptually the cost of evaluating index qual is also linear in the
 		// number of index columns, but we're only accounting for the dominant cost
-		return CCost(pci->NumRebinds() * (pci->Rows() * pci->Width() * dIndexFilterCostUnit +  dInitScan));
+		return CCost(// cost for each byte returned by the index scan
+					 pci->NumRebinds() * pci->Rows() * pci->Width() * dIndexFilterCostUnit +
+					 // cost for each rebind (minus the initial one)
+					 (pci->NumRebinds() -  1) * dInitRebind +
+					 // init cost
+					 dInitScan);
 	}
 
 	// if the expression is const table get, the pcrsUsed is empty
