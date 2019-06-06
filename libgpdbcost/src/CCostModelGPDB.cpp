@@ -1453,8 +1453,10 @@ CCostModelGPDB::CostBitmapTableScan
 		{
 			result = CostBitmapLargeNDV(pcmgpdb, pci, dNDV);
 		}
-
-		result = CostBitmapSmallNDV(pcmgpdb, pci, dNDV);
+		else
+		{
+			result = CostBitmapSmallNDV(pcmgpdb, pci, dNDV);
+		}
 	}
 
 	pcrsLocalUsed->Release();
@@ -1487,8 +1489,15 @@ CCostModelGPDB::CostBitmapSmallNDV
 
 	CDouble dBitmapIO = pcmgpdb->GetCostModelParams()->PcpLookup(CCostModelParamsGPDB::EcpBitmapIOCostSmallNDV)->Get();
 	CDouble dBitmapPageCost = pcmgpdb->GetCostModelParams()->PcpLookup(CCostModelParamsGPDB::EcpBitmapPageCostSmallNDV)->Get();
+	CDouble effectiveNDV = dNDV;
 
-	return CCost(pci->NumRebinds() * (dBitmapIO * dSize + dBitmapPageCost * dNDV));
+	if (rows < 1.0)
+	{
+		// if we aren't accessing a row every rebind, then don't charge a cost for those cases where we don't have a row
+		effectiveNDV = rows;
+	}
+
+	return CCost(pci->NumRebinds() * (dBitmapIO * dSize + dBitmapPageCost * effectiveNDV));
 }
 
 
