@@ -1401,7 +1401,6 @@ CCostModelGPDB::CostBitmapTableScan
 	if (COperator::EopScalarBitmapIndexProbe != pexprIndexCond->Pop()->Eopid() || 1 < pcrsLocalUsed->Size())
 	{
 		// child is Bitmap AND/OR, or we use Multi column index
-		// hard-code for now
 		const CDouble dIndexFilterCostUnit = pcmgpdb->GetCostModelParams()->PcpLookup(CCostModelParamsGPDB::EcpIndexFilterCostUnit)->Get();
 
 		GPOS_ASSERT(0 < dIndexFilterCostUnit);
@@ -1414,7 +1413,9 @@ CCostModelGPDB::CostBitmapTableScan
 
 		// For now we are trying to cost Bitmap Scan similar to Index Scan. dIndexFilterCostUnit is
 		// the dominant factor in costing Index Scan so we are using it in our model. Also we are giving
-		// Bitmap Scan a start up cost similar to Sequential Scan.
+		// Bitmap Scan a start up cost similar to Sequential Scan. Note that in this code path we add the
+		// relatively high dInitScan cost, while in the other code paths below (CostBitmapLargeNDV and
+		// CostBitmapSmallNDV) we don't. That's something we should look into.
 
 		// Conceptually the cost of evaluating index qual is also linear in the
 		// number of index columns, but we're only accounting for the dominant cost

@@ -44,12 +44,15 @@ TABLE_NAME_PATTERN = r"cal_txtest"
 
 TABLE_SCAN = "table_scan"
 TABLE_SCAN_PATTERN = r"Seq Scan"
+TABLE_SCAN_PATTERN_V5 = r"Table Scan"
 
 INDEX_SCAN = "index_scan"
 INDEX_SCAN_PATTERN = r">  Index Scan"
+INDEX_SCAN_PATTERN_V5 = r">  Index Scan"
 
 BITMAP_SCAN = "bitmap_scan"
 BITMAP_SCAN_PATTERN = r"Bitmap Heap Scan"
+BITMAP_SCAN_PATTERN_V5 = r"Bitmap Table Scan"
 
 OPTIMIZER_DEFAULT_PLAN = "optimizer"
 
@@ -63,6 +66,7 @@ glob_verbose=False
 glob_sigma_diff=3
 glob_log_file=None
 glob_exe_timeout=40000
+glob_gpdb_major_version=7
 
 
 # SQL statements, DDL and DML
@@ -168,6 +172,11 @@ analyze cal_txtest
 _allow_system_mods = """
 set allow_system_table_mods to on
 """
+
+_allow_system_mods_v5 = """
+set allow_system_table_mods to 'dml'
+"""
+
 # Make sure pg_statistics has smooth and precise statistics, so that the cardinality estimates we get are very precise
 #
 # For NDVs of 100 or less, list all of them
@@ -322,19 +331,22 @@ def log_output(str):
 def connect(host, port_num, db_name):
     try:
         dburl = dbconn.DbURL(hostname=host, port=port_num, dbname=db_name)
-        conn = dbconn.connect(dburl, encoding="UTF8", allowSystemTableMods=True)
+        conn = dbconn.connect(dburl, encoding="UTF8")
     except Exception as e:
         print("Exception during connect: %s" % e)
         quit()
     return conn
 
 def select_version(conn):
+    global glob_gpdb_major_version
     sqlStr = "select version()"
     curs = dbconn.execSQL(conn, sqlStr)
 
     rows = curs.fetchall()
     for row in rows:
         log_output(row[0])
+        glob_gpdb_major_version = int(re.sub(".*Greenplum Database ([0-9]*)\..*", "\\1", row[0]))
+        log_output("GPDB major version is %d" % glob_gpdb_major_version)
 
     log_output("Backend pid:")
     sqlStr = "select pg_backend_pid()"
@@ -414,18 +426,25 @@ def explain_index_scan(conn, sqlStr):
         log_output("Executing query: %s" % ("explain " + sqlStr))
         exp_curs = dbconn.execSQL(conn, "explain " + sqlStr)
         rows = exp_curs.fetchall()
+        table_scan_pattern = TABLE_SCAN_PATTERN
+        index_scan_pattern = INDEX_SCAN_PATTERN
+        bitmap_scan_pattern = BITMAP_SCAN_PATTERN
+        if (glob_gpdb_major_version) <= 5:
+            table_scan_pattern = TABLE_SCAN_PATTERN_V5
+            index_scan_pattern = INDEX_SCAN_PATTERN_V5
+            bitmap_scan_pattern = BITMAP_SCAN_PATTERN_V5
     
         for row in rows:
             log_output(row[0])
             if re.search(TABLE_NAME_PATTERN, row[0]):
-                if re.search(TABLE_SCAN_PATTERN, row[0]):
-                    scan_type = TABLE_SCAN
+                if re.search(bitmap_scan_pattern, row[0]):
+                    scan_type = BITMAP_SCAN
                     cost = cost_from_explain_line(row[0])
-                elif re.search(INDEX_SCAN_PATTERN, row[0]):
+                elif re.search(index_scan_pattern, row[0]):
                     scan_type = INDEX_SCAN
                     cost = cost_from_explain_line(row[0])
-                elif re.search(BITMAP_SCAN_PATTERN, row[0]):
-                    scan_type = BITMAP_SCAN
+                elif re.search(table_scan_pattern, row[0]):
+                    scan_type = TABLE_SCAN
                     cost = cost_from_explain_line(row[0])
 
     except Exception as e:
@@ -947,6 +966,7 @@ def createDB(conn, use_ao, num_rows):
     execute_sql(conn, _drop_tables)
     execute_sql(conn, create_cal_table_stmt)
     execute_sql_arr(conn, _create_other_tables)
+    commit_db(conn)
     execute_and_commit_sql(conn, insert_into_temp_stmt)
     execute_and_commit_sql(conn, _insert_into_table)
     execute_and_commit_sql(conn, insert_into_other_stmt)
@@ -959,7 +979,10 @@ def dropDB(conn):
 
 # ensure that we have perfect histogram statistics on the relevant columns
 def smoothStatistics(conn):
-    execute_sql(conn, _allow_system_mods)
+    if glob_gpdb_major_version > 5:
+        execute_sql(conn, _allow_system_mods)
+    else:
+        execute_sql(conn, _allow_system_mods_v5)
     execute_sql_arr(conn, _fix_statistics)
     commit_db(conn)
 
