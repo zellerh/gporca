@@ -617,7 +617,7 @@ CExpressionPreprocessor::PexprRemoveSuperfluousOuterRefs
 				pop = GPOS_NEW(mp) CLogicalGbAgg(
 												 mp,
 												 new_grouping_cols,
-												 GPOS_NEW(mp) CColRefArray(mp), // empty minimal grby cols
+												 NULL,
 												 popAgg->Egbaggtype(),
 												 popAgg->FGeneratesDuplicates(),
 												 NULL // no DQA cols
