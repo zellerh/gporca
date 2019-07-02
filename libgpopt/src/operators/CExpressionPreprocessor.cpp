@@ -525,7 +525,7 @@ CExpressionPreprocessor::PexprRemoveSuperfluousOuterRefs
 			// the outer references are NOT the ONLY Group By column
 			//
 			// For example:
-			// -- Cannot remove t.b from groupby, because this will produce and invalid plan
+			// -- Cannot remove t.b from groupby, because this will produce an invalid plan
 			// -- with both groupby list and project list empty, in this case we need to add
 			// -- a project node below the GrbyAgg
 			// select a from t where c in (select distinct t.b from s)
@@ -573,17 +573,10 @@ CExpressionPreprocessor::PexprRemoveSuperfluousOuterRefs
 				// that would make both pExprProjList and grouping_cols empty, which is not allowed.
 				// The solution in this case is to add a project node below that will simply echo
 				// the outer reference, and to use that newly produced ColRef as groupby column.
-				CColRefArray *grouping_cols = popAgg->Pdrgpcr();
 				CExpression *child = (*pexpr)[0];
-				CExpressionArray *grouping_cols_arr = GPOS_NEW(mp) CExpressionArray(mp);
+				CExpressionArray *grouping_cols_arr = CUtils::PdrgpexprScalarIdents(mp, popAgg->Pdrgpcr());
 
-				GPOS_ASSERT(0 < grouping_cols->Size());
-
-				// convert the outer reference(s) into a CExpressionArray
-				for (ULONG ul = 0; ul < grouping_cols->Size(); ++ul)
-				{
-					grouping_cols_arr->Append(CUtils::PexprScalarIdent(mp, (*grouping_cols)[ul]));
-				}
+				GPOS_ASSERT(0 < grouping_cols_arr->Size());
 
 				// add a project node on top of our child
 				CExpression *projectExpr = CUtils::PexprAddProjection(
@@ -622,6 +615,7 @@ CExpressionPreprocessor::PexprRemoveSuperfluousOuterRefs
 												 popAgg->FGeneratesDuplicates(),
 												 NULL // no DQA cols
 												);
+				// release the previous pop
 				popAgg->Release();
 				popAgg = NULL;
 
