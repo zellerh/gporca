@@ -85,7 +85,7 @@ namespace gpos
 			}
 
 			// create new task
-			CTask *Create(void *(*pfunc)(void*), void *argv, volatile BOOL *cancel = NULL);
+			CTask *Create(void *(*pfunc)(void*), void *argv, BOOL *cancel = NULL);
 
 			// schedule task for execution
 			void Schedule(CTask *task);

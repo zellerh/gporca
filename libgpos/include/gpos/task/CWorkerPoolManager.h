@@ -65,17 +65,12 @@ namespace gpos
 			// active flag
 			BOOL m_active;
 
-			// WLS
-			/*
-			CSyncHashtable
-			<CWorker, CWorkerId, CSpinlockOS> m_shtWLS;
-			*/
 			// we only support a single worker now
 			CWorker *m_single_worker;
 
 			// task storage
 			CSyncHashtable
-			<CTask, CTaskId, CSpinlockOS> m_shtTS;
+			<CTask, CTaskId> m_shtTS;
 
 			//-------------------------------------------------------------------
 			// Interface for CAutoTaskProxy
@@ -87,18 +82,15 @@ namespace gpos
 			// increment AutoTaskProxy reference counter
 			void AddRef()
 			{
-				ExchangeAddUlongPtrWithInt(&m_auto_task_proxy_counter, 1);
+				m_auto_task_proxy_counter++;
 			}
 
 			// decrement AutoTaskProxy reference counter
 			void RemoveRef()
 			{
-#ifdef GPOS_DEBUG
-				ULONG_PTR auto_task_proxy_counter =
-#endif // GPOS_DEBUG
-				ExchangeAddUlongPtrWithInt(&m_auto_task_proxy_counter, -1);
-				GPOS_ASSERT(auto_task_proxy_counter != 0 &&
+				GPOS_ASSERT(m_auto_task_proxy_counter != 0 &&
 							"AutoTaskProxy counter decremented from 0");
+				m_auto_task_proxy_counter--;
 			}
 
 			// insert task in table

@@ -98,17 +98,17 @@ namespace gpopt
 			CSyncPool<SJobLink> m_spjl;
 
 			// current job counters
-			volatile ULONG_PTR m_ulpTotal;
-			volatile ULONG_PTR m_ulpRunning;
-			volatile ULONG_PTR m_ulpQueued;
+			ULONG_PTR m_ulpTotal;
+			ULONG_PTR m_ulpRunning;
+			ULONG_PTR m_ulpQueued;
 
 			// stats
-			volatile ULONG_PTR m_ulpStatsQueued;
-			volatile ULONG_PTR m_ulpStatsDequeued;
-			volatile ULONG_PTR m_ulpStatsSuspended;
-			volatile ULONG_PTR m_ulpStatsCompleted;
-			volatile ULONG_PTR m_ulpStatsCompletedQueued;
-			volatile ULONG_PTR m_ulpStatsResumed;
+			ULONG_PTR m_ulpStatsQueued;
+			ULONG_PTR m_ulpStatsDequeued;
+			ULONG_PTR m_ulpStatsSuspended;
+			ULONG_PTR m_ulpStatsCompleted;
+			ULONG_PTR m_ulpStatsCompletedQueued;
+			ULONG_PTR m_ulpStatsResumed;
 
 #ifdef GPOS_DEBUG
 			// list of running jobs

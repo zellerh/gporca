@@ -135,7 +135,7 @@ CAutoTaskProxy::Create
 	(
 	void *(*pfunc)(void*),
 	void *arg,
-	volatile BOOL *cancel
+	BOOL *cancel
 	)
 {
 	// create memory pool for task

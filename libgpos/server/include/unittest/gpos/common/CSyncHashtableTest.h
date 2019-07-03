@@ -42,16 +42,16 @@ namespace gpos
 		private:
 
 			// types used by testing functions
-			typedef CSyncHashtable<SElem, ULONG, CSpinlockDummy>
+			typedef CSyncHashtable<SElem, ULONG>
 				SElemHashtable;
 
-			typedef CSyncHashtableAccessByKey<SElem, ULONG, CSpinlockDummy>
+			typedef CSyncHashtableAccessByKey<SElem, ULONG>
 				SElemHashtableAccessor;
 
-			typedef CSyncHashtableIter<SElem, ULONG, CSpinlockDummy>
+			typedef CSyncHashtableIter<SElem, ULONG>
 				SElemHashtableIter;
 
-			typedef CSyncHashtableAccessByIter<SElem, ULONG, CSpinlockDummy>
+			typedef CSyncHashtableAccessByIter<SElem, ULONG>
 				SElemHashtableIterAccessor;
 
 			// function pointer to a hash table task

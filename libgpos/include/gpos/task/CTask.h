@@ -70,13 +70,13 @@ namespace gpos
 			CTaskLocalStorage m_tls;
 			
 			// task status
-			volatile ETaskStatus m_status;
+			ETaskStatus m_status;
 
 			// cancellation flag
-			volatile BOOL *m_cancel;
+			BOOL *m_cancel;
 
 			// local cancellation flag; used when no flag is externally passed
-			volatile BOOL m_cancel_local;
+			BOOL m_cancel_local;
 
 			// counter of requests to suspend cancellation
 			ULONG m_abort_suspend_count;

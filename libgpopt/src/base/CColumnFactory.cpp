@@ -329,8 +329,7 @@ CColumnFactory::LookupColRef
 	ULONG id
 	)
 {
-	CSyncHashtableAccessByKey<CColRef, ULONG,
-		CSpinlockColumnFactory> shtacc(m_sht, id);
+	CSyncHashtableAccessByKey<CColRef, ULONG> shtacc(m_sht, id);
 	
 	CColRef *colref = shtacc.Find();
 	
@@ -358,7 +357,7 @@ CColumnFactory::Destroy
 	
 	{
 		// scope for the hash table accessor
-		CSyncHashtableAccessByKey<CColRef, ULONG, CSpinlockColumnFactory>
+		CSyncHashtableAccessByKey<CColRef, ULONG>
 			shtacc(m_sht, id);
 		
 		CColRef *pcrFound = shtacc.Find();

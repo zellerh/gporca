@@ -623,8 +623,6 @@ gpos::clib::Malloc
 	SIZE_T size
 	)
 {
-	GPOS_ASSERT_NO_SPINLOCK;
-
 	return malloc(size);
 }
 
@@ -643,8 +641,6 @@ gpos::clib::Free
 	void *src
 	)
 {
-	GPOS_ASSERT_NO_SPINLOCK;
-
 	free(src);
 }
 

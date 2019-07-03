@@ -161,7 +161,7 @@ CMemo::Add
 
 	GPOS_ASSERT(NULL != pgexpr);
 	m_listGroups.Push(pgroup);
-	(void) ExchangeAddUlongPtrWithInt(&m_ulpGrps, 1);
+	m_ulpGrps++;
 }
 
 

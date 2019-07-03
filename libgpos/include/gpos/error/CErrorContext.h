@@ -18,7 +18,6 @@
 #include "gpos/error/CSerializable.h"
 #include "gpos/error/IErrorContext.h"
 #include "gpos/string/CWStringStatic.h"
-#include "gpos/sync/CAutoSpinlock.h"
 
 #define GPOS_ERROR_MESSAGE_BUFFER_SIZE	(4 * 1024)
 
@@ -66,9 +65,6 @@ namespace gpos
 
 			// list of objects to serialize on exception
 			CList<CSerializable> m_serializable_objects_list;
-
-			// spinlock protecting the list of serializable objects
-			CSpinlockOS m_serial_lock;
 
 			// minidump handler
 			CMiniDumper *m_mini_dumper_handle;
@@ -146,9 +142,6 @@ namespace gpos
 				CSerializable *serializable_obj
 				)
 			{
-				CAutoSpinlock asl(m_serial_lock);
-				asl.Lock();
-
 				m_serializable_objects_list.Append(serializable_obj);
 			}
 
@@ -158,9 +151,6 @@ namespace gpos
 				CSerializable *serializable_obj
 				)
 			{
-				CAutoSpinlock asl(m_serial_lock);
-				asl.Lock();
-
 				m_serializable_objects_list.Remove(serializable_obj);
 			}
 

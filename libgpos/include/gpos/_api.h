@@ -37,7 +37,7 @@ struct gpos_exec_params
 	void *stack_start;              /* start of current thread's stack */
 	char *error_buffer;             /* buffer used to store error messages */
 	int error_buffer_size;          /* size of error message buffer */
-	volatile bool *abort_requested; /* flag indicating if abort is requested */
+	bool *abort_requested;          /* flag indicating if abort is requested */
 };
 
 /* struct containing initialization parameters for gpos */

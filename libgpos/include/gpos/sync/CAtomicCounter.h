@@ -12,7 +12,6 @@
 #define GPOS_CAtomicCounter_H
 
 #include "gpos/base.h"
-#include "gpos/sync/atomic.h"
 
 namespace gpos
 {
@@ -31,7 +30,7 @@ namespace gpos
 		private:
 
 			// counter
-			volatile ULONG_PTR m_counter;
+			ULONG_PTR m_counter;
 
 			// private copy ctor
 			CAtomicCounter(const CAtomicCounter &);
@@ -57,7 +56,7 @@ namespace gpos
 				T t = (T)-1;
 				GPOS_ASSERT(m_counter < t - 1 && "Counter overflow");
 #endif // GPOS_DEBUG
-				return (T) ExchangeAddUlongPtrWithInt(&m_counter, 1);
+				return (T) m_counter++;
 			}			
 			
 	}; // class CAtomicCounter

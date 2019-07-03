@@ -216,7 +216,7 @@ CScheduler::Add
 	pj->SetParent(pjParent);
 
 	// increment total number of jobs
-	(void) ExchangeAddUlongPtrWithInt(&m_ulpTotal, 1);
+	m_ulpTotal++;
 
 	Schedule(pj);
 }
@@ -286,7 +286,7 @@ CScheduler::Schedule
 	m_listjlWaiting.Push(pjl);
 
 	// increment number of queued jobs
-	(void) ExchangeAddUlongPtrWithInt(&m_ulpQueued, 1);
+	m_ulpQueued++;
 
 	// update statistics
 	m_ulpStatsQueued++;
@@ -312,7 +312,7 @@ CScheduler::PreExecute
 				"Runnable job cannot have pending children");
 
 	// increment number of running jobs
-	(void) ExchangeAddUlongPtrWithInt(&m_ulpRunning, 1);
+	m_ulpRunning++;
 
 	// increment job ref counter
 	pj->IncRefs();
@@ -397,7 +397,7 @@ CScheduler::EjrPostExecute
 	ULONG_PTR ulRefs = pj->UlpDecrRefs();
 
 	// decrement number of running jobs
-	(void) ExchangeAddUlongPtrWithInt(&m_ulpRunning, -1);
+	m_ulpRunning--;
 
 	// check if job completed
 	if (fCompleted)
@@ -440,10 +440,10 @@ CScheduler::PjRetrieve()
 		GPOS_ASSERT(0 == pj->UlpRefs());
 
 		// decrement number of queued jobs
-		(void) ExchangeAddUlongPtrWithInt(&m_ulpQueued, -1);
+		m_ulpQueued--;
 
 		// update statistics
-		(void) ExchangeAddUlongPtrWithInt(&m_ulpStatsDequeued, 1);
+		m_ulpStatsDequeued++;
 
 		// recycle job link
 		m_spjl.Recycle(pjl);
@@ -494,7 +494,7 @@ CScheduler::Suspend
 	}
 #endif // GPOS_DEBUG)
 
-	(void) ExchangeAddUlongPtrWithInt(&m_ulpStatsSuspended, 1);
+	m_ulpStatsSuspended++;
 }
 
 
@@ -527,8 +527,8 @@ CScheduler::Complete
 	ResumeParent(pj);
 
 	// update statistics
-	(void) ExchangeAddUlongPtrWithInt(&m_ulpTotal, -1);
-	(void) ExchangeAddUlongPtrWithInt(&m_ulpStatsCompleted, 1);
+	m_ulpTotal--;
+	m_ulpStatsCompleted++;
 }
 
 
@@ -561,9 +561,9 @@ CScheduler::CompleteQueued
 	ResumeParent(pj);
 
 	// update statistics
-	(void) ExchangeAddUlongPtrWithInt(&m_ulpTotal, -1);
-	(void) ExchangeAddUlongPtrWithInt(&m_ulpStatsCompleted, 1);
-	(void) ExchangeAddUlongPtrWithInt(&m_ulpStatsCompletedQueued, 1);
+	m_ulpTotal--;
+	m_ulpStatsCompleted++;
+	m_ulpStatsCompletedQueued++;
 }
 
 
@@ -602,7 +602,7 @@ CScheduler::ResumeParent
 			Resume(pjParent);
 
 			// update statistics
-			(void) ExchangeAddUlongPtrWithInt(&m_ulpStatsResumed, 1);
+			m_ulpStatsResumed++;
 		}
 	}
 }

@@ -157,22 +157,6 @@ CWorkerPoolManager::RegisterWorker
 	GPOS_ASSERT(NULL != worker);
 	GPOS_ASSERT(NULL == m_single_worker);
 	m_single_worker = worker;
-	/*
-	// scope for hash table accessor
-	{
-		// get access
-		CWorkerId wid = worker->GetWid();
-		CSyncHashtableAccessByKey<CWorker, CWorkerId, CSpinlockOS> shta(m_shtWLS, wid);
-		
-		// must be first to register
-		GPOS_ASSERT(NULL == shta.Find() && "Found registered worker.");
-
-		shta.Insert(worker);
-	}
-
-	// check insertion succeeded
-	GPOS_ASSERT(worker == Worker(worker->GetWid()));
-	 */
 }
 
 
@@ -238,7 +222,7 @@ CWorkerPoolManager::RemoveTask
 	// scope for hash table accessor
 	{
 		// get access
-		CSyncHashtableAccessByKey<CTask, CTaskId, CSpinlockOS> shta(m_shtTS, tid);
+		CSyncHashtableAccessByKey<CTask, CTaskId> shta(m_shtTS, tid);
 
 		task = shta.Find();
 		if (NULL != task)
@@ -294,7 +278,7 @@ CWorkerPoolManager::Cancel
 
 	// scope for hash table accessor
 	{
-		CSyncHashtableAccessByKey<CTask, CTaskId, CSpinlockOS> shta(m_shtTS, tid);
+		CSyncHashtableAccessByKey<CTask, CTaskId> shta(m_shtTS, tid);
 		task = shta.Find();
 		if (NULL != task)
 		{

@@ -80,7 +80,7 @@ CSyncHashtableTest::EresUnittest_Basics()
 	CMemoryPool *mp = amp.Pmp();
 
 	SElem *rgelem = GPOS_NEW_ARRAY(mp, SElem, GPOS_SHT_ELEMENTS);
-	CSyncHashtable<SElem, ULONG, CSpinlockDummy> sht;
+	CSyncHashtable<SElem, ULONG> sht;
 	sht.Init
 		(
 		mp,
@@ -121,7 +121,7 @@ CSyncHashtableTest::EresUnittest_Accessor()
 
 	SElem *rgelem = GPOS_NEW_ARRAY(mp, SElem, GPOS_SHT_ELEMENTS);
 
-	CSyncHashtable<SElem, ULONG, CSpinlockDummy> rgsht[2];
+	CSyncHashtable<SElem, ULONG> rgsht[2];
 
 	rgsht[0].Init
 		(
@@ -160,13 +160,11 @@ CSyncHashtableTest::EresUnittest_Accessor()
 
 		CSyncHashtableAccessByKey
 			<SElem,
-			ULONG,
-			CSpinlockDummy> shtacc0(rgsht[0], ulKey);
+			ULONG> shtacc0(rgsht[0], ulKey);
 
 		CSyncHashtableAccessByKey
 			<SElem,
-			ULONG,
-			CSpinlockDummy> shtacc1(rgsht[1], ulKey);
+			ULONG> shtacc1(rgsht[1], ulKey);
 
 		if (NULL == shtacc0.Find())
 		{
@@ -187,13 +185,11 @@ CSyncHashtableTest::EresUnittest_Accessor()
 
 		CSyncHashtableAccessByKey
 			<SElem,
-			ULONG,
-			CSpinlockDummy> shtacc0(rgsht[0], ulKey);
+			ULONG> shtacc0(rgsht[0], ulKey);
 
 		CSyncHashtableAccessByKey
 			<SElem,
-			ULONG,
-			CSpinlockDummy> shtacc1(rgsht[1], ulKey);
+			ULONG> shtacc1(rgsht[1], ulKey);
 
 		GPOS_ASSERT(NULL == shtacc1.Find());
 		GPOS_ASSERT(pelem == shtacc0.Find());
@@ -222,7 +218,7 @@ CSyncHashtableTest::EresUnittest_ComplexEquality()
 
 	SElem *rgelem = GPOS_NEW_ARRAY(mp, SElem, GPOS_SHT_ELEMENTS);
 
-	CSyncHashtable<SElem, SElem, CSpinlockDummy> sht;
+	CSyncHashtable<SElem, SElem> sht;
 	sht.Init
 		(
 		mp,
@@ -246,8 +242,7 @@ CSyncHashtableTest::EresUnittest_ComplexEquality()
 		SElem elem(GPOS_SHT_ELEMENTS + j, j);
 		CSyncHashtableAccessByKey
 			<SElem,
-			SElem,
-			CSpinlockDummy> shtacc(sht, elem);
+			SElem> shtacc(sht, elem);
 
 #ifdef GPOS_DEBUG
 		SElem *pelem = shtacc.Find();

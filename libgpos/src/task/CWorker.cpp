@@ -40,11 +40,6 @@ CWorker::CWorker
 	m_stack_size(stack_size),
 	m_stack_start(stack_start)
 {
-#ifdef GPOS_DEBUG			
-	m_spin_lock_list.Init(GPOS_OFFSET(CSpinlockBase, m_link));
-	m_mutex_list.Init(GPOS_OFFSET(CMutexBase, m_link));
-#endif // GPOS_DEBUG
-
 	GPOS_ASSERT(stack_size >= 2 * 1024 && "Worker has to have at least 2KB stack");
 
 	// register worker
@@ -65,16 +60,6 @@ CWorker::CWorker
 //---------------------------------------------------------------------------
 CWorker::~CWorker()
 {
-	// since resources are being tracked in the worker releasing the locks is not an
-	// option: release/unlock require the worker to be in tact -- given that we're in
-	// the destructor we must assume the worst
-	//
-	// CONSIDER: 03/27/2008; if this is ever a problem on a production system,
-	// introduce emergency release/unlock function which suspends tracking; make 
-	// tracking available in optimized builds
-	GPOS_ASSERT(!OwnsSpinlocks() && "Cannot destruct worker while holding a spinlock.");
-	GPOS_ASSERT(!OwnsMutexes() && "Cannot destruct worker while holding a mutex.");
-	
 	// unregister worker
 	GPOS_ASSERT(this == Self() && "Unidentified worker found.");
 	CWorkerPoolManager::WorkerPoolManager()->RemoveWorker();
