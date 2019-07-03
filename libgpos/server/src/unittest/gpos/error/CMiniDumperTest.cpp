@@ -300,7 +300,7 @@ CMiniDumperTest::CMiniDumperStream::SerializeEntryHeader()
 	wstr.AppendFormat
 		(
 		GPOS_WSZ_LIT("<THREAD ID=%d>\n"),
-		CWorker::Self()->GetThreadId()
+		0
 		);
 
 	*m_oos << wstr.GetBuffer();

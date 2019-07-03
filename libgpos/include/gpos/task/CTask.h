@@ -16,14 +16,10 @@
 #include "gpos/error/CException.h"
 #include "gpos/error/CErrorContext.h"
 #include "gpos/memory/CMemoryPoolManager.h"
-#include "gpos/sync/CAutoMutex.h"
-#include "gpos/sync/CEvent.h"
-#include "gpos/sync/CMutex.h"
 #include "gpos/task/CTaskContext.h"
 #include "gpos/task/CTaskId.h"
 #include "gpos/task/CTaskLocalStorage.h"
 #include "gpos/task/ITask.h"
-#include "gpos/task/IWorker.h"
 
 namespace gpos
 {
@@ -73,12 +69,6 @@ namespace gpos
 			// TLS
 			CTaskLocalStorage m_tls;
 			
-			// mutex for status change
-			CMutexBase *m_mutex;
-
-			// event to signal status change
-			CEvent *m_event;
-
 			// task status
 			volatile ETaskStatus m_status;
 
@@ -103,18 +93,11 @@ namespace gpos
 				CMemoryPool *mp,
 				CTaskContext *task_ctxt,
 				IErrorContext *err_ctxt,
-				CEvent *event,
-				volatile BOOL *cancel
+				BOOL *cancel
 				);
 
 			// no copy ctor
 			CTask(const CTask&);
-
-			// set task status
-			void SetStatus(ETaskStatus status);
-
-			// signal task completion or error
-			void Signal(ETaskStatus status) throw();
 
 			// binding a task structure to a function and its arguments
 			void Bind(void *(*func)(void*), void *arg);
@@ -250,6 +233,9 @@ namespace gpos
 			{
 				return m_status;
 			}
+
+			// set task status
+			void SetStatus(ETaskStatus status);
 
 			// task result accessor
 			void *GetRes() const

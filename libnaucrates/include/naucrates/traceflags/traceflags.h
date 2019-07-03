@@ -86,7 +86,7 @@ namespace gpos
 		///////////////////////////////////////////////////////
 
 		// use threads in optimization engine
-		EopttraceParallel = 103000,
+		EopttraceParallel = 103000, // no longer used
 
 		// produce a minidump
 		EopttraceMinidump = 103001,

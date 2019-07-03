@@ -16,8 +16,6 @@
 
 #include "gpos/memory/CAutoMemoryPool.h"
 
-#include "gpos/sync/CAutoMutex.h"
-
 #include "gpos/task/CAutoTaskProxy.h"
 
 #include "gpos/test/CUnittest.h"

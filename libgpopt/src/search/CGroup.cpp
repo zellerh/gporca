@@ -286,10 +286,6 @@ CGroup::CleanupContexts()
 			}
 		}
 	}
-
-#ifdef GPOS_DEBUG
-	CWorker::Self()->ResetTimeSlice();
-#endif // GPOS_DEBUG
 }
 
 
@@ -487,7 +483,7 @@ CGroup::SetId
 	ULONG id
 	)
 {
-	GPOS_ASSERT(m_lock.IsOwned());
+	//GPOS_ASSERT(m_lock.IsOwned());
 	GPOS_ASSERT(GPOPT_INVALID_GROUP_ID == m_id &&
 				"Overwriting previously assigned group id");
 
@@ -509,7 +505,7 @@ CGroup::InitProperties
 	DrvdPropArray *pdp
 	)
 {
-	GPOS_ASSERT(m_lock.IsOwned());
+	//GPOS_ASSERT(m_lock.IsOwned());
 	GPOS_ASSERT(NULL == m_pdp);
 	GPOS_ASSERT(NULL != pdp);
 	GPOS_ASSERT_IMP(FScalar(), DrvdPropArray::EptScalar == pdp->Ept());
@@ -533,7 +529,7 @@ CGroup::InitStats
 	IStatistics *stats
 	)
 {
-	GPOS_ASSERT(m_lock.IsOwned());
+	//GPOS_ASSERT(m_lock.IsOwned());
 	GPOS_ASSERT(NULL == m_pstats);
 	GPOS_ASSERT(NULL != stats);
 
@@ -555,7 +551,7 @@ CGroup::SetState
 	EState estNewState
 	)
 {
-	GPOS_ASSERT(m_lock.IsOwned());
+	//GPOS_ASSERT(m_lock.IsOwned());
 	GPOS_ASSERT(estNewState == (EState) (m_estate + 1));
 
 	m_estate = estNewState;
@@ -580,7 +576,7 @@ CGroup::SetHashJoinKeys
 	GPOS_ASSERT(m_fScalar);
 	GPOS_ASSERT(NULL != pdrgpexprOuter);
 	GPOS_ASSERT(NULL != pdrgpexprInner);
-	GPOS_ASSERT(m_lock.IsOwned());
+	//GPOS_ASSERT(m_lock.IsOwned());
 
 	if (NULL != m_pdrgpexprHashJoinKeysOuter)
 	{
@@ -634,7 +630,7 @@ CGroup::Insert
 	CGroupExpression *pgexpr
 	)
 {
-	GPOS_ASSERT(m_lock.IsOwned());
+	//GPOS_ASSERT(m_lock.IsOwned());
 
 	m_listGExprs.Append(pgexpr);
 	COperator *pop = pgexpr->Pop();
@@ -674,7 +670,7 @@ CGroup::MoveDuplicateGExpr
 	CGroupExpression *pgexpr
 	)
 {
-	GPOS_ASSERT(m_lock.IsOwned());
+	//GPOS_ASSERT(m_lock.IsOwned());
 
 	m_listGExprs.Remove(pgexpr);
 	m_ulGExprs--;
@@ -738,7 +734,7 @@ CGroup::PgexprAnyCTEConsumer()
 CGroupExpression *
 CGroup::PgexprFirst()
 {
-	GPOS_ASSERT(m_lock.IsOwned());
+	//GPOS_ASSERT(m_lock.IsOwned());
 
 	return m_listGExprs.First();
 }
@@ -758,7 +754,7 @@ CGroup::PgexprNext
 	CGroupExpression *pgexpr
 	) 
 {
-	GPOS_ASSERT(m_lock.IsOwned());
+	//GPOS_ASSERT(m_lock.IsOwned());
 
 	return m_listGExprs.Next(pgexpr);
 }
@@ -2061,21 +2057,12 @@ CGroup::PstatsCompute
 	stats = CLogical::PopConvert(pgexpr->Pop())->PstatsDerive(m_mp, exprhdl, poc->Pdrgpstat());
 	GPOS_ASSERT(NULL != stats);
 
+	// add computed stats to local map
+	poc->AddRef();
 #ifdef GPOS_DEBUG
-	BOOL fSuccess = false;
+	BOOL fSuccess =
 #endif  // GPOS_DEBUG
-
-	// add computed stats to local map -- we can't use group proxy here due to potential memory allocation
-	// which is disallowed with spin locks
-	{
-		CAutoMutex am(m_mutexStats);
-		am.Lock();
-		poc->AddRef();
-#ifdef GPOS_DEBUG
-		fSuccess =
-#endif  // GPOS_DEBUG
-		m_pstatsmap->Insert(poc, stats);
-	}
+	m_pstatsmap->Insert(poc, stats);
 	GPOS_ASSERT(fSuccess);
 
 	return stats;

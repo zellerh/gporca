@@ -28,7 +28,6 @@
 
 #include "gpos/common/clibwrapper.h"
 #include "gpos/error/CException.h"
-#include "gpos/task/IWorker.h"
 
 using namespace gpos;
 

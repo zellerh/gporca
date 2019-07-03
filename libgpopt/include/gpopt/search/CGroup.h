@@ -12,7 +12,6 @@
 #define GPOPT_CGroup_H
 
 #include "gpos/base.h"
-#include "gpos/sync/CMutex.h"
 
 #include "naucrates/statistics/CStatistics.h"
 
@@ -225,10 +224,6 @@ namespace gpopt
 
 			// map of computed stats during costing
 			OptCtxtToIStatisticsMap *m_pstatsmap;
-
-			// mutex for locking stats map when adding a new entry
-			CMutex m_mutexStats;
-
 
 			// hashtable of optimization contexts
 			ShtOC m_sht;

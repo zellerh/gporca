@@ -19,7 +19,6 @@
 #include "gpos/memory/CAutoMemoryPool.h"
 #include "gpos/test/CFSimulatorTestExt.h"
 #include "gpos/test/CUnittest.h"
-#include "gpos/test/CTimeSliceTest.h"
 
 
 #include "gpopt/engine/CEnumeratorConfig.h"
@@ -237,10 +236,6 @@ static gpos::CUnittest rgut[] =
 #ifdef GPOS_FPSIMULATOR
 	GPOS_UNITTEST_EXT(CFSimulatorTestExt),
 #endif // GPOS_FPSIMULATOR
-
-#ifdef GPOS_DEBUG
-	GPOS_UNITTEST_EXT(CTimeSliceTest),
-#endif // GPOS_DEBUG
 };
 
 //---------------------------------------------------------------------------
@@ -447,11 +442,6 @@ INT main
 	gpopt_init();
 
 	GPOS_ASSERT(iArgs >= 0);
-
-	if (gpos_set_threads(4, 20))
-	{
-		return GPOS_FAILED;
-	}
 
 	// setup args for unittest params
 	CMainArgs ma(iArgs, rgszArgs, "uU:d:xT:i:");

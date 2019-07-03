@@ -11,9 +11,6 @@
 
 #include "gpos/base.h"
 
-#include "gpos/sync/CAutoMutex.h"
-
-#include "gpopt/search/CJob.h"
 #include "gpopt/search/CJobFactory.h"
 #include "gpopt/search/CScheduler.h"
 #include "gpopt/search/CSchedulerContext.h"
@@ -34,8 +31,7 @@ using namespace gpopt;
 CScheduler::CScheduler
 	(
 	CMemoryPool *mp,
-	ULONG ulJobs,
-	ULONG_PTR ulpTasks
+	ULONG ulJobs
 #ifdef GPOS_DEBUG
 	,
 	BOOL fTrackingJobs
@@ -43,8 +39,6 @@ CScheduler::CScheduler
 	)
 	:
 	m_spjl(mp, ulJobs),
-	m_ulpTasksMax(ulpTasks),
-	m_ulpTasksActive(0),
 	m_ulpTotal(0),
 	m_ulpRunning(0),
 	m_ulpQueued(0),
@@ -65,9 +59,6 @@ CScheduler::CScheduler
 	// initialize list of waiting new jobs
 	m_listjlWaiting.Init(GPOS_OFFSET(SJobLink, m_link));
 	
-	// initialize event for job queue
-	m_event.Init(&m_mutex);
-
 #ifdef GPOS_DEBUG
 	// initialize list of running jobs
 	m_listjRunning.Init(GPOS_OFFSET(CJob, m_linkRunning));
@@ -94,7 +85,6 @@ CScheduler::~CScheduler()
 		0 == m_ulpTotal
 		);
 
-	GPOS_ASSERT(0 == m_event.GetNumWaiters());
 }
 
 
@@ -113,50 +103,9 @@ CScheduler::Run
 	)
 {
 	CSchedulerContext *psc = reinterpret_cast<CSchedulerContext*>(pv);
-	psc->Psched()->ProcessJobs(psc);
+	psc->Psched()->ExecuteJobs(psc);
 
 	return NULL;
-}
-
-
-//---------------------------------------------------------------------------
-//	@function:
-//		CScheduler::ProcessJobs
-//
-//	@doc:
-// 		Internal job processing task
-//
-//---------------------------------------------------------------------------
-void
-CScheduler::ProcessJobs
-	(
-	CSchedulerContext *psc
-	)
-{
-	while (true)
-	{
-		IncTasksActive();
-
-		// execute waiting jobs
-		ExecuteJobs(psc);
-
-		DecrTasksActive();
-
-		CAutoMutex am(m_mutex);
-		am.Lock();
-
-		// stop when all jobs have completed
-		if (IsEmpty())
-		{
-			m_event.Broadcast();
-			break;
-		}
-
-		// wait until there is enough work to pick up
-		m_event.Wait();
-
-		GPOS_CHECK_ABORT;
-	}
 }
 
 
@@ -189,10 +138,8 @@ CScheduler::ExecuteJobs
 
 #ifdef GPOS_DEBUG
 		// restrict parallelism to keep track of jobs
-		CAutoMutex am(m_mutex);
 		if (FTrackingJobs())
 		{
-			am.Lock();
 			m_listjRunning.Remove(pj);
 		}
 #endif // GPOS_DEBUG
@@ -259,15 +206,6 @@ CScheduler::Add
 	GPOS_ASSERT(NULL != pj);
 	GPOS_ASSERT(0 == pj->UlpRefs());
 
-#ifdef GPOS_DEBUG
-	// restrict parallelism to keep track of jobs
-	CAutoMutex am(m_mutex);
-	if (FTrackingJobs())
-	{
-		am.Lock();
-	}
-#endif // GPOS_DEBUG
-
 	// increment ref counter for parent job
 	if (NULL != pjParent)
 	{
@@ -320,7 +258,6 @@ CScheduler::Schedule
 	)
 {
 	GPOS_ASSERT(NULL != pj);
-	GPOS_ASSERT_IMP(FTrackingJobs(), m_mutex.IsOwned());
 
 	// get job link
 	SJobLink *pjl = m_spjl.PtRetrieve();
@@ -352,24 +289,7 @@ CScheduler::Schedule
 	(void) ExchangeAddUlongPtrWithInt(&m_ulpQueued, 1);
 
 	// update statistics
-	(void) ExchangeAddUlongPtrWithInt(&m_ulpStatsQueued, 1);
-
-	// check if there is enough work for another worker
-	if (FIncreaseWorkers())
-	{
-		CAutoMutex am(m_mutex);
-#ifdef GPOS_DEBUG
-		if (!FTrackingJobs())
-		{
-			am.Lock();
-		}
-#else
-		am.Lock();
-#endif // GPOS_DEBUG
-
-		// wake up worker to pick up a job
-		m_event.Signal();
-	}
+	m_ulpStatsQueued++;
 }
 
 
@@ -508,15 +428,6 @@ CScheduler::EjrPostExecute
 CJob *
 CScheduler::PjRetrieve()
 {
-#ifdef GPOS_DEBUG
-	// restrict parallelism to keep track of jobs
-	CAutoMutex am(m_mutex);
-	if (FTrackingJobs())
-	{
-		am.Lock();
-	}
-#endif // GPOS_DEBUG
-
 	// retrieve runnable job from lists of waiting jobs
 	SJobLink *pjl = m_listjlWaiting.Pop();
 	CJob *pj = NULL;
@@ -571,7 +482,7 @@ CScheduler::Suspend
 	)
 {
 	GPOS_ASSERT(NULL != pj);
-	GPOS_ASSERT_IMP(FTrackingJobs(), m_mutex.IsOwned());
+	//GPOS_ASSERT_IMP(FTrackingJobs(), m_mutex.IsOwned());
 
 #ifdef GPOS_DEBUG
 	if (FTrackingJobs())
@@ -602,7 +513,7 @@ CScheduler::Complete
 	)
 {
 	GPOS_ASSERT(0 == pj->UlpRefs());
-	GPOS_ASSERT_IMP(FTrackingJobs(), m_mutex.IsOwned());
+	//GPOS_ASSERT_IMP(FTrackingJobs(), m_mutex.IsOwned());
 
 #ifdef GPOS_DEBUG
 	if (FTrackingJobs())
@@ -638,12 +549,8 @@ CScheduler::CompleteQueued
 	GPOS_ASSERT(0 == pj->UlpRefs());
 
 #ifdef GPOS_DEBUG
-	// restrict parallelism to keep track of jobs
-	CAutoMutex am(m_mutex);
 	if (FTrackingJobs())
 	{
-		am.Lock();
-
 		GPOS_ASSERT(CJob::EjsSuspended == pj->Ejs());
 
 		m_listjSuspended.Remove(pj);
@@ -675,7 +582,7 @@ CScheduler::ResumeParent
 	)
 {
 	GPOS_ASSERT(0 == pj->UlpRefs());
-	GPOS_ASSERT_IMP(FTrackingJobs(), m_mutex.IsOwned());
+	//GPOS_ASSERT_IMP(FTrackingJobs(), m_mutex.IsOwned());
 
 	CJob *pjParent = pj->PjParent();
 
@@ -742,9 +649,6 @@ CScheduler::OsPrintActiveJobs
 	IOstream &os
 	)
 {
-	CAutoMutex am(m_mutex);
-	am.Lock();
-
 	os << "Scheduler - active jobs: " << std::endl << std::endl;
 
 	os << "List of running jobs: " << std::endl;

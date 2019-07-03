@@ -14,7 +14,6 @@
 
 #include "gpos/common/CMainArgs.h"
 #include "gpos/test/CFSimulatorTestExt.h"
-#include "gpos/test/CTimeSliceTest.h"
 #include "gpos/test/CUnittest.h"
 
 
@@ -56,12 +55,6 @@
 #include "unittest/gpos/memory/CMemoryPoolAllocTest.h"
 #include "unittest/gpos/memory/CMemoryPoolBasicTest.h"
 #include "unittest/gpos/memory/CCacheTest.h"
-
-#include "unittest/gpos/sync/CAutoSpinlockTest.h"
-#include "unittest/gpos/sync/CAutoMutexTest.h"
-#include "unittest/gpos/sync/CEventTest.h"
-#include "unittest/gpos/sync/CMutexTest.h"
-#include "unittest/gpos/sync/CSpinlockTest.h"
 
 #include "unittest/gpos/string/CStringTest.h"
 #include "unittest/gpos/string/CWStringTest.h"
@@ -145,11 +138,6 @@ static gpos::CUnittest rgut[] =
 	GPOS_UNITTEST_STD(CFSimulatorTest),
 	GPOS_UNITTEST_EXT(CFSimulatorTestExt),
 #endif // GPOS_FPSIMULATOR
-
-#ifdef GPOS_DEBUG
-	// time slicing
-	GPOS_UNITTEST_EXT(CTimeSliceTest),
-#endif // GPOS_DEBUG
 };
 
 // static variable counting the number of failed tests; PvExec overwrites with
@@ -199,11 +187,6 @@ INT main
 
 	GPOS_ASSERT(iArgs >= 0);
 
-	if (gpos_set_threads(4, 20))
-	{
-		return GPOS_FAILED;
-	}
-	
 	// initialize unittest framework
 	CUnittest::Init(rgut, GPOS_ARRAY_SIZE(rgut), NULL, NULL);
 

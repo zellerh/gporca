@@ -35,8 +35,7 @@ CTask::CTask
 	CMemoryPool *mp,
 	CTaskContext *task_ctxt,
 	IErrorContext *err_ctxt,
-	CEvent *event,
-	volatile BOOL *cancel
+	BOOL *cancel
 	)
 	:
 	m_mp(mp),
@@ -46,8 +45,6 @@ CTask::CTask
 	m_func(NULL),
 	m_arg(NULL),
 	m_res(NULL),
-	m_mutex(event->GetMutex()),
-	m_event(event),
 	m_status(EtsInit),
 	m_cancel(cancel),
 	m_cancel_local(false),
@@ -158,7 +155,8 @@ CTask::Execute()
 	}
 	
 	// signal end of task execution
-	Signal(ets);
+	SetStatus(ets);
+	//Signal(ets);
 }
 
 
@@ -243,43 +241,6 @@ CTask::IsFinished() const
 
 //---------------------------------------------------------------------------
 //	@function:
-//		CTask::Signal
-//
-//	@doc:
-//		Signal task completion or error
-//
-//---------------------------------------------------------------------------
-void
-CTask::Signal
-	(
-	ETaskStatus status
-	)
-	throw()
-{
-	GPOS_ASSERT(IsScheduled() && !IsFinished() && "Invalid task status after execution");
-
-	// scope for locking mutex
-	{
-		// suspend cancellation, or else the mutex may throw an Abort exception
-		SuspendAbort();
-
-		// use lock to prevent a waiting worker from missing a signal
-		CAutoMutex am(*m_mutex);
-		am.Lock();
-
-		// update task status
-		SetStatus(status);
-
-		m_event->Signal();
-
-		// resume cancellation
-		ResumeAbort();
-	}
-}
-
-
-//---------------------------------------------------------------------------
-//	@function:
 //		CTask::ResumeAbort
 //
 //	@doc:
@@ -297,7 +258,6 @@ CTask::ResumeAbort()
 	CWorker *worker = CWorker::Self();
 
 	GPOS_ASSERT(NULL != worker);
-	worker->ResetTimeSlice();
 #endif
 }
 

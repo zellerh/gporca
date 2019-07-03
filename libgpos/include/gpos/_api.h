@@ -52,12 +52,6 @@ struct gpos_init_params
 void gpos_init(struct gpos_init_params *params);
 
 /*
- * set number of threads in worker pool
- * return 0 for successful completion, 1 for error
- */
-int gpos_set_threads(int min, int max);
-
-/*
  * execute function as a GPOS task using current thread;
  * return 0 for successful completion, 1 for error
  */

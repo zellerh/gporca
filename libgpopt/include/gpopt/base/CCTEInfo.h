@@ -14,7 +14,6 @@
 #include "gpos/base.h"
 #include "gpos/common/CHashMap.h"
 #include "gpos/common/CStack.h"
-#include "gpos/sync/CMutex.h"
 #include "gpos/sync/CAtomicCounter.h"
 
 #include "gpopt/base/CColumnFactory.h"
@@ -66,9 +65,6 @@ namespace gpopt
 					ULONG m_ulCount;
 
 				public:
-
-					// mutex for locking entry when changing member variables
-					CMutex m_mutex;
 
 					// ctor
 					explicit
@@ -137,9 +133,6 @@ namespace gpopt
 					BOOL m_fUsed;
 
 				public:
-
-					// mutex for locking entry when changing member variables when deriving stats
-					CMutex m_mutex;
 
 					// ctors
 					CCTEInfoEntry(CMemoryPool *mp, CExpression *pexprCTEProducer);

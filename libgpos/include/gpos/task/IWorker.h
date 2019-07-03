@@ -82,8 +82,6 @@ namespace gpos
 			virtual ~IWorker() {}
 
 			// accessors
-			virtual ULONG GetThreadId() const = 0;
-			virtual CWorkerId GetWid() const = 0;
 			virtual ULONG_PTR GetStackStart() const = 0;
 			virtual ITask *GetTask() = 0;
 

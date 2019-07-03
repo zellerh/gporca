@@ -25,7 +25,6 @@
 #include "gpos/memory/CMemoryPoolManager.h"
 #include "gpos/memory/CMemoryPoolTracker.h"
 #include "gpos/memory/IMemoryVisitor.h"
-#include "gpos/sync/CAutoMutex.h"
 
 using namespace gpos;
 
