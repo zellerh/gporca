@@ -102,7 +102,6 @@
 #include "unittest/gpopt/operators/CPredicateUtilsTest.h"
 #include "unittest/gpopt/operators/CScalarIsDistinctFromTest.h"
 
-#include "unittest/gpopt/search/CSchedulerTest.h"
 #include "unittest/gpopt/search/CSearchStrategyTest.h"
 #include "unittest/gpopt/minidump/CMultilevelPartitionTest.h"
 #include "unittest/gpopt/search/COptimizationJobsTest.h"
@@ -216,7 +215,6 @@ static gpos::CUnittest rgut[] =
 	GPOS_UNITTEST_STD(CScalarIsDistinctFromTest),
 	GPOS_UNITTEST_STD(CPartConstraintTest),
 #if !defined(GPOS_SunOS)
-	GPOS_UNITTEST_STD(CSchedulerTest),
 	GPOS_UNITTEST_STD(CSearchStrategyTest),
 #endif  // !defined(GPOS_SunOS)
 	GPOS_UNITTEST_STD(COptimizationJobsTest),

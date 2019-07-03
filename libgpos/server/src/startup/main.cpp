@@ -59,9 +59,7 @@
 #include "unittest/gpos/string/CStringTest.h"
 #include "unittest/gpos/string/CWStringTest.h"
 
-#include "unittest/gpos/task/CAutoTaskProxyTest.h"
 #include "unittest/gpos/task/CTaskLocalStorageTest.h"
-#include "unittest/gpos/task/CWorkerPoolManagerTest.h"
 
 #include "unittest/gpos/test/CUnittestTest.h"
 
@@ -115,16 +113,7 @@ static gpos::CUnittest rgut[] =
 	GPOS_UNITTEST_STD(CWStringTest),
 	GPOS_UNITTEST_STD(CStringTest),
 
-	// sync
-	GPOS_UNITTEST_STD(CAutoMutexTest),
-	GPOS_UNITTEST_STD(CAutoSpinlockTest),
-	GPOS_UNITTEST_STD(CEventTest),
-	GPOS_UNITTEST_STD(CMutexTest),
-	GPOS_UNITTEST_STD(CSpinlockTest),
-
 	// task
-	GPOS_UNITTEST_STD(CAutoTaskProxyTest),
-	GPOS_UNITTEST_STD(CWorkerPoolManagerTest),
 	GPOS_UNITTEST_STD(CTaskLocalStorageTest),
 
 	// test

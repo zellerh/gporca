@@ -193,13 +193,7 @@ namespace gpos
 			static GPOS_RESULT EresUnittest_ComplexEquality();
 			static GPOS_RESULT EresUnittest_SameKeyIteration();
 			static GPOS_RESULT EresUnittest_NonConcurrentIteration();
-			static GPOS_RESULT EresUnittest_ConcurrentIteration();
-			static GPOS_RESULT EresUnittest_Concurrency();
 
-
-#ifdef GPOS_DEBUG
-			static GPOS_RESULT EresUnittest_AccessorDeadlock();
-#endif // GPOS_DEBUG
 	};
 }
 
