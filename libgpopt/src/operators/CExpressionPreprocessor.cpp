@@ -577,6 +577,7 @@ CExpressionPreprocessor::PexprRemoveSuperfluousOuterRefs
 				CExpressionArray *grouping_cols_arr = CUtils::PdrgpexprScalarIdents(mp, popAgg->Pdrgpcr());
 
 				GPOS_ASSERT(0 < grouping_cols_arr->Size());
+				child->AddRef();
 
 				// add a project node on top of our child
 				CExpression *projectExpr = CUtils::PexprAddProjection(
@@ -587,7 +588,6 @@ CExpressionPreprocessor::PexprRemoveSuperfluousOuterRefs
 																			// this is done at the end
 																			// of preprocessing
 																	 );
-				child->AddRef();
 				grouping_cols_arr->Release();
 
 				// build a children array for the new GrbyAgg expression
