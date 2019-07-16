@@ -110,7 +110,7 @@ CColumnFactory::PcrCreate
 	)
 {
 	// increment atomic counter
-	ULONG id = m_aul.Incr();
+	ULONG id = m_aul++;
 	
 	WCHAR wszFmt[] = GPOS_WSZ_LIT("ColRef_%04d");
 	CWStringDynamic *pstrTempName = GPOS_NEW(m_mp) CWStringDynamic(m_mp);
@@ -137,7 +137,7 @@ CColumnFactory::PcrCreate
 	const CName &name
 	)
 {
-	ULONG id = m_aul.Incr();
+	ULONG id = m_aul++;
 
 	return PcrCreate(pmdtype, type_modifier, id, name);
 }
@@ -273,7 +273,7 @@ CColumnFactory::PcrCreate
 	BOOL mark_as_used
 	)
 {
-	ULONG id = m_aul.Incr();
+	ULONG id = m_aul++;
 	
 	return PcrCreate(pcoldesc, id, name, ulOpSource, mark_as_used);
 }
@@ -299,7 +299,7 @@ CColumnFactory::PcrCopy
 	}
 
 	GPOS_ASSERT(CColRef::EcrtTable == colref->Ecrt());
-	ULONG id = m_aul.Incr();
+	ULONG id = m_aul++;
 	CColRefTable *pcrTable = CColRefTable::PcrConvert(const_cast<CColRef*>(colref));
 
 	return PcrCreate

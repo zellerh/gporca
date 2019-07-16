@@ -14,7 +14,6 @@
 #include "gpos/base.h"
 #include "gpos/common/CHashMap.h"
 #include "gpos/common/CStack.h"
-#include "gpos/sync/CAtomicCounter.h"
 
 #include "gpopt/base/CColumnFactory.h"
 #include "gpopt/operators/CExpression.h"
@@ -185,7 +184,7 @@ namespace gpopt
 			UlongToCTEInfoEntryMap *m_phmulcteinfoentry;
 
 			// next available CTE Id
-			CAtomicULONG m_ulNextCTEId;
+			ULONG m_ulNextCTEId;
 
 			// whether or not to inline CTE consumers
 			BOOL m_fEnableInlining;
@@ -240,7 +239,7 @@ namespace gpopt
 			// next available CTE id
 			ULONG next_id()
 			{
-				return m_ulNextCTEId.Incr();
+				return m_ulNextCTEId++;
 			}
 
 			// derive the statistics on the CTE producer

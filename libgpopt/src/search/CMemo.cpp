@@ -145,7 +145,7 @@ CMemo::Add
 	}
 	GPOS_ASSERT(NULL != pdp);
 
-	ULONG id = m_aul.Incr();
+	ULONG id = m_aul++;
 	pdp->AddRef();
 #ifdef GPOS_DEBUG
 	CGroupExpression *pgexpr = NULL;

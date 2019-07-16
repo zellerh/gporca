@@ -15,7 +15,6 @@
 #include "gpos/common/CRefCount.h"
 #include "gpos/common/CSyncHashtable.h"
 #include "gpos/common/CSyncList.h"
-#include "gpos/sync/CAtomicCounter.h"
 
 #include "gpopt/search/CGroupExpression.h"
 
@@ -66,7 +65,7 @@ namespace gpopt
 			CMemoryPool *m_mp;
 		
 			// id counter for groups
-			CAtomicULONG m_aul;
+			ULONG m_aul;
 
 			// root group
 			CGroup *m_pgroupRoot;

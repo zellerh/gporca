@@ -17,7 +17,6 @@
 #include "gpos/base.h"
 #include "gpos/common/CSyncHashtable.h"
 #include "gpos/common/CSyncHashtableAccessByKey.h"
-#include "gpos/sync/CAtomicCounter.h"
 #include "gpos/task/CTask.h"
 #include "gpos/task/CTaskId.h"
 #include "gpos/task/CTaskSchedulerFifo.h"
