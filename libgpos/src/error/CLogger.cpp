@@ -15,6 +15,7 @@
 #include "gpos/error/CLoggerStream.h"
 #include "gpos/error/CLoggerSyslog.h"
 #include "gpos/error/CMessageRepository.h"
+#include "gpos/io/ioutils.h"
 #include "gpos/string/CWStringConst.h"
 
 using namespace gpos;
