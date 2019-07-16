@@ -17,6 +17,7 @@
 #include "gpos/error/CMiniDumper.h"
 #include "gpos/error/CSerializable.h"
 #include "gpos/error/IErrorContext.h"
+#include "gpos/io/ioutils.h"
 #include "gpos/string/CWStringStatic.h"
 
 #define GPOS_ERROR_MESSAGE_BUFFER_SIZE	(4 * 1024)
