@@ -49,6 +49,7 @@ CMemo::CMemo
 	)
 	:
 	m_mp(mp),
+	m_aul(0),
 	m_pgroupRoot(NULL),
 	m_ulpGrps(0),
 	m_pmemotmap(NULL)

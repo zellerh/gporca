@@ -38,7 +38,8 @@ using namespace gpmd;
 CColumnFactory::CColumnFactory()
 	:
 	m_mp(NULL),
-	m_phmcrcrs(NULL)
+	m_phmcrcrs(NULL),
+	m_aul(0)
 {
 	CAutoMemoryPool amp;
 	m_mp = amp.Pmp();
