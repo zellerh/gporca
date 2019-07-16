@@ -123,7 +123,7 @@ namespace gpos
                 m_bucket.m_chain.Prepend(value, ptNext);
 
                 // increase number of entries
-				m_ht.m_size++;
+                m_ht.m_size++;
 			}
 
 			// adds first element after second element
@@ -137,7 +137,7 @@ namespace gpos
                 m_bucket.m_chain.Append(value, ptPrev);
 
                 // increase number of entries
-				m_ht.m_size++;
+                m_ht.m_size++;
             }
 
 		public:

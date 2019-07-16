@@ -19,9 +19,6 @@
 #include "unittest/gpos/common/CSyncListTest.h"
 
 #define GPOS_SLIST_SIZE 10
-#define GPOS_SLIST_STRESS_TASKS 10
-#define GPOS_SLIST_STRESS_ITER 100000
-#define GPOS_SLIST_STRESS_CFA 1000
 
 using namespace gpos;
 

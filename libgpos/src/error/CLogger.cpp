@@ -15,7 +15,6 @@
 #include "gpos/error/CLoggerStream.h"
 #include "gpos/error/CLoggerSyslog.h"
 #include "gpos/error/CMessageRepository.h"
-#include "gpos/io/iotypes.h"
 #include "gpos/string/CWStringConst.h"
 
 using namespace gpos;
@@ -160,7 +159,7 @@ CLogger::Format
 		m_entry_wrapper.AppendFormat
 			(
 			GPOS_WSZ_LIT(",THD%03d,%s,\"%ls\",\n"),
-			1, //thread id
+			0, //thread id
 			sev,
 			m_msg_wrapper.GetBuffer()
 			);

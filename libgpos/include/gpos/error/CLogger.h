@@ -111,14 +111,6 @@ namespace gpos
 				m_info_level = info_level;
 			}
 
-#ifdef GPOS_FPSIMULATOR
-			// check if a message is logged
-			BOOL MessageIsLogged() const
-			{
-				return false;
-			}
-#endif // GPOS_FPSIMULATOR
-
 	};	// class CLogger
 }
 

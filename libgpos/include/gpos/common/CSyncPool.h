@@ -36,7 +36,7 @@ namespace gpos
 	//		CSyncPool<class T>
 	//
 	//	@doc:
-	//		Object pool class (no longer thread-safe)
+	//		Object pool class (not thread-safe, despite the name)
 	//
 	//---------------------------------------------------------------------------
 	template <class T>

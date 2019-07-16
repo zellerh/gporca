@@ -73,7 +73,7 @@ namespace gpos
 
 		public:
 	
-			// ctor - acquires spinlock on target bucket
+			// ctor
 			CSyncHashtableAccessByKey<T, K>
 				(CSyncHashtable<T, K> &ht, const K &key)
             :

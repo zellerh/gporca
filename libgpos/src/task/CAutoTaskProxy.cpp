@@ -106,6 +106,7 @@ CAutoTaskProxy::Destroy
 	if (task->IsScheduled() && !task->IsReported())
 	{
 		Cancel(task);
+		task->SetReported();
 		CheckError(task);
 	}
 

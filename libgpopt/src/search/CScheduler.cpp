@@ -482,7 +482,6 @@ CScheduler::Suspend
 	)
 {
 	GPOS_ASSERT(NULL != pj);
-	//GPOS_ASSERT_IMP(FTrackingJobs(), m_mutex.IsOwned());
 
 #ifdef GPOS_DEBUG
 	if (FTrackingJobs())
@@ -513,7 +512,6 @@ CScheduler::Complete
 	)
 {
 	GPOS_ASSERT(0 == pj->UlpRefs());
-	//GPOS_ASSERT_IMP(FTrackingJobs(), m_mutex.IsOwned());
 
 #ifdef GPOS_DEBUG
 	if (FTrackingJobs())
@@ -582,7 +580,6 @@ CScheduler::ResumeParent
 	)
 {
 	GPOS_ASSERT(0 == pj->UlpRefs());
-	//GPOS_ASSERT_IMP(FTrackingJobs(), m_mutex.IsOwned());
 
 	CJob *pjParent = pj->PjParent();
 

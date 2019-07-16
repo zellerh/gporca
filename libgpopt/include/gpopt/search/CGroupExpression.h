@@ -75,7 +75,7 @@ namespace gpopt
 			typedef
 				CSyncHashtable<
 					CCostContext, // entry
-					OPTCTXT_PTR> ShtCC;
+					OPTCTXT_PTR   /* search key */> ShtCC;
 
 		private:
 

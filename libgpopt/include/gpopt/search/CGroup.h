@@ -82,7 +82,7 @@ namespace gpopt
 			typedef
 				CSyncHashtable<
 					COptimizationContext, // entry
-					COptimizationContext> ShtOC;
+					COptimizationContext  /* search key */> ShtOC;
 
 			// states of a group
 			enum EState

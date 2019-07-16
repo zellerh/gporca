@@ -15,7 +15,7 @@
 //		2)	expects target type to have SLink (see CList.h) and Key
 //			members with appopriate accessors;
 //		3)	clients must provide their own hash function;
-//		4)	hashtable is no longer thread-safe;
+//		4)	hashtable is not thread-safe, despite the name;
 //---------------------------------------------------------------------------
 #ifndef GPOS_CSyncHashtable_H
 #define GPOS_CSyncHashtable_H

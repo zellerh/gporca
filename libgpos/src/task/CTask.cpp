@@ -156,7 +156,6 @@ CTask::Execute()
 	
 	// signal end of task execution
 	SetStatus(ets);
-	//Signal(ets);
 }
 
 

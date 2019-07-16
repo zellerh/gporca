@@ -561,11 +561,7 @@ FSimulateIOErrorInternal
 		// disable simulation temporarily to log injection
 		CAutoTraceFlag(EtraceSimulateIOError, false);
 
-		CLogger *plogger = dynamic_cast<CLogger*>(ITask::Self()->GetTaskCtxt()->GetErrorLogger());
-		if (!plogger->MessageIsLogged())
-		{
-			GPOS_TRACE_FORMAT_ERR("Simulating I/O error at %s:%d", file, line_num);
-		}
+		GPOS_TRACE_FORMAT_ERR("Simulating I/O error at %s:%d", file, line_num);
 
 		errno = error_no;
 
