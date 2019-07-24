@@ -68,6 +68,7 @@ CExpression::CExpression
 	m_pdpscalar(NULL),
 	m_pgexpr(pgexpr),
 	m_cost(GPOPT_INVALID_COST),
+	m_rebinds(GPOPT_INVALID_REBINDS),
 	m_ulOriginGrpId(gpos::ulong_max),
 	m_ulOriginGrpExprId(gpos::ulong_max)
 {
@@ -106,6 +107,7 @@ CExpression::CExpression
 	m_pdpscalar(NULL),
 	m_pgexpr(NULL),
 	m_cost(GPOPT_INVALID_COST),
+	m_rebinds(GPOPT_INVALID_REBINDS),
 	m_ulOriginGrpId(gpos::ulong_max),
 	m_ulOriginGrpExprId(gpos::ulong_max)
 {
@@ -146,6 +148,7 @@ CExpression::CExpression
 	m_pdpscalar(NULL),
 	m_pgexpr(NULL),
 	m_cost(GPOPT_INVALID_COST),
+	m_rebinds(GPOPT_INVALID_REBINDS),
 	m_ulOriginGrpId(gpos::ulong_max),
 	m_ulOriginGrpExprId(gpos::ulong_max)
 {
@@ -190,6 +193,7 @@ CExpression::CExpression
 	m_pdpscalar(NULL),
 	m_pgexpr(NULL),
 	m_cost(GPOPT_INVALID_COST),
+	m_rebinds(GPOPT_INVALID_REBINDS),
 	m_ulOriginGrpId(gpos::ulong_max),
 	m_ulOriginGrpExprId(gpos::ulong_max)
 {
@@ -234,6 +238,7 @@ CExpression::CExpression
 	m_pdpscalar(NULL),
 	m_pgexpr(NULL),
 	m_cost(GPOPT_INVALID_COST),
+	m_rebinds(GPOPT_INVALID_REBINDS),
 	m_ulOriginGrpId(gpos::ulong_max),
 	m_ulOriginGrpExprId(gpos::ulong_max)
 {
@@ -258,7 +263,8 @@ CExpression::CExpression
 	CGroupExpression *pgexpr,
 	CExpressionArray *pdrgpexpr,
 	IStatistics *input_stats,
-	CCost cost
+	CCost cost,
+	DOUBLE num_rebinds
 	)
 	:
 	m_mp(mp),
@@ -271,6 +277,7 @@ CExpression::CExpression
 	m_pdpscalar(NULL),
 	m_pgexpr(pgexpr),
 	m_cost(cost),
+	m_rebinds(num_rebinds),
 	m_ulOriginGrpId(gpos::ulong_max),
 	m_ulOriginGrpExprId(gpos::ulong_max)
 {
@@ -1244,13 +1251,15 @@ CExpression::OsPrint
 	(void) m_pop->OsPrint(os);
 	if (!m_pop->FScalar() && NULL != m_pstats)
 	{
+		char rebindString[32];
+
+		snprintf(rebindString, sizeof(rebindString), "%.1f", m_rebinds);
 		os
 			<< "   rows:"
 			<< LINT(m_pstats->Rows().Get())
 			<< "   width:"
 			<< LINT(m_pstats->Width().Get())
-			<< "  rebinds:"
-			<< LINT(m_pstats->NumRebinds().Get());
+			<< "  rebinds:" << rebindString;
 	}
 	if (m_pop->FPhysical())
 	{

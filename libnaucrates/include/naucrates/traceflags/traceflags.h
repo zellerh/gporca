@@ -184,6 +184,10 @@ namespace gpos
 
 		// ExpandFullJoin
 		EopttraceExpandFullJoin = 103032,
+
+		// Enable more accurate computation of number of rebinds
+		EopttraceEnableCostRebinds = 103033,
+
 		///////////////////////////////////////////////////////
 		///////////////////// statistics flags ////////////////
 		//////////////////////////////////////////////////////

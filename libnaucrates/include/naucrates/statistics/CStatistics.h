@@ -95,10 +95,6 @@ namespace gpnaucrates
 			// flag to indicate if input relation is empty
 			BOOL m_empty;
 
-			// statistics could be computed using predicates with external parameters (outer references),
-			// this is the total number of external parameters' values
-			CDouble m_num_rebinds;
-
 			// number of predicates applied
 			ULONG m_num_predicates;
 
@@ -150,13 +146,6 @@ namespace gpnaucrates
 			// actual number of rows
 			virtual
 			CDouble Rows() const;
-
-			// number of rebinds
-			virtual
-			CDouble NumRebinds() const
-			{
-				return m_num_rebinds;
-			}
 
 			// skew estimate for given column
 			virtual
@@ -247,18 +236,6 @@ namespace gpnaucrates
 			// append given stats to current object
 			virtual
 			void AppendStats(CMemoryPool *mp, IStatistics *stats);
-
-			// set number of rebinds
-			virtual
-			void SetRebinds
-				(
-				CDouble num_rebinds
-				)
-			{
-				GPOS_ASSERT(0.0 < num_rebinds);
-
-				m_num_rebinds = num_rebinds;
-			}
 
 			// copy stats
 			virtual

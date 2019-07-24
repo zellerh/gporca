@@ -589,6 +589,7 @@ CJoinStatsProcessor::DeriveStatsWithOuterRefs
 		IStatistics::EStatsJoinType join_type
 		)
 {
+	// TODO: Consider deleting outer stats???
 	GPOS_ASSERT(exprhdl.HasOuterRefs() && "attached expression does not have outer references");
 	GPOS_ASSERT(NULL != expr);
 	GPOS_ASSERT(NULL != stats);
@@ -611,7 +612,6 @@ CJoinStatsProcessor::DeriveStatsWithOuterRefs
 
 	// scale result using cardinality of outer stats and set number of rebinds of returned stats
 	IStatistics *result_stats = result_join_stats->ScaleStats(mp, CDouble(1.0/num_rows_outer));
-	result_stats->SetRebinds(num_rows_outer);
 	result_join_stats->Release();
 
 	return result_stats;

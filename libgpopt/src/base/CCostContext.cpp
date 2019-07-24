@@ -608,9 +608,8 @@ CCostContext::CostCompute
 	DOUBLE width = m_pstats->Width(mp, m_poc->Prpp()->PcrsRequired()).Get();
 	ci.SetWidth(width);
 
-	DOUBLE num_rebinds = m_pstats->NumRebinds().Get();
+	DOUBLE num_rebinds = m_poc->Prpp()->NumRebinds();
 	ci.SetRebinds(num_rebinds);
-	GPOS_ASSERT_IMP(!exprhdl.HasOuterRefs(), GPOPT_DEFAULT_REBINDS == (ULONG) (num_rebinds) && "invalid number of rebinds when there are no outer references");
 
 	// extract children costing info
 	for (ULONG ul = 0; ul < arity; ul++)
@@ -631,9 +630,8 @@ CCostContext::CostCompute
 		DOUBLE dWidthChild = child_stats->Width(mp, pocChild->Prpp()->PcrsRequired()).Get();
 		ci.SetChildWidth(ul, dWidthChild);
 
-		DOUBLE dRebindsChild = child_stats->NumRebinds().Get();
+		DOUBLE dRebindsChild = pocChild->Prpp()->NumRebinds();
 		ci.SetChildRebinds(ul, dRebindsChild);
-		GPOS_ASSERT_IMP(!exprhdl.HasOuterRefs(ul), GPOPT_DEFAULT_REBINDS == (ULONG) (dRebindsChild) && "invalid number of rebinds when there are no outer references");
 
 		DOUBLE dCostChild =  (*pdrgpcostChildren)[ul]->Get();
 		ci.SetChildCost(ul, dCostChild);

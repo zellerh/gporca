@@ -50,7 +50,8 @@ CReqdPropPlan::CReqdPropPlan
 	CEnfdOrder *peo,
 	CEnfdDistribution *ped,
 	CEnfdRewindability *per,
-	CCTEReq *pcter
+	CCTEReq *pcter,
+	DOUBLE num_rebinds
 	)
 	:
 	m_pcrs(pcrs),
@@ -58,7 +59,8 @@ CReqdPropPlan::CReqdPropPlan
 	m_ped(ped),
 	m_per(per),
 	m_pepp(NULL),
-	m_pcter(pcter)
+	m_pcter(pcter),
+	m_num_rebinds(num_rebinds)
 {
 	GPOS_ASSERT(NULL != pcrs);
 	GPOS_ASSERT(NULL != peo);
@@ -83,7 +85,8 @@ CReqdPropPlan::CReqdPropPlan
 	CEnfdDistribution *ped,
 	CEnfdRewindability *per,
 	CEnfdPartitionPropagation *pepp,
-	CCTEReq *pcter
+	CCTEReq *pcter,
+	DOUBLE num_rebinds
 	)
 	:
 	m_pcrs(pcrs),
@@ -91,7 +94,8 @@ CReqdPropPlan::CReqdPropPlan
 	m_ped(ped),
 	m_per(per),
 	m_pepp(pepp),
-	m_pcter(pcter)
+	m_pcter(pcter),
+	m_num_rebinds(num_rebinds)
 {
 	GPOS_ASSERT(NULL != pcrs);
 	GPOS_ASSERT(NULL != peo);
@@ -264,6 +268,16 @@ CReqdPropPlan::Compute
 							CEnfdPartitionPropagation::EppmSatisfy,
 							ppfmDerived
 							);
+
+	m_num_rebinds = popPhysical->ComputeNumRebindsForChild
+							(
+							 mp,
+							 exprhdl,
+							 prppInput->NumRebinds(),
+							 child_index,
+							 pdrgpdpCtxt
+							);
+
 }
 
 //---------------------------------------------------------------------------
@@ -508,7 +522,9 @@ CReqdPropPlan::Equals
 	       Pcter()->Equals(prpp->Pcter()) &&
 	       Peo()->Matches(prpp->Peo()) &&
 	       Ped()->Matches(prpp->Ped()) &&
-	       Per()->Matches(prpp->Per());
+	       Per()->Matches(prpp->Per()) &&
+	       (!GPOS_FTRACE(EopttraceEnableCostRebinds) ||
+	        m_num_rebinds == prpp->m_num_rebinds);
 
 	if (result)
 	{
@@ -653,7 +669,7 @@ CReqdPropPlan::PrppEmpty
 	CEnfdRewindability *per = GPOS_NEW(mp) CEnfdRewindability(prs, CEnfdRewindability::ErmSatisfy);
 	CCTEReq *pcter = GPOS_NEW(mp) CCTEReq(mp);
 
-	return GPOS_NEW(mp) CReqdPropPlan(pcrs, peo, ped, per, pcter);
+	return GPOS_NEW(mp) CReqdPropPlan(pcrs, peo, ped, per, pcter, 1.0);
 }
 
 //---------------------------------------------------------------------------
@@ -707,7 +723,8 @@ CReqdPropPlan::OsPrint
 		os << GetPrintablePtr(m_pepp);
 	}
 	os <<  "]";
-	
+	os << ", num rebinds: " << m_num_rebinds;
+
 	return os;
 }
 
@@ -826,7 +843,7 @@ CReqdPropPlan::PrppRemap
 	prppInput->Pcter()->AddRef();
 	CCTEReq *pcter = prppInput->Pcter();
 
-	return GPOS_NEW(mp) CReqdPropPlan(pcrsRequired, peo, ped, per, pepp, pcter);
+	return GPOS_NEW(mp) CReqdPropPlan(pcrsRequired, peo, ped, per, pepp, pcter, prppInput->NumRebinds());
 }
 
 #ifdef GPOS_DEBUG

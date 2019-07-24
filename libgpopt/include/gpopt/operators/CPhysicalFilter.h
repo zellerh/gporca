@@ -147,6 +147,16 @@ namespace gpopt
 				ULONG ulOptReq
 				);
 
+			virtual
+			DOUBLE ComputeNumRebindsForChild
+				(
+				 CMemoryPool *mp,
+				 CExpressionHandle &exprhdl,
+				 DOUBLE parentNumRebinds,
+				 ULONG child_index,
+				 CDrvdProp2dArray *
+				 );
+
 			// check if required columns are included in output columns
 			virtual
 			BOOL FProvidesReqdCols(CExpressionHandle &exprhdl, CColRefSet *pcrsRequired, ULONG ulOptReq) const;

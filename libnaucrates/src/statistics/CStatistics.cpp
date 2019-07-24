@@ -72,7 +72,6 @@ CStatistics::CStatistics
 	m_rows(rows),
 	m_stats_estimation_risk(no_card_est_risk_default_val),
 	m_empty(is_empty),
-	m_num_rebinds(1.0), // by default, a stats object is rebound to parameters only once
 	m_num_predicates(num_predicates),
 	m_src_upper_bound_NDVs(NULL)
 {
@@ -133,7 +132,6 @@ CStatistics::OsPrint
 {
 	os << "{" << std::endl;
 	os << "Rows = " << Rows() << std::endl;
-	os << "Rebinds = " << NumRebinds() << std::endl;
 
 	UlongToHistogramMapIter col_hist_mapping(m_colid_histogram_mapping);
 	while (col_hist_mapping.Advance())

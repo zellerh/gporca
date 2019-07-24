@@ -299,6 +299,23 @@ CPhysicalFilter::PcteRequired
 	return PcterPushThru(pcter);
 }
 
+DOUBLE CPhysicalFilter::ComputeNumRebindsForChild
+	(
+	 CMemoryPool *,
+	 CExpressionHandle &exprhdl,
+	 DOUBLE parentNumRebinds,
+	 ULONG ,
+	 CDrvdProp2dArray *
+	 )
+{
+	if (!GPOS_FTRACE(EopttraceEnableCostRebinds) && !exprhdl.HasOuterRefs(0))
+	{
+		return 1.0;
+	}
+
+	return parentNumRebinds;
+}
+
 //---------------------------------------------------------------------------
 //	@function:
 //		CPhysicalFilter::PosDerive

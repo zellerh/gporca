@@ -506,6 +506,17 @@ namespace gpopt
 				CDrvdProp2dArray *pdrgpdpCtxt,
 				ULONG ulOptReq
 				) = 0;
+
+			// compute number of rebinds for the n-th child
+			virtual
+			DOUBLE ComputeNumRebindsForChild
+				(
+				 CMemoryPool *mp,
+				 CExpressionHandle &exprhdl,
+				 DOUBLE parentNumRebinds,
+				 ULONG child_index,
+				 CDrvdProp2dArray *pdrgpdpCtxt
+				);
 			
 			// required properties: check if required columns are included in output columns
 			virtual

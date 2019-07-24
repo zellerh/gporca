@@ -117,6 +117,16 @@ namespace gpopt
 				return PppsRequiredNLJoinChild(mp, exprhdl, pppsRequired, child_index, pdrgpdpCtxt, ulOptReq);
 			}
 
+			virtual
+			DOUBLE ComputeNumRebindsForChild
+				(
+				 CMemoryPool *mp,
+				 CExpressionHandle &exprhdl,
+				 DOUBLE parentNumRebinds,
+				 ULONG child_index,
+				 CDrvdProp2dArray *pdrgpdpCtxt
+				 );
+
 			//-------------------------------------------------------------------------------------
 			// Enforced Properties
 			//-------------------------------------------------------------------------------------

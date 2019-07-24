@@ -1116,6 +1116,19 @@ CPhysical::PcmDerive
 	return pcm;
 }
 
+DOUBLE
+CPhysical::ComputeNumRebindsForChild
+	(
+	 CMemoryPool *,
+	 CExpressionHandle &,
+	 DOUBLE parentNumRebinds,
+	 ULONG,
+	 CDrvdProp2dArray *
+	)
+{
+	return parentNumRebinds;
+}
+
 //---------------------------------------------------------------------------
 //	@function:
 //		CPhysical::FProvidesReqdCTEs

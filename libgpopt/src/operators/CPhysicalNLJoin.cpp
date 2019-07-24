@@ -250,6 +250,51 @@ CPhysicalNLJoin::PppsRequiredNLJoinChild
 	return PppsRequiredJoinChild(mp, exprhdl, pppsRequired, child_index, pdrgpdpCtxt, true);
 }
 
+//---------------------------------------------------------------------------
+//	@function:
+//		CPhysicalNLJoin::ComputeNumRebindsForChild
+//
+//	@doc:
+//		Compute number of rebinds (estimated number of times child plan gets executed)
+//
+//---------------------------------------------------------------------------
+DOUBLE CPhysicalNLJoin::ComputeNumRebindsForChild
+	(
+	 CMemoryPool *,
+	 CExpressionHandle &exprhdl,
+	 DOUBLE parentNumRebinds,
+	 ULONG child_index,
+	 CDrvdProp2dArray *
+	 )
+{
+	if (0 == child_index)
+	{
+		return parentNumRebinds;
+	}
+
+	// for a nested loop join, the right (inner) child gets executed
+	// once for every row from the outer, and that entire process
+	// happens parentNumRebinds times
+	CGroupExpression *groupExpr = exprhdl.Pgexpr();
+
+	if (NULL != groupExpr)
+	{
+		IStatistics *childStats = (*groupExpr)[0]->Pstats();
+
+		if (!GPOS_FTRACE(EopttraceEnableCostRebinds) && !exprhdl.HasOuterRefs(child_index))
+		{
+			return 1.0;
+		}
+
+		if (NULL != childStats)
+		{
+			return fmax(childStats->Rows().Get() * parentNumRebinds, 1.0);
+		}
+	}
+
+	GPOS_ASSERT(!"Shouldn't reach here");
+	return 1.0;
+}
 
 // EOF
 

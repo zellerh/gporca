@@ -10,10 +10,12 @@
 //---------------------------------------------------------------------------
 
 #include "gpos/base.h"
+#include "gpopt/base/CColRefSetIter.h"
 #include "gpopt/base/CUtils.h"
 
 #include "gpopt/operators/CExpressionHandle.h"
 #include "gpopt/operators/CPhysicalSpool.h"
+#include "naucrates/statistics/CStatisticsUtils.h"
 
 
 using namespace gpopt;
@@ -226,6 +228,70 @@ CPhysicalSpool::PrsRequired
 	{
 		return GPOS_NEW(mp) CRewindabilitySpec(CRewindabilitySpec::ErtNone, motion_hazard);
 	}
+}
+
+DOUBLE
+CPhysicalSpool::ComputeNumRebindsForChild
+	(
+	 CMemoryPool *mp,
+	 CExpressionHandle &exprhdl,
+	 DOUBLE parentNumRebinds,
+	 ULONG child_index,
+	 CDrvdProp2dArray *
+	)
+{
+	CColRefSet *childOuterRefs = exprhdl.GetRelationalProperties(0)->PcrsOuter();
+
+	if (!GPOS_FTRACE(EopttraceEnableCostRebinds))
+	{
+		return parentNumRebinds;
+	}
+
+	if (0 == childOuterRefs->Size())
+	{
+		// If the child has no outer references, then there is no reason to re-execute it
+		return 1.0;
+	}
+
+	GPOS_ASSERT(0 == child_index);
+
+	// The child does have outer references, try to estimate the number of times
+	// we have to recompute the child, that happens each time the values of the
+	// outer references change between rebinds of this spool operator
+
+	CGroupExpression *groupExpr = exprhdl.Pgexpr();
+	if (NULL != groupExpr)
+	{
+		IStatistics *childStats = (*groupExpr)[child_index]->Pstats();
+
+		if (NULL != childStats)
+		{
+			// Compute the number of NDVs of the outer references
+			CDoubleArray *outerRefsNDVs = GPOS_NEW(mp) CDoubleArray(mp);
+
+			CColRefSetIter crsi(*childOuterRefs);
+			while (crsi.Advance())
+			{
+				CColRef *colref = crsi.Pcr();
+				CDouble *ndv = GPOS_NEW(mp) CDouble(childStats->GetNDVs(colref));
+				outerRefsNDVs->Append(ndv);
+			}
+
+			const CStatisticsConfig *stats_config = dynamic_cast<CStatistics *>(childStats)->GetStatsConfig();
+			CDouble combinedColsNDV = CStatisticsUtils::GetCumulativeNDVs(stats_config, outerRefsNDVs);
+
+			outerRefsNDVs->Release();
+
+			// The NDV is only a very rough estimator of the number of rebinds.
+			// If the outer rows are not sorted by the outer references, then we
+			// can see more rebinds than the number of NDVs. Ideally we would have
+			// information on the ordering here.
+			return fmax(parentNumRebinds * combinedColsNDV.Get(), 1.0);
+		}
+	}
+
+	GPOS_ASSERT(!"Shouldn't reach here");
+	return 1.0;
 }
 
 

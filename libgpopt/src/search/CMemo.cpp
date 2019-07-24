@@ -336,6 +336,7 @@ CMemo::PexprExtractPlan
 	CGroupExpression *pgexprBest = NULL;
 	COptimizationContext *poc = NULL;
 	CCost cost = GPOPT_INVALID_COST;
+	DOUBLE num_rebinds = GPOPT_INVALID_REBINDS;
 	IStatistics *stats = NULL;
 	if (pgroupRoot->FScalar())
 	{
@@ -361,6 +362,7 @@ CMemo::PexprExtractPlan
 		{
 			cost = poc->PccBest()->Cost();
 			stats = poc->PccBest()->Pstats();
+			num_rebinds = poc->Prpp()->NumRebinds();
 		}
 	}
 
@@ -426,7 +428,8 @@ CMemo::PexprExtractPlan
 							pgexprBest,
 							pdrgpexpr,
 							stats,
-							cost
+							cost,
+							num_rebinds
 							);
 
 	if (pexpr->Pop()->FPhysical() && !poc->PccBest()->IsValid(mp))

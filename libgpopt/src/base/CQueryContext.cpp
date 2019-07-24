@@ -255,7 +255,7 @@ CQueryContext::PqcGenerate
 	// constructed later based on derived relation properties (CPartInfo) by
 	// CReqdPropPlan::InitReqdPartitionPropagation().
 
-	CReqdPropPlan *prpp = GPOS_NEW(mp) CReqdPropPlan(pcrs, peo, ped, per, pcter);
+	CReqdPropPlan *prpp = GPOS_NEW(mp) CReqdPropPlan(pcrs, peo, ped, per, pcter, 1.0);
 
 	// Finally, create the CQueryContext
 	pdrgpmdname->AddRef();

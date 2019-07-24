@@ -108,11 +108,6 @@ namespace gpnaucrates
 			virtual
 			BOOL IsEmpty() const = 0;
 
-			// statistics could be computed using predicates with external parameters (outer references),
-			// this is the total number of external parameters' values
-			virtual
-			CDouble NumRebinds() const = 0;
-
 			// skew estimate for given column
 			virtual
 			CDouble GetSkew(ULONG colid) const = 0;
@@ -192,10 +187,6 @@ namespace gpnaucrates
 			// append given stats to current object
 			virtual
 			void AppendStats(CMemoryPool *mp, IStatistics *stats) = 0;
-
-			// set number of rebinds
-			virtual
-			void SetRebinds(CDouble num_rebinds) = 0;
 
 			// copy stats
 			virtual

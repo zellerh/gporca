@@ -495,6 +495,23 @@ COptimizationContext::DbgPrint()
 	CAutoTrace at(m_mp);
 	(void) this->OsPrint(at.Os(), " ");
 }
+
+void
+COptimizationContext::DbgPrintVerbose()
+{
+	CAutoTraceFlag atf(EopttracePrintOptimizationContext, true);
+	CAutoTrace at(m_mp);
+	(void) this->OsPrint(at.Os(), " ");
+
+	if (NULL != m_pdrgpstatCtxt)
+	{
+		for (ULONG i=0; i < m_pdrgpstatCtxt->Size(); i++)
+		{
+			at.Os() << "Stats entry " << i;
+			(*m_pdrgpstatCtxt)[i]->OsPrint(at.Os());
+		}
+	}
+}
 #endif // GPOS_DEBUG
 
 // EOF

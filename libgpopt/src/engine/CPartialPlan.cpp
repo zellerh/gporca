@@ -119,7 +119,7 @@ CPartialPlan::ExtractChildrenCostingInfo
 			pci->SetChildRows(ulIndex, dRowsChild);
 			DOUBLE dWidthChild = child_stats->Width(mp, prppChild->PcrsRequired()).Get();
 			pci->SetChildWidth(ulIndex, dWidthChild);
-			pci->SetChildRebinds(ulIndex, child_stats->NumRebinds().Get());
+			pci->SetChildRebinds(ulIndex, m_pccChild->m_poc->Prpp()->NumRebinds());
 			pci->SetChildCost(ulIndex, m_pccChild->Cost().Get());
 
 			// continue with next child
@@ -133,7 +133,8 @@ CPartialPlan::ExtractChildrenCostingInfo
 		dRowsChild = pcm->DRowsPerHost(CDouble(dRowsChild)).Get();
 		pci->SetChildRows(ulIndex, dRowsChild);
 
-		pci->SetChildRebinds(ulIndex, child_stats->NumRebinds().Get());
+		// TODO: Come up with a better estimate, if this is the inner of an NLJ type operator
+		pci->SetChildRebinds(ulIndex, m_prpp->NumRebinds());
 
 		DOUBLE dWidthChild =  child_stats->Width(mp, prppChild->PcrsRequired()).Get();
 		pci->SetChildWidth(ulIndex, dWidthChild);
@@ -244,7 +245,7 @@ CPartialPlan::CostCompute
 	ci.SetWidth(width);
 
 	// extract rebinds
-	DOUBLE num_rebinds = m_pgexpr->Pgroup()->Pstats()->NumRebinds().Get();
+	DOUBLE num_rebinds = m_prpp->NumRebinds();
 	ci.SetRebinds(num_rebinds);
 
 	// compute partial plan cost

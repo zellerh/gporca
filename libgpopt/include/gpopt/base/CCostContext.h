@@ -25,6 +25,10 @@
 // invalid cost value
 #define GPOPT_INVALID_COST	CCost(-0.5)
 
+// invalid rebinds value
+#define GPOPT_INVALID_REBINDS	-1.0
+
+
 
 namespace gpopt
 {

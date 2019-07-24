@@ -66,6 +66,9 @@ namespace gpopt
 			// required ctes
 			CCTEReq *m_pcter;
 
+			// number of times this plan will be executed
+			DOUBLE m_num_rebinds;
+
 			// private copy ctor
 			CReqdPropPlan(const CReqdPropPlan &);
 
@@ -90,7 +93,8 @@ namespace gpopt
 				m_ped(NULL),
 				m_per(NULL),
 				m_pepp(NULL),
-				m_pcter(NULL)
+				m_pcter(NULL),
+				m_num_rebinds(1.0)
 			{}
 
 			// ctor
@@ -100,7 +104,8 @@ namespace gpopt
 				CEnfdOrder *peo,
 				CEnfdDistribution *ped,
 				CEnfdRewindability *per,
-				CCTEReq *pcter
+				CCTEReq *pcter,
+				DOUBLE num_rebinds
 				);
 
 			// ctor
@@ -111,7 +116,8 @@ namespace gpopt
 				CEnfdDistribution *ped,
 				CEnfdRewindability *per,
 				CEnfdPartitionPropagation *pepp,
-				CCTEReq *pcter
+				CCTEReq *pcter,
+				DOUBLE num_rebinds
 				);
 
 			// dtor
@@ -192,6 +198,12 @@ namespace gpopt
 			CCTEReq *Pcter() const
 			{
 				return m_pcter;
+			}
+
+			// number of rebinds (times the plan gets executed)
+			DOUBLE NumRebinds() const
+			{
+				return m_num_rebinds;
 			}
 
 			// given a property spec type, return the corresponding property spec member

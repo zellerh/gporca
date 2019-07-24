@@ -49,7 +49,7 @@ CExpressionTest::PrppCreateRequiredProperties(CMemoryPool *mp, CColRefSet *pcrs)
 	CEnfdDistribution *ped = GPOS_NEW(mp) CEnfdDistribution(pds, CEnfdDistribution::EdmSatisfy);
 	CEnfdRewindability *per = GPOS_NEW(mp) CEnfdRewindability(prs, CEnfdRewindability::ErmSatisfy);
 	CCTEReq *pcter = GPOS_NEW(mp) CCTEReq(mp);
-	return GPOS_NEW(mp) CReqdPropPlan(pcrs, peo, ped, per, pcter);
+	return GPOS_NEW(mp) CReqdPropPlan(pcrs, peo, ped, per, pcter, 1.0);
 }
 
 //---------------------------------------------------------------------------
@@ -807,7 +807,7 @@ CExpressionTest::EresUnittest_FValidPlan_InvalidOrder()
 	CEnfdDistribution *ped = GPOS_NEW(mp) CEnfdDistribution(pds, CEnfdDistribution::EdmExact);
 	CEnfdRewindability *per = GPOS_NEW(mp) CEnfdRewindability(prs, CEnfdRewindability::ErmSatisfy);
 	CCTEReq *pcter = GPOS_NEW(mp) CCTEReq(mp);
-	CReqdPropPlan *prppIncompatibleOrder = GPOS_NEW(mp) CReqdPropPlan(pcrsGetCopy, peo, ped, per, pcter);
+	CReqdPropPlan *prppIncompatibleOrder = GPOS_NEW(mp) CReqdPropPlan(pcrsGetCopy, peo, ped, per, pcter, 1.0);
 
 	CPartInfo *ppartinfo = GPOS_NEW(mp) CPartInfo(mp);
 	prppIncompatibleOrder->InitReqdPartitionPropagation(mp, ppartinfo);
@@ -869,7 +869,7 @@ CExpressionTest::EresUnittest_FValidPlan_InvalidDistribution()
 	CEnfdRewindability *per = GPOS_NEW(mp) CEnfdRewindability(prs, CEnfdRewindability::ErmSatisfy);
 	CCTEReq *pcter = GPOS_NEW(mp) CCTEReq(mp);
 	CColRefSet *pcrsCopy = GPOS_NEW(mp) CColRefSet(mp, *pcrs);
-	CReqdPropPlan *prppIncompatibleDistribution = GPOS_NEW(mp) CReqdPropPlan(pcrsCopy, peo, ped, per, pcter);
+	CReqdPropPlan *prppIncompatibleDistribution = GPOS_NEW(mp) CReqdPropPlan(pcrsCopy, peo, ped, per, pcter, 1.0);
 	CPartInfo *ppartinfo = GPOS_NEW(mp) CPartInfo(mp);
 	prppIncompatibleDistribution->InitReqdPartitionPropagation(mp, ppartinfo);
 
@@ -929,7 +929,7 @@ CExpressionTest::EresUnittest_FValidPlan_InvalidRewindability()
 	CEnfdRewindability *per = GPOS_NEW(mp) CEnfdRewindability(prs, CEnfdRewindability::ErmSatisfy);
 	CCTEReq *pcter = GPOS_NEW(mp) CCTEReq(mp);
 	CColRefSet *pcrsCopy = GPOS_NEW(mp) CColRefSet(mp, *pcrs);
-	CReqdPropPlan *prppIncompatibleRewindability = GPOS_NEW(mp) CReqdPropPlan(pcrsCopy, peo, ped, per, pcter);
+	CReqdPropPlan *prppIncompatibleRewindability = GPOS_NEW(mp) CReqdPropPlan(pcrsCopy, peo, ped, per, pcter, 1.0);
 	CPartInfo *ppartinfo = GPOS_NEW(mp) CPartInfo(mp);
 	prppIncompatibleRewindability->InitReqdPartitionPropagation(mp, ppartinfo);
 
@@ -995,7 +995,7 @@ CExpressionTest::EresUnittest_FValidPlan_InvalidCTEs()
 	pdpplan->AddRef();
 	pcter->Insert(ulCTEId, CCTEMap::EctProducer /*ect*/, true /*fRequired*/, pdpplan);
 	CColRefSet *pcrsCopy = GPOS_NEW(mp) CColRefSet(mp, *pcrs);
-	CReqdPropPlan *prppIncompatibleCTE = GPOS_NEW(mp) CReqdPropPlan(pcrsCopy, peo, ped, per, pcter);
+	CReqdPropPlan *prppIncompatibleCTE = GPOS_NEW(mp) CReqdPropPlan(pcrsCopy, peo, ped, per, pcter, 1.0);
 	CPartInfo *ppartinfo = GPOS_NEW(mp) CPartInfo(mp);
 	prppIncompatibleCTE->InitReqdPartitionPropagation(mp, ppartinfo);
 

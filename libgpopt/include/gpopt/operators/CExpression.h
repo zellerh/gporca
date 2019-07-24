@@ -86,6 +86,9 @@ namespace gpopt
 			// cost of physical expression node when copied out of the memo
 			CCost m_cost;
 
+			// number of rebinds when copied out of the memo
+			DOUBLE m_rebinds;
+
 			// id of origin group, used for debugging expressions extracted from memo
 			ULONG m_ulOriginGrpId;
 
@@ -175,7 +178,8 @@ namespace gpopt
 				CGroupExpression *pgexpr,
 				CExpressionArray *pdrgpexpr,
 				IStatistics *input_stats,
-				CCost cost = GPOPT_INVALID_COST
+				CCost cost = GPOPT_INVALID_COST,
+				DOUBLE rebinds = GPOPT_INVALID_REBINDS
 				);
 
 			// ctor for expression with derived properties
