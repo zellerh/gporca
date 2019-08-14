@@ -78,6 +78,10 @@ namespace gpos
 
 				// allocation request size
 				ULONG m_alloc;
+				// marker, used to distinguish aggregating allocations
+				// (non-zero marker value) from regular memory pool allocations
+				// with a zero marker
+				ULONG m_zero_marker;
 			};
 
 			// reference counter
@@ -174,20 +178,12 @@ namespace gpos
 			void *FinalizeAlloc(void *ptr, ULONG alloc, EAllocationType eat);
 
 			// return allocation to owning memory pool
-			inline static void
+			static void
 			FreeAlloc
 				(
 				void *ptr,
 				EAllocationType eat
-				)
-			{
-				GPOS_ASSERT(ptr != NULL);
-
-				AllocHeader *header = static_cast<AllocHeader*>(ptr) - 1;
-				BYTE *alloc_type = static_cast<BYTE*>(ptr) + header->m_alloc;
-				GPOS_RTL_ASSERT(*alloc_type == eat);
-				header->m_mp->Free(header);
-			}
+				 );
 
 			// implementation of placement new with memory pool
 			void *NewImpl
@@ -197,6 +193,15 @@ namespace gpos
 				ULONG line,
 				EAllocationType type
 				);
+
+			virtual
+			void *AggregatedNew
+				(
+				 SIZE_T size,
+				 const CHAR *filename,
+				 ULONG line,
+				 EAllocationType type
+				 );
 
 			// implementation of array-new with memory pool
 			template <typename T>
@@ -236,7 +241,7 @@ namespace gpos
 				EAllocationType type
 				);
 
-			// allocate memory; return NULL if the memory could not be allocated
+		// allocate memory; return NULL if the memory could not be allocated
 			virtual
 			void *Allocate
 				(
@@ -405,7 +410,7 @@ inline void *operator new
 	gpos::ULONG line
 	)
 {
-	return mp->NewImpl(size, filename, line, gpos::CMemoryPool::EatSingleton);
+	return mp->AggregatedNew(size, filename, line, gpos::CMemoryPool::EatSingleton);
 }
 
 // Corresponding placement variant of delete operator. Note that, for delete

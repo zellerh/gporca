@@ -17,6 +17,7 @@
 #endif // GPOS_DEBUG
 #include "gpos/memory/CMemoryPool.h"
 #include "gpos/memory/CMemoryPoolManager.h"
+#include "gpos/memory/CMemoryPoolTracker.h"
 #include "gpos/memory/CMemoryVisitorPrint.h"
 #include "gpos/task/ITask.h"
 
@@ -95,6 +96,7 @@ CMemoryPool::FinalizeAlloc
 	AllocHeader *header = static_cast<AllocHeader*>(ptr);
 	header->m_mp = this;
 	header->m_alloc = alloc;
+	header->m_zero_marker = 0;
 
 	BYTE *alloc_type = reinterpret_cast<BYTE*>(header + 1) + alloc;
 	*alloc_type = eat;
@@ -115,6 +117,31 @@ CMemoryPool::SizeOfAlloc
 	return header->m_alloc;
 }
 
+
+// return allocation to owning memory pool
+void
+CMemoryPool::FreeAlloc
+(
+ void *ptr,
+ EAllocationType eat
+ )
+{
+	GPOS_ASSERT(ptr != NULL);
+
+	AllocHeader *header = static_cast<AllocHeader*>(ptr) - 1;
+	if (0 != header->m_zero_marker)
+	{
+		// if it's non-zero, we have an aggregated allocation
+		CMemoryPoolTracker::dlfree(ptr);
+	}
+	else
+	{
+		BYTE *alloc_type = static_cast<BYTE*>(ptr) + header->m_alloc;
+		GPOS_RTL_ASSERT(*alloc_type == eat);
+		header->m_mp->Free(header);
+
+	}
+}
 
 //---------------------------------------------------------------------------
 //	@function:
@@ -149,6 +176,18 @@ CMemoryPool::NewImpl
 	return this->FinalizeAlloc(ptr, (ULONG) size, eat);
 }
 
+void*
+CMemoryPool::AggregatedNew
+	(
+	 SIZE_T size,
+	 const CHAR *filename,
+	 ULONG line,
+	 EAllocationType type
+	 )
+{
+	return NewImpl(size, filename, line, type);
+}
+
 //---------------------------------------------------------------------------
 //	@function:
 //		DeleteImpl
@@ -174,8 +213,6 @@ CMemoryPool::DeleteImpl
 	FreeAlloc(ptr, eat);
 
 }  // namespace gpos
-
-// EOF
 
 #ifdef GPOS_DEBUG
 

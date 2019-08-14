@@ -25,6 +25,7 @@
 #include "gpos/memory/CMemoryPoolManager.h"
 #include "gpos/memory/CMemoryPoolTracker.h"
 #include "gpos/memory/IMemoryVisitor.h"
+#include "gpos/memory/dlmalloc.h"
 
 using namespace gpos;
 
@@ -55,11 +56,13 @@ CMemoryPoolTracker::CMemoryPoolTracker
 	CMemoryPool(underlying_memory_pool, owns_underlying_memory_pool, thread_safe),
 	m_alloc_sequence(0),
 	m_capacity(max_size),
-	m_reserved(0)
+	m_reserved(0),
+	m_aggregate(true)
 {
 	GPOS_ASSERT(NULL != underlying_memory_pool);
 
 	m_allocations_list.Init(GPOS_OFFSET(SAllocHeader, m_link));
+	memset(&m_malloc_state, 0, sizeof(m_malloc_state));
 }
 
 
@@ -258,6 +261,18 @@ CMemoryPoolTracker::TearDown()
 	}
 
 	CMemoryPool::TearDown();
+}
+
+void*
+CMemoryPoolTracker::AggregatedNew
+	(
+	 SIZE_T size,
+	 const CHAR *,
+	 ULONG,
+	 EAllocationType
+	 )
+{
+	return dlmalloc(size);
 }
 
 
