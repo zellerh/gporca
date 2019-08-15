@@ -1,10 +1,16 @@
-//
-//  dlmalloc.h
-//  gpdb_all
-//
-//  Created by Pivotal on 8/12/19.
-//
-
+/*-------------------------------------------------------------------------
+ *
+ * dlmalloc.h
+ *
+ * This is a version (aka dlmalloc) of malloc/free/realloc written by
+ * Doug Lea and released to the public domain, as explained at
+ * http://creativecommons.org/licenses/publicdomain.  Send questions,
+ * comments, complaints, performance data, etc to dl@cs.oswego.edu
+ *
+ * Portions Copyright (c) 2019-Present Pivotal Software, Inc.
+ *
+ *-------------------------------------------------------------------------
+ */
 #ifndef dlmalloc_h
 #define dlmalloc_h
 
@@ -14,10 +20,8 @@
 
 #include <stddef.h>
 
-/*
- malloc_params holds global properties, including those that can be
- dynamically set using mallopt. There is a single instance, mparams,
- initialized in init_mparams.
+/* header used to surround memory allocated with dlmalloc, see dlmalloc.cpp
+   for more information. See also the comment in CMemoryPool::AllocHeader
  */
 
 struct malloc_chunk {
@@ -32,6 +36,10 @@ typedef struct malloc_chunk* mchunkptr;
 typedef struct malloc_chunk* sbinptr;  /* The type of bins of chunks */
 typedef unsigned int binmap_t;         /* Described below */
 typedef unsigned int flag_t;           /* The type of various bit flag sets */
+
+/* descriptor of a contiguous memory area allocated from a lower layer,
+   for use by dlmalloc
+ */
 
 struct malloc_segment {
 	char*        base;             /* base address */
@@ -109,7 +117,7 @@ typedef struct malloc_tree_chunk* tbinptr; /* The type of bins of trees */
  than this are trapped (unless INSECURE is defined).
 
  Magic tag
- A cross-check field that should always hold same value as mparams.magic.
+ A cross-check field to validate pointers to malloc_state.
 
  Flags
  Bits recording whether to use MMAP, locks, or contiguous MORECORE
@@ -139,14 +147,6 @@ struct malloc_state {
 	msegment   seg;
 };
 
-//static struct malloc_params mparams;
-
-/* The global malloc_state used for all non-"mspace" calls */
-//static struct malloc_state _gm_;
-//#define gm                 (&_gm_)
-//#define is_global(M)       ((M) == &_gm_)
 #define is_initialized(M)  ((M)->top != 0)
-
-
 
 #endif /* dlmalloc_h */

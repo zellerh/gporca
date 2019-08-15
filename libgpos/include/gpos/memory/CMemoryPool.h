@@ -76,12 +76,25 @@ namespace gpos
 				// pointer to pool
 				CMemoryPool *m_mp;
 
+				// Marker, used to distinguish aggregating allocations
+				// (non-zero marker value) from regular memory pool allocations
+				// with a zero marker.
+				// When we deallocate memory, we'll have to find out whether it
+				// was allocated using CMemoryPoolTracker::dlmalloc() or
+				// using CMemoryPool::NewImpl(). In the dlmalloc() case, the 16 bytes
+				// preceding the memory will be a malloc_chunk, in the NewImpl()
+				// case the same 16 bytes will be an AllocHeader.
+				// The lowest order byte of an in-use malloc_chunk->head will
+				// never be zero, since it will have the CINUSE_BIT set.
+				// On a little-endian system, the same byte will
+				// be mapped to m_zero_marker, which we always set
+				// to 0. This allows us to distinguish which allocation
+				// method was used for the memory (0 means CMemoryPool::NewImpl(),
+				// non-zero means CMemoryPoolTracker::dlmalloc()
+				ULONG m_zero_marker;
+
 				// allocation request size
 				ULONG m_alloc;
-				// marker, used to distinguish aggregating allocations
-				// (non-zero marker value) from regular memory pool allocations
-				// with a zero marker
-				ULONG m_zero_marker;
 			};
 
 			// reference counter

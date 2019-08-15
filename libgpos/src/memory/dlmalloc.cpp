@@ -1,10 +1,16 @@
-//
-//  dlalloc.cpp
-//  dlalloc_test
-//
-//  Created by Pivotal on 8/8/19.
-//  Copyright © 2019 Pivotal. All rights reserved.
-//
+/*-------------------------------------------------------------------------
+ *
+ * dlmalloc.cpp
+ *
+ * This is a version (aka dlmalloc) of malloc/free/realloc written by
+ * Doug Lea and released to the public domain, as explained at
+ * http://creativecommons.org/licenses/publicdomain.  Send questions,
+ * comments, complaints, performance data, etc to dl@cs.oswego.edu
+ *
+ * Portions Copyright (c) 2019-Present Pivotal Software, Inc.
+ *
+ *-------------------------------------------------------------------------
+ */
 
 #include "gpos/memory/dlmalloc.h"
 #include "gpos/memory/CMemoryPoolTracker.h"
@@ -237,12 +243,8 @@ ABORT_ON_ASSERT_FAILURE   default: defined as 1 (true)
   ABORT_ON_ASSERT_FAILURE cause assertions failures to call abort(),
   which will usually make debugging easier.
 
-MALLOC_FAILURE_ACTION     default: sets errno to ENOMEM, or no-op on win32
-  The action to take before "return 0" when malloc fails to be able to
-  return memory because there is none available.
-
+MALLOC_FAILURE_ACTION     ---- code removed
 HAVE_MORECORE             ---- code removed
-
 MORECORE                  ---- replaced with malloc or lower-layer call
 
 MORECORE_CONTIGUOUS       ---- code removed, always 0
@@ -348,12 +350,6 @@ DEFAULT_MMAP_THRESHOLD    ---- removed
 #ifndef INSECURE
 #define INSECURE 0
 #endif  /* INSECURE */
-#ifndef MALLOC_FAILURE_ACTION
-#define MALLOC_FAILURE_ACTION  errno = ENOMEM;
-#endif  /* MALLOC_FAILURE_ACTION */
-#ifndef HAVE_MORECORE
-#define HAVE_MORECORE 1
-#endif  /* HAVE_MORECORE */
 #ifndef DEFAULT_GRANULARITY
 #define DEFAULT_GRANULARITY ((size_t)256U * (size_t)1024U)
 #endif  /* DEFAULT_GRANULARITY */
@@ -425,80 +421,6 @@ DEFAULT_MMAP_THRESHOLD    ---- removed
 /*------------------------------ internal #includes ---------------------- */
 
 #include <stdio.h>       /* for printing in malloc_stats */
-
-#ifndef LACKS_ERRNO_H
-#include <errno.h>       /* for MALLOC_FAILURE_ACTION */
-#endif /* LACKS_ERRNO_H */
-#ifndef LACKS_STDLIB_H
-#include <stdlib.h>      /* for abort() */
-#endif /* LACKS_STDLIB_H */
-#ifdef DEBUG
-#if ABORT_ON_ASSERT_FAILURE
-#define assert(x) if(!(x)) ABORT
-#else /* ABORT_ON_ASSERT_FAILURE */
-#include <assert.h>
-#endif /* ABORT_ON_ASSERT_FAILURE */
-#else  /* DEBUG */
-#define assert(x)
-#endif /* DEBUG */
-#ifndef LACKS_STRING_H
-#include <string.h>      /* for memset etc */
-#endif  /* LACKS_STRING_H */
-#if USE_BUILTIN_FFS
-#ifndef LACKS_STRINGS_H
-#include <strings.h>     /* for ffs */
-#endif /* LACKS_STRINGS_H */
-#endif /* USE_BUILTIN_FFS */
-#if HAVE_MORECORE
-#ifndef LACKS_UNISTD_H
-#include <unistd.h>     /* for sbrk */
-#else /* LACKS_UNISTD_H */
-#if !defined(__FreeBSD__) && !defined(__OpenBSD__) && !defined(__NetBSD__)
-extern void*     sbrk(ptrdiff_t);
-#endif /* FreeBSD etc */
-#endif /* LACKS_UNISTD_H */
-#endif /* HAVE_MORECORE */
-
-#ifndef malloc_getpagesize
-#  ifdef _SC_PAGESIZE         /* some SVR4 systems omit an underscore */
-#    ifndef _SC_PAGE_SIZE
-#      define _SC_PAGE_SIZE _SC_PAGESIZE
-#    endif
-#  endif
-#  ifdef _SC_PAGE_SIZE
-#    define malloc_getpagesize sysconf(_SC_PAGE_SIZE)
-#  else
-#    if defined(BSD) || defined(DGUX) || defined(HAVE_GETPAGESIZE)
-       extern size_t getpagesize();
-#      define malloc_getpagesize getpagesize()
-#    else
-#      ifndef LACKS_SYS_PARAM_H
-#        include <sys/param.h>
-#      endif
-#      ifdef EXEC_PAGESIZE
-#        define malloc_getpagesize EXEC_PAGESIZE
-#      else
-#        ifdef NBPG
-#          ifndef CLSIZE
-#            define malloc_getpagesize NBPG
-#          else
-#            define malloc_getpagesize (NBPG * CLSIZE)
-#          endif
-#        else
-#          ifdef NBPC
-#            define malloc_getpagesize NBPC
-#          else
-#            ifdef PAGESIZE
-#              define malloc_getpagesize PAGESIZE
-#            else /* just guess */
-#              define malloc_getpagesize ((size_t)4096U)
-#            endif
-#          endif
-#        endif
-#      endif
-#    endif
-#  endif
-#endif
 
 /* ------------------- size_t and alignment properties -------------------- */
 
@@ -937,16 +859,10 @@ typedef struct malloc_tree_chunk* tchunkptr;
 
 /* -------------------------- system alloc setup ------------------------- */
 
-/* page-align a size */
-#define page_align(S)\
- (((S) + (m_malloc_state.page_size)) & ~(m_malloc_state.page_size - SIZE_T_ONE))
-
 /* granularity-align a size */
 #define granularity_align(S)\
   (((S) + (m_malloc_state.granularity)) & ~(m_malloc_state.granularity - SIZE_T_ONE))
 
-#define is_page_aligned(S)\
-   (((size_t)(S) & (m_malloc_state.page_size - SIZE_T_ONE)) == 0)
 #define is_granularity_aligned(S)\
    (((size_t)(S) & (m_malloc_state.granularity - SIZE_T_ONE)) == 0)
 
@@ -971,7 +887,7 @@ static msegmentptr segment_holding(malloc_state * m, char* addr) {
   noncontiguous segments are added.
 */
 #define TOP_FOOT_SIZE\
-  (align_offset(chunk2mem(0))+pad_request(sizeof(struct malloc_segment))+MIN_CHUNK_SIZE)
+  (align_offset(TWO_SIZE_T_SIZES)+pad_request(sizeof(struct malloc_segment))+MIN_CHUNK_SIZE)
 
 
 /* -------------------------------  Hooks -------------------------------- */
@@ -1219,7 +1135,7 @@ static size_t traverse_and_check(malloc_state * m);
 int gpos::CMemoryPoolTracker::init_mstate() {
   if (m_malloc_state.page_size == 0) {
 	m_malloc_state.magic = (size_t) MALLOC_STATE_MAGIC;
-    m_malloc_state.page_size = malloc_getpagesize;
+    m_malloc_state.page_size = 4096;
     m_malloc_state.granularity = DEFAULT_GRANULARITY;
 
     /* Sanity-check configuration:
@@ -1246,31 +1162,31 @@ int gpos::CMemoryPoolTracker::init_mstate() {
 
 /* Check properties of any chunk, whether free, inuse etc  */
 static void do_check_any_chunk(malloc_state * m, mchunkptr p) {
-  assert((is_aligned(chunk2mem(p))) || (p->head == FENCEPOST_HEAD));
-  assert(ok_address(m, p));
+  GPOS_ASSERT((is_aligned(chunk2mem(p))) || (p->head == FENCEPOST_HEAD));
+  GPOS_ASSERT(ok_address(m, p));
 }
 
 /* Check properties of top chunk */
 static void do_check_top_chunk(malloc_state * m, mchunkptr p) {
   msegmentptr sp = segment_holding(m, (char*)p);
   size_t  sz = chunksize(p);
-  assert(sp != 0);
-  assert((is_aligned(chunk2mem(p))) || (p->head == FENCEPOST_HEAD));
-  assert(ok_address(m, p));
-  assert(sz == m->topsize);
-  assert(sz > 0);
-  assert(sz == ((sp->base + sp->size) - (char*)p) - TOP_FOOT_SIZE);
-  assert(pinuse(p));
-  assert(!next_pinuse(p));
+  GPOS_ASSERT(sp != 0);
+  GPOS_ASSERT((is_aligned(chunk2mem(p))) || (p->head == FENCEPOST_HEAD));
+  GPOS_ASSERT(ok_address(m, p));
+  GPOS_ASSERT(sz == m->topsize);
+  GPOS_ASSERT(sz > 0);
+  GPOS_ASSERT(sz == ((sp->base + sp->size) - (char*)p) - TOP_FOOT_SIZE);
+  GPOS_ASSERT(pinuse(p));
+  GPOS_ASSERT(!next_pinuse(p));
 }
 
 /* Check properties of inuse chunks */
 static void do_check_inuse_chunk(malloc_state * m, mchunkptr p) {
   do_check_any_chunk(m, p);
-  assert(cinuse(p));
-  assert(next_pinuse(p));
+  GPOS_ASSERT(cinuse(p));
+  GPOS_ASSERT(next_pinuse(p));
   /* If not pinuse, previous chunk has OK offset */
-  assert(pinuse(p) || next_chunk(prev_chunk(p)) == p);
+  GPOS_ASSERT(pinuse(p) || next_chunk(prev_chunk(p)) == p);
 }
 
 /* Check properties of free chunks */
@@ -1278,20 +1194,20 @@ static void do_check_free_chunk(malloc_state * m, mchunkptr p) {
   size_t sz = p->head & ~(PINUSE_BIT|CINUSE_BIT);
   mchunkptr next = chunk_plus_offset(p, sz);
   do_check_any_chunk(m, p);
-  assert(!cinuse(p));
-  assert(!next_pinuse(p));
+  GPOS_ASSERT(!cinuse(p));
+  GPOS_ASSERT(!next_pinuse(p));
   if (p != m->dv && p != m->top) {
     if (sz >= MIN_CHUNK_SIZE) {
-      assert((sz & CHUNK_ALIGN_MASK) == 0);
-      assert(is_aligned(chunk2mem(p)));
-      assert(next->prev_foot == sz);
-      assert(pinuse(p));
-      assert (next == m->top || cinuse(next));
-      assert(p->fd->bk == p);
-      assert(p->bk->fd == p);
+      GPOS_ASSERT((sz & CHUNK_ALIGN_MASK) == 0);
+      GPOS_ASSERT(is_aligned(chunk2mem(p)));
+      GPOS_ASSERT(next->prev_foot == sz);
+      GPOS_ASSERT(pinuse(p));
+      GPOS_ASSERT(next == m->top || cinuse(next));
+      GPOS_ASSERT(p->fd->bk == p);
+      GPOS_ASSERT(p->bk->fd == p);
     }
     else  /* markers are always of size SIZE_T_SIZE */
-      assert(sz == SIZE_T_SIZE);
+      GPOS_ASSERT(sz == SIZE_T_SIZE);
   }
 }
 
@@ -1301,11 +1217,11 @@ static void do_check_malloced_chunk(malloc_state * m, void* mem, size_t s) {
     mchunkptr p = mem2chunk(mem);
     size_t sz = p->head & ~(PINUSE_BIT|CINUSE_BIT);
     do_check_inuse_chunk(m, p);
-    assert((sz & CHUNK_ALIGN_MASK) == 0);
-    assert(sz >= MIN_CHUNK_SIZE);
-    assert(sz >= s);
+    GPOS_ASSERT((sz & CHUNK_ALIGN_MASK) == 0);
+    GPOS_ASSERT(sz >= MIN_CHUNK_SIZE);
+    GPOS_ASSERT(sz >= s);
     /* size is less than MIN_CHUNK_SIZE more than request */
-    assert(sz < (s + MIN_CHUNK_SIZE));
+    GPOS_ASSERT(sz < (s + MIN_CHUNK_SIZE));
   }
 }
 
@@ -1317,47 +1233,47 @@ static void do_check_tree(malloc_state * m, tchunkptr t) {
   size_t tsize = chunksize(t);
   bindex_t idx;
   compute_tree_index(tsize, idx);
-  assert(tindex == idx);
-  assert(tsize >= MIN_LARGE_SIZE);
-  assert(tsize >= minsize_for_tree_index(idx));
-  assert((idx == NTREEBINS-1) || (tsize < minsize_for_tree_index((idx+1))));
+  GPOS_ASSERT(tindex == idx);
+  GPOS_ASSERT(tsize >= MIN_LARGE_SIZE);
+  GPOS_ASSERT(tsize >= minsize_for_tree_index(idx));
+  GPOS_ASSERT((idx == NTREEBINS-1) || (tsize < minsize_for_tree_index((idx+1))));
 
   do { /* traverse through chain of same-sized nodes */
     do_check_any_chunk(m, ((mchunkptr)u));
-    assert(u->index == tindex);
-    assert(chunksize(u) == tsize);
-    assert(!cinuse(u));
-    assert(!next_pinuse(u));
-    assert(u->fd->bk == u);
-    assert(u->bk->fd == u);
+    GPOS_ASSERT(u->index == tindex);
+    GPOS_ASSERT(chunksize(u) == tsize);
+    GPOS_ASSERT(!cinuse(u));
+    GPOS_ASSERT(!next_pinuse(u));
+    GPOS_ASSERT(u->fd->bk == u);
+    GPOS_ASSERT(u->bk->fd == u);
     if (u->parent == 0) {
-      assert(u->child[0] == 0);
-      assert(u->child[1] == 0);
+      GPOS_ASSERT(u->child[0] == 0);
+      GPOS_ASSERT(u->child[1] == 0);
     }
     else {
-      assert(head == 0); /* only one node on chain has parent */
+      GPOS_ASSERT(head == 0); /* only one node on chain has parent */
       head = u;
-      assert(u->parent != u);
-      assert (u->parent->child[0] == u ||
+      GPOS_ASSERT(u->parent != u);
+      GPOS_ASSERT(u->parent->child[0] == u ||
               u->parent->child[1] == u ||
               *((tbinptr*)(u->parent)) == u);
       if (u->child[0] != 0) {
-        assert(u->child[0]->parent == u);
-        assert(u->child[0] != u);
+        GPOS_ASSERT(u->child[0]->parent == u);
+        GPOS_ASSERT(u->child[0] != u);
         do_check_tree(m, u->child[0]);
       }
       if (u->child[1] != 0) {
-        assert(u->child[1]->parent == u);
-        assert(u->child[1] != u);
+        GPOS_ASSERT(u->child[1]->parent == u);
+        GPOS_ASSERT(u->child[1] != u);
         do_check_tree(m, u->child[1]);
       }
       if (u->child[0] != 0 && u->child[1] != 0) {
-        assert(chunksize(u->child[0]) < chunksize(u->child[1]));
+        GPOS_ASSERT(chunksize(u->child[0]) < chunksize(u->child[1]));
       }
     }
     u = u->fd;
   } while (u != t);
-  assert(head != 0);
+  GPOS_ASSERT(head != 0);
 }
 
 /*  Check all the chunks in a treebin.  */
@@ -1366,7 +1282,7 @@ static void do_check_treebin(malloc_state * m, bindex_t i) {
   tchunkptr t = *tb;
   int empty = (m->treemap & (1U << i)) == 0;
   if (t == 0)
-    assert(empty);
+    GPOS_ASSERT(empty);
   if (!empty)
     do_check_tree(m, t);
 }
@@ -1377,7 +1293,7 @@ static void do_check_smallbin(malloc_state * m, bindex_t i) {
   mchunkptr p = b->bk;
   unsigned int empty = (m->smallmap & (1U << i)) == 0;
   if (p == b)
-    assert(empty);
+    GPOS_ASSERT(empty);
   if (!empty) {
     for (; p != b; p = p->bk) {
       size_t size = chunksize(p);
@@ -1385,8 +1301,8 @@ static void do_check_smallbin(malloc_state * m, bindex_t i) {
       /* each chunk claims to be free */
       do_check_free_chunk(m, p);
       /* chunk belongs in bin */
-      assert(small_index(size) == i);
-      assert(p->bk == b || chunksize(p->bk) == chunksize(p));
+      GPOS_ASSERT(small_index(size) == i);
+      GPOS_ASSERT(p->bk == b || chunksize(p->bk) == chunksize(p));
       /* chunk is followed by an inuse chunk */
       q = next_chunk(p);
       if (q->head != FENCEPOST_HEAD)
@@ -1440,17 +1356,17 @@ static size_t traverse_and_check(malloc_state * m) {
     while (s != 0) {
       mchunkptr q = align_as_chunk(s->base);
       mchunkptr lastq = 0;
-      assert(pinuse(q));
+      GPOS_ASSERT(pinuse(q));
       while (segment_holds(s, q) &&
              q != m->top && q->head != FENCEPOST_HEAD) {
         sum += chunksize(q);
         if (cinuse(q)) {
-          assert(!bin_find(m, q));
+          GPOS_ASSERT(!bin_find(m, q));
           do_check_inuse_chunk(m, q);
         }
         else {
-          assert(q == m->dv || bin_find(m, q));
-          assert(lastq == 0 || cinuse(lastq)); /* Not 2 consecutive free */
+          GPOS_ASSERT(q == m->dv || bin_find(m, q));
+          GPOS_ASSERT(lastq == 0 || cinuse(lastq)); /* Not 2 consecutive free */
           do_check_free_chunk(m, q);
         }
         lastq = q;
@@ -1474,21 +1390,21 @@ static void do_check_malloc_state(malloc_state * m) {
 
   if (m->dvsize != 0) { /* check dv chunk */
     do_check_any_chunk(m, m->dv);
-    assert(m->dvsize == chunksize(m->dv));
-    assert(m->dvsize >= MIN_CHUNK_SIZE);
-    assert(bin_find(m, m->dv) == 0);
+    GPOS_ASSERT(m->dvsize == chunksize(m->dv));
+    GPOS_ASSERT(m->dvsize >= MIN_CHUNK_SIZE);
+    GPOS_ASSERT(bin_find(m, m->dv) == 0);
   }
 
   if (m->top != 0) {   /* check top chunk */
     do_check_top_chunk(m, m->top);
-    assert(m->topsize == chunksize(m->top));
-    assert(m->topsize > 0);
-    assert(bin_find(m, m->top) == 0);
+    GPOS_ASSERT(m->topsize == chunksize(m->top));
+    GPOS_ASSERT(m->topsize > 0);
+    GPOS_ASSERT(bin_find(m, m->top) == 0);
   }
 
   total = traverse_and_check(m);
-  assert(total <= m->footprint);
-  assert(m->footprint <= m->max_footprint);
+  GPOS_ASSERT(total <= m->footprint);
+  GPOS_ASSERT(m->footprint <= m->max_footprint);
 }
 #endif /* GPOS_DEBUG */
 
@@ -1539,7 +1455,7 @@ static void do_check_malloc_state(malloc_state * m) {
   bindex_t I  = small_index(S);\
   mchunkptr B = smallbin_at(M, I);\
   mchunkptr F = B;\
-  assert(S >= MIN_CHUNK_SIZE);\
+  GPOS_ASSERT(S >= MIN_CHUNK_SIZE);\
   if (!smallmap_is_marked(M, I))\
     mark_smallmap(M, I);\
   else if (RTCHECK(ok_address(M, B->fd)))\
@@ -1558,9 +1474,9 @@ static void do_check_malloc_state(malloc_state * m) {
   mchunkptr F = P->fd;\
   mchunkptr B = P->bk;\
   bindex_t I = small_index(S);\
-  assert(P != B);\
-  assert(P != F);\
-  assert(chunksize(P) == small_index2size(I));\
+  GPOS_ASSERT(P != B);\
+  GPOS_ASSERT(P != F);\
+  GPOS_ASSERT(chunksize(P) == small_index2size(I));\
   if (F == B)\
     clear_smallmap(M, I);\
   else if (RTCHECK((F == smallbin_at(M,I) || ok_address(M, F)) &&\
@@ -1576,9 +1492,9 @@ static void do_check_malloc_state(malloc_state * m) {
 /* Unlink the first chunk from a smallbin */
 #define unlink_first_small_chunk(M, B, P, I) {\
   mchunkptr F = P->fd;\
-  assert(P != B);\
-  assert(P != F);\
-  assert(chunksize(P) == small_index2size(I));\
+  GPOS_ASSERT(P != B);\
+  GPOS_ASSERT(P != F);\
+  GPOS_ASSERT(chunksize(P) == small_index2size(I));\
   if (B == F)\
     clear_smallmap(M, I);\
   else if (RTCHECK(ok_address(M, F))) {\
@@ -1596,7 +1512,7 @@ static void do_check_malloc_state(malloc_state * m) {
   size_t DVS = (M).dvsize;\
   if (DVS != 0) {\
     mchunkptr DV = (M).dv;\
-    assert(is_small(DVS));\
+    GPOS_ASSERT(is_small(DVS));\
     insert_small_chunk(&(M), DV, DVS);\
   }\
   (M).dvsize = S;\
@@ -1822,7 +1738,7 @@ static void add_segment(malloc_state * m, char* tbase, size_t tsize) {
   init_top(m, (mchunkptr)tbase, tsize - TOP_FOOT_SIZE);
 
   /* Set up segment record */
-  assert(is_aligned(ss));
+  GPOS_ASSERT(is_aligned(ss));
   set_size_and_pinuse_of_inuse_chunk(m, sp, ssize);
   *ss = m->seg; /* Push current record */
   m->seg.base = tbase;
@@ -1840,7 +1756,7 @@ static void add_segment(malloc_state * m, char* tbase, size_t tsize) {
     else
       break;
   }
-  assert(nfences >= 2);
+  GPOS_ASSERT(nfences >= 2);
 
   /* Insert the rest of old top into a bin as an ordinary free chunk */
   if (csp != old_top) {
@@ -1907,8 +1823,7 @@ void* gpos::CMemoryPoolTracker::sys_alloc(size_t nb) {
     }
   }
 
-  MALLOC_FAILURE_ACTION;
-  return 0;
+  return NULL;
 }
 
 /* ---------------------------- malloc support --------------------------- */
@@ -1968,7 +1883,7 @@ static void* tmalloc_large(malloc_state * m, size_t nb) {
   if (v != 0 && rsize < (size_t)(m->dvsize - nb)) {
     if (RTCHECK(ok_address(m, v))) { /* split */
       mchunkptr r = chunk_plus_offset(v, nb);
-      assert(chunksize(v) == rsize + nb);
+      GPOS_ASSERT(chunksize(v) == rsize + nb);
       if (RTCHECK(ok_next(v, r))) {
         unlink_large_chunk(m, v);
         if (rsize < MIN_CHUNK_SIZE)
@@ -2007,7 +1922,7 @@ static void* tmalloc_small(malloc_state * m, size_t nb) {
 
   if (RTCHECK(ok_address(m, v))) {
     mchunkptr r = chunk_plus_offset(v, nb);
-    assert(chunksize(v) == rsize + nb);
+    GPOS_ASSERT(chunksize(v) == rsize + nb);
     if (RTCHECK(ok_next(v, r))) {
       unlink_large_chunk(m, v);
       if (rsize < MIN_CHUNK_SIZE)
@@ -2065,7 +1980,7 @@ void* gpos::CMemoryPoolTracker::dlmalloc(size_t bytes) {
       idx += ~smallbits & 1;       /* Uses next bin if idx empty */
       b = smallbin_at(&m_malloc_state, idx);
       p = b->fd;
-      assert(chunksize(p) == small_index2size(idx));
+      GPOS_ASSERT(chunksize(p) == small_index2size(idx));
       unlink_first_small_chunk(&m_malloc_state, b, p, idx);
       set_inuse_and_pinuse(&m_malloc_state, p, small_index2size(idx));
       mem = chunk2mem(p);
@@ -2082,7 +1997,7 @@ void* gpos::CMemoryPoolTracker::dlmalloc(size_t bytes) {
         compute_bit2idx(leastbit, i);
         b = smallbin_at(&m_malloc_state, i);
         p = b->fd;
-        assert(chunksize(p) == small_index2size(i));
+        GPOS_ASSERT(chunksize(p) == small_index2size(i));
         unlink_first_small_chunk(&m_malloc_state, b, p, i);
         rsize = small_index2size(i) - nb;
         /* Fit here cannot be remainderless if 4byte sizes */
@@ -2165,7 +2080,10 @@ void gpos::CMemoryPoolTracker::dlfree(void* mem) {
   if (mem != 0) {
     mchunkptr p  = mem2chunk(mem);
 	malloc_state *mstate = get_mstate_for(p);
-	assert(mstate->magic == MALLOC_STATE_MAGIC);
+	GPOS_ASSERT(mstate->magic == MALLOC_STATE_MAGIC);
+#ifdef GPOS_DEBUG
+	do_check_malloc_state(mstate);
+#endif
     check_inuse_chunk(mstate, p);
     if (RTCHECK(ok_address(mstate, p) && ok_cinuse(p))) {
       size_t psize = chunksize(p);
