@@ -12,19 +12,17 @@
  *-------------------------------------------------------------------------
  */
 
+#include "gpos/error/CException.h"
 #include "gpos/memory/dlmalloc.h"
 #include "gpos/memory/CMemoryPoolTracker.h"
+
+using namespace gpos;
 
 /* enable debug for now */
 #define DEBUG 1
 
 /*
-  This is a version (aka dlmalloc) of malloc/free/realloc written by
-  Doug Lea and released to the public domain, as explained at
-  http://creativecommons.org/licenses/publicdomain.  Send questions,
-  comments, complaints, performance data, etc to dl@cs.oswego.edu
-
-* Version 2.8.3 Thu Sep 22 11:16:15 2005  Doug Lea  (dl at gee)
+ * Version 2.8.3 Thu Sep 22 11:16:15 2005  Doug Lea  (dl at gee)
 
    Note: There may be an updated version of this malloc obtainable at
            ftp://gee.cs.oswego.edu/pub/misc/malloc.c
@@ -101,7 +99,7 @@
        malloc_state.
 
        By default detected errors cause the program to abort (calling
-       "abort()"). You can override this to instead proceed past
+       "GPOS_ABORT"). You can override this to instead proceed past
        errors by defining PROCEED_ON_ERROR.  In this case, a bad free
        has no effect, and a malloc that encounters a bad address
        caused by user overwrites will ignore the bad address by
@@ -203,16 +201,7 @@ USE_DL_PREFIX            default: NOT defined
   This can be useful when you only want to use this malloc in one part
   of a program, using your regular system malloc elsewhere.
 
-ABORT                    default: defined as abort()
-  Defines how to abort on failed checks.  On most systems, a failed
-  check cannot die with an "assert" or even print an informative
-  message, because the underlying print routines in turn call malloc,
-  which will fail again.  Generally, the best policy is to simply call
-  abort(). It's not very useful to do more than this because many
-  errors due to overwriting will show up as address faults (null, odd
-  addresses etc) rather than malloc-triggered checks, so will also
-  abort.  Also, most compilers know that abort() does not return, so
-  can better optimize code conditionally calling it.
+ABORT                    ---- code has been removed, use GPOS_ABORT
 
 PROCEED_ON_ERROR           default: defined as 0 (false)
   Controls whether detected bad addresses cause them to bypassed
@@ -338,12 +327,6 @@ DEFAULT_MMAP_THRESHOLD    ---- removed
 #ifndef MALLOC_ALIGNMENT
 #define MALLOC_ALIGNMENT ((size_t)8U)
 #endif  /* MALLOC_ALIGNMENT */
-#ifndef ABORT
-#define ABORT  abort()
-#endif  /* ABORT */
-#ifndef ABORT_ON_ASSERT_FAILURE
-#define ABORT_ON_ASSERT_FAILURE 1
-#endif  /* ABORT_ON_ASSERT_FAILURE */
 #ifndef PROCEED_ON_ERROR
 #define PROCEED_ON_ERROR 0
 #endif  /* PROCEED_ON_ERROR */
@@ -915,11 +898,11 @@ static void reset_on_error(malloc_state * m);
 #else /* PROCEED_ON_ERROR */
 
 #ifndef CORRUPTION_ERROR_ACTION
-#define CORRUPTION_ERROR_ACTION(m) ABORT
+#define CORRUPTION_ERROR_ACTION(m) GPOS_ABORT
 #endif /* CORRUPTION_ERROR_ACTION */
 
 #ifndef USAGE_ERROR_ACTION
-#define USAGE_ERROR_ACTION(m,p) ABORT
+#define USAGE_ERROR_ACTION(m,p) GPOS_ABORT
 #endif /* USAGE_ERROR_ACTION */
 
 #endif /* PROCEED_ON_ERROR */
@@ -1152,7 +1135,7 @@ int gpos::CMemoryPoolTracker::init_mstate() {
         ((MCHUNK_SIZE         & (MCHUNK_SIZE-SIZE_T_ONE))         != 0) ||
         ((m_malloc_state.granularity & (m_malloc_state.granularity-SIZE_T_ONE)) != 0) ||
         ((m_malloc_state.page_size   & (m_malloc_state.page_size-SIZE_T_ONE))   != 0))
-      ABORT;
+      GPOS_ABORT;
   }
   return 0;
 }
