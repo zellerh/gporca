@@ -2083,6 +2083,7 @@ void gpos::CMemoryPoolTracker::dlfree(void* mem) {
           else if ((next->head & INUSE_BITS) == INUSE_BITS) {
             mstate->dvsize = psize;
             set_free_with_pinuse(p, psize, next);
+			return;
           }
         }
         else
@@ -2116,13 +2117,17 @@ void gpos::CMemoryPoolTracker::dlfree(void* mem) {
             set_size_and_pinuse_of_free_chunk(p, psize);
             if (p == mstate->dv) {
               mstate->dvsize = psize;
+		      return;
             }
+		    insert_chunk(mstate, p, psize);
+		    check_free_chunk(mstate, p);
           }
         }
-        else
+		else {
           set_free_with_pinuse(p, psize, next);
-        insert_chunk(mstate, p, psize);
-        check_free_chunk(mstate, p);
+          insert_chunk(mstate, p, psize);
+          check_free_chunk(mstate, p);
+		}
       }
     }
 
