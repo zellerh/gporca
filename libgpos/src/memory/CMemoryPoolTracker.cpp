@@ -91,9 +91,12 @@ CMemoryPoolTracker::~CMemoryPoolTracker()
 void *
 CMemoryPoolTracker::Allocate
 	(
-	const ULONG bytes,
+	const ULONG bytes
+#ifdef GPOS_DEBUG
+	,
 	const CHAR *file,
 	const ULONG line
+#endif
 	)
 {
 	GPOS_ASSERT(GPOS_MEM_ALLOC_MAX >= bytes);
@@ -105,7 +108,11 @@ CMemoryPoolTracker::Allocate
 	void *ptr;
 	if (mem_available)
 	{
-		ptr = GetUnderlyingMemoryPool()->Allocate(alloc, file, line);
+		ptr = GetUnderlyingMemoryPool()->Allocate(alloc
+#ifdef GPOS_DEBUG
+												  , file, line
+#endif
+												 );
 	}
 	else
 	{
@@ -128,8 +135,13 @@ CMemoryPoolTracker::Allocate
 	header->m_serial = m_alloc_sequence;
 	++m_alloc_sequence;
 
+#ifdef GPOS_DEBUG
 	header->m_filename = file;
 	header->m_line = line;
+#else
+	header->m_filename = "";
+	header->m_line = 0;
+#endif
 	header->m_size = bytes;
 
 	void *ptr_result = header + 1;
@@ -267,9 +279,13 @@ void*
 CMemoryPoolTracker::AggregatedNew
 	(
 	 SIZE_T size,
-	 const CHAR *,
-	 ULONG,
+#ifdef GPOS_DEBUG
+	 const CHAR * filename,
+	 ULONG line,
+	 EAllocationType type
+#else
 	 EAllocationType
+#endif
 	 )
 {
 	return dlmalloc(size);

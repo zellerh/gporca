@@ -155,8 +155,10 @@ void*
 CMemoryPool::NewImpl
 	(
 	SIZE_T size,
+#ifdef GPOS_DEBUG
 	const CHAR *filename,
 	ULONG line,
+#endif
 	CMemoryPool::EAllocationType eat
 	)
 {
@@ -169,7 +171,11 @@ CMemoryPool::NewImpl
 	);
 
 	ULONG alloc_size = CMemoryPool::GetAllocSize((ULONG) size);
-	void *ptr = Allocate(alloc_size, filename, line);
+	void *ptr = Allocate(alloc_size
+#ifdef GPOS_DEBUG
+						 , filename, line
+#endif
+						);
 
 	GPOS_OOM_CHECK(ptr);
 	
@@ -180,12 +186,19 @@ void*
 CMemoryPool::AggregatedNew
 	(
 	 SIZE_T size,
-	 const CHAR *filename,
+#ifdef GPOS_DEBUG
+	 const CHAR * filename,
 	 ULONG line,
+#endif
 	 EAllocationType type
 	 )
 {
-	return NewImpl(size, filename, line, type);
+	return NewImpl(size,
+#ifdef GPOS_DEBUG
+				   filename,
+				   line,
+#endif
+				   type);
 }
 
 //---------------------------------------------------------------------------

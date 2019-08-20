@@ -202,8 +202,10 @@ namespace gpos
 			void *NewImpl
 				(
 				SIZE_T size,
+#ifdef GPOS_DEBUG
 				const CHAR *filename,
 				ULONG line,
+#endif
 				EAllocationType type
 				);
 
@@ -211,8 +213,10 @@ namespace gpos
 			void *AggregatedNew
 				(
 				 SIZE_T size,
-				 const CHAR *filename,
+#ifdef GPOS_DEBUG
+				 const CHAR * filename,
 				 ULONG line,
+#endif
 				 EAllocationType type
 				 );
 
@@ -220,15 +224,20 @@ namespace gpos
 			template <typename T>
 			T* NewArrayImpl
 				(
-				SIZE_T num_elements,
+				SIZE_T num_elements
+#ifdef GPOS_DEBUG
+				,
 				const CHAR *filename,
 				ULONG line
+#endif
 				)
 			{
 				T *array = static_cast<T*>(NewImpl(
 												   sizeof(T) * num_elements,
+#ifdef GPOS_DEBUG
 												   filename,
 												   line,
+#endif
 												   EatArray));
 				for (SIZE_T idx = 0; idx < num_elements; ++idx) {
 					try {
@@ -254,13 +263,16 @@ namespace gpos
 				EAllocationType type
 				);
 
-		// allocate memory; return NULL if the memory could not be allocated
+			// allocate memory; return NULL if the memory could not be allocated
 			virtual
 			void *Allocate
 				(
-				const ULONG num_bytes,
+				const ULONG num_bytes
+#ifdef GPOS_DEBUG
+				,
 				const CHAR *filename,
 				const ULONG line
+#endif
 				) = 0;
 
 			// free memory previously allocated by a call to pvAllocate; NULL may be passed
@@ -418,12 +430,20 @@ namespace gpos
 inline void *operator new
 	(
 	gpos::SIZE_T size,
-	gpos::CMemoryPool *mp,
+	gpos::CMemoryPool *mp
+#ifdef GPOS_DEBUG
+	,
 	const gpos::CHAR *filename,
 	gpos::ULONG line
+#endif
 	)
 {
-	return mp->AggregatedNew(size, filename, line, gpos::CMemoryPool::EatSingleton);
+	return mp->AggregatedNew(size,
+#ifdef GPOS_DEBUG
+							 filename,
+							 line,
+#endif
+							 gpos::CMemoryPool::EatSingleton);
 }
 
 // Corresponding placement variant of delete operator. Note that, for delete
@@ -447,7 +467,11 @@ inline void operator delete
 // Placement new-style macro to do 'new' with a memory pool. Anything allocated
 // with this *must* be deleted by GPOS_DELETE, *not* the ordinary delete
 // operator.
+#ifdef GPOS_DEBUG
 #define GPOS_NEW(mp) new(mp, __FILE__, __LINE__)
+#else
+#define GPOS_NEW(mp) new(mp)
+#endif
 
 // Replacement for array-new. Conceptually equivalent to
 // 'new(mp) datatype[count]'. Any arrays allocated with this *must* be deleted
@@ -457,8 +481,11 @@ inline void operator delete
 // arrays, because when we do so the C++ compiler adds its own book-keeping
 // information to the allocation in a non-portable way such that we can not
 // recover GPOS' own book-keeping information reliably.
-#define GPOS_NEW_ARRAY(mp, datatype, count) \
-mp->NewArrayImpl<datatype>(count, __FILE__, __LINE__)
+#ifdef GPOS_DEBUG
+#define GPOS_NEW_ARRAY(mp, datatype, count) mp->NewArrayImpl<datatype>(count, __FILE__, __LINE__)
+#else
+#define GPOS_NEW_ARRAY(mp, datatype, count) mp->NewArrayImpl<datatype>(count)
+#endif
 
 // Delete a singleton object allocated by GPOS_NEW().
 template <typename T>

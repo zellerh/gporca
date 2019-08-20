@@ -52,9 +52,12 @@ namespace gpos
 			virtual
 			void *Allocate
 				(
-				const ULONG num_bytes,
+				const ULONG num_bytes
+#ifdef GPOS_DEBUG
+				,
 				const CHAR *filename,
 				const ULONG line
+#endif
 				);
 
 			// free memory

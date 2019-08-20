@@ -126,9 +126,12 @@ namespace gpos
 			virtual
 			void *Allocate
 				(
-				const ULONG bytes,
+				const ULONG bytes
+#ifdef GPOS_DEBUG
+				,
 				const CHAR *file,
 				const ULONG line
+#endif
 				);
 
 			// free memory
@@ -143,8 +146,10 @@ namespace gpos
 			void *AggregatedNew
 				(
 				 SIZE_T size,
-				 const CHAR *filename,
+#ifdef GPOS_DEBUG
+				 const CHAR * filename,
 				 ULONG line,
+#endif
 				 EAllocationType type
 				 );
 
