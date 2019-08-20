@@ -26,6 +26,7 @@
 #include "gpos/memory/CMemoryPoolTracker.h"
 #include "gpos/memory/IMemoryVisitor.h"
 #include "gpos/memory/dlmalloc.h"
+#include "gpos/task/traceflags.h"
 
 using namespace gpos;
 
@@ -57,9 +58,16 @@ CMemoryPoolTracker::CMemoryPoolTracker
 	m_alloc_sequence(0),
 	m_capacity(max_size),
 	m_reserved(0),
-	m_aggregate(true)
+	m_aggregate(false)
 {
 	GPOS_ASSERT(NULL != underlying_memory_pool);
+
+	if (ITask::Self())
+	{
+		m_aggregate = GPOS_FTRACE(EtraceAggregateMemoryAllocations);
+	}
+
+	m_aggregate = true; // for now
 
 	m_allocations_list.Init(GPOS_OFFSET(SAllocHeader, m_link));
 	memset(&m_malloc_state, 0, sizeof(m_malloc_state));
@@ -288,7 +296,19 @@ CMemoryPoolTracker::AggregatedNew
 #endif
 	 )
 {
-	return dlmalloc(size);
+	if (m_aggregate)
+	{
+		return dlmalloc(size);
+	}
+	else
+	{
+		return NewImpl(size,
+#ifdef GPOS_DEBUG
+					   filename,
+					   line,
+#endif
+					   type);
+	}
 }
 
 

@@ -48,6 +48,9 @@ namespace gpos
 		// print exception on raise to stderr
 		EtracePrintExceptionOnRaise = 104,
 
+		// Consolidate (aggregate) memory requests at a higher level, to save time and memory
+		EtraceAggregateMemoryAllocations = 105,
+
 		EtraceSentinel
 	};
 }
