@@ -133,7 +133,6 @@ struct malloc_state {
 	binmap_t   treemap;
 	size_t     dvsize;
 	size_t     topsize;
-	char*      least_addr;
 	mchunkptr  dv;
 	mchunkptr  top;
 	size_t     trim_check;

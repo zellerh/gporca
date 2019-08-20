@@ -18,9 +18,6 @@
 
 using namespace gpos;
 
-/* enable debug for now */
-#define DEBUG 1
-
 /*
  * Version 2.8.3 Thu Sep 22 11:16:15 2005  Doug Lea  (dl at gee)
 
@@ -110,9 +107,7 @@ using namespace gpos;
 
        If you don't like either of these options, you can define
        CORRUPTION_ERROR_ACTION and USAGE_ERROR_ACTION to do anything
-       else. And if if you are sure that your program using malloc has
-       no errors or vulnerabilities, you can define INSECURE to 1,
-       which might (or might not) provide a small performance improvement.
+       else.
 
   Thread-safety: NOT thread-safe!
 
@@ -193,8 +188,8 @@ USE_LOCKS                ---- code has been removed
 
 FOOTERS                  ---- code has been removed, always set
 
-INSECURE                 default: 0
-  If true, omit checks for usage errors and heap space overwrites.
+INSECURE                 ---- code has been partially removed,
+                              use DLMALLOC_DEBUG for partial check
 
 USE_DL_PREFIX            default: NOT defined
   Causes compiler to prefix all public routines with the string 'dl'.
@@ -214,8 +209,8 @@ PROCEED_ON_ERROR           default: defined as 0 (false)
   and can be examined to see if errors have occurred. This option
   generates slower code than the default abort policy.
 
-DEBUG                    default: NOT defined
-  The DEBUG setting is mainly intended for people trying to modify
+DLMALLOC_DEBUG           default: NOT defined
+  The DLMALLOC_DEBUG setting is mainly intended for people trying to modify
   this code or diagnose problems when porting to new platforms.
   However, it may also be able to better isolate user errors than just
   using runtime checks.  The assertions in the check routines spell
@@ -909,7 +904,7 @@ static void reset_on_error(malloc_state * m);
 
 /* -------------------------- Debugging setup ---------------------------- */
 
-#ifndef GPOS_DEBUG
+#ifndef DLMALLOC_DEBUG
 
 #define check_free_chunk(M,P)
 #define check_inuse_chunk(M,P)
@@ -917,7 +912,7 @@ static void reset_on_error(malloc_state * m);
 #define check_malloc_state(M)
 #define check_top_chunk(M,P)
 
-#else /* GPOS_DEBUG */
+#else /* DLMALLOC_DEBUG */
 #define check_free_chunk(M,P)       do_check_free_chunk(M,P)
 #define check_inuse_chunk(M,P)      do_check_inuse_chunk(M,P)
 #define check_top_chunk(M,P)        do_check_top_chunk(M,P)
@@ -935,7 +930,7 @@ static void   do_check_smallbin(malloc_state * m, bindex_t i);
 static void   do_check_malloc_state(malloc_state * m);
 static int    bin_find(malloc_state * m, mchunkptr x);
 static size_t traverse_and_check(malloc_state * m);
-#endif /* GPOS_DEBUG */
+#endif /* DLMALLOC_DEBUG */
 
 /* ---------------------------- Indexing Bins ---------------------------- */
 
@@ -1065,22 +1060,18 @@ static size_t traverse_and_check(malloc_state * m);
 
 */
 
-#if !INSECURE
-/* Check if address a is at least as high as any from MORECORE or MMAP */
-#define ok_address(M, a) ((char*)(a) >= (M)->least_addr)
+#ifdef DLMALLOC_DEBUG
+/* Check if address a is contained in one of the segments */
+#define ok_address(M, a) (NULL != segment_holding(M, a))
+#else
+#define ok_address(M, a) (1)
+#endif
 /* Check if address of next chunk n is higher than base chunk p */
 #define ok_next(p, n)    ((char*)(p) < (char*)(n))
 /* Check if p has its cinuse bit on */
 #define ok_cinuse(p)     cinuse(p)
 /* Check if p has its pinuse bit on */
 #define ok_pinuse(p)     pinuse(p)
-
-#else /* !INSECURE */
-#define ok_address(M, a) (1)
-#define ok_next(b, n)    (1)
-#define ok_cinuse(p)     (1)
-#define ok_pinuse(p)     (1)
-#endif /* !INSECURE */
 
 /* In gcc, use __builtin_expect to minimize impact of checks */
 #if !INSECURE
@@ -1140,12 +1131,13 @@ int gpos::CMemoryPoolTracker::init_mstate() {
   return 0;
 }
 
-#ifdef GPOS_DEBUG
+#ifdef DLMALLOC_DEBUG
 /* ------------------------- Debugging Support --------------------------- */
 
 /* Check properties of any chunk, whether free, inuse etc  */
 static void do_check_any_chunk(malloc_state * m, mchunkptr p) {
   GPOS_ASSERT((is_aligned(chunk2mem(p))) || (p->head == FENCEPOST_HEAD));
+  GPOS_ASSERT(NULL != m);
   GPOS_ASSERT(ok_address(m, p));
 }
 
@@ -1389,7 +1381,7 @@ static void do_check_malloc_state(malloc_state * m) {
   GPOS_ASSERT(total <= m->footprint);
   GPOS_ASSERT(m->footprint <= m->max_footprint);
 }
-#endif /* GPOS_DEBUG */
+#endif /* DLMALLOC_DEBUG */
 
 ///* ----------------------------- statistics ------------------------------ */
 //
@@ -1783,7 +1775,7 @@ void* gpos::CMemoryPoolTracker::sys_alloc(size_t nb) {
       m_malloc_state.max_footprint = m_malloc_state.footprint;
 
     if (!is_initialized(&m_malloc_state)) { /* first-time initialization */
-      m_malloc_state.seg.base = m_malloc_state.least_addr = tbase;
+      m_malloc_state.seg.base = tbase;
       m_malloc_state.seg.size = tsize;
       m_malloc_state.seg.sflags = mmap_flag;
       init_bins(&m_malloc_state);
@@ -1999,9 +1991,6 @@ void* gpos::CMemoryPoolTracker::dlmalloc(size_t bytes) {
 
       else if (m_malloc_state.treemap != 0 && (mem = tmalloc_small(&m_malloc_state, nb)) != 0) {
         check_malloced_chunk(&m_malloc_state, mem, nb);
-#ifdef GPOS_DEBUG
-        do_check_malloc_state(&m_malloc_state);
-#endif
         return mem;
       }
     }
@@ -2048,6 +2037,10 @@ void* gpos::CMemoryPoolTracker::dlmalloc(size_t bytes) {
     return mem;
   }
 
+#ifdef DLMALLOC_DEBUG
+  do_check_malloc_state(&m_malloc_state);
+#endif
+
   mem = sys_alloc(nb);
 
   return mem;
@@ -2064,9 +2057,6 @@ void gpos::CMemoryPoolTracker::dlfree(void* mem) {
     mchunkptr p  = mem2chunk(mem);
 	malloc_state *mstate = get_mstate_for(p);
 	GPOS_ASSERT(mstate->magic == MALLOC_STATE_MAGIC);
-#ifdef GPOS_DEBUG
-	do_check_malloc_state(mstate);
-#endif
     check_inuse_chunk(mstate, p);
     if (RTCHECK(ok_address(mstate, p) && ok_cinuse(p))) {
       size_t psize = chunksize(p);

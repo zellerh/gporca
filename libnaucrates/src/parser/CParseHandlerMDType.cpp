@@ -47,6 +47,7 @@ CParseHandlerMDType::CParseHandlerMDType
 	CParseHandlerMetadataObject(mp, parse_handler_mgr, parse_handler_root),
 	m_mdid(NULL),
 	m_mdname(NULL),
+	m_type_length(-1),
 	m_mdid_eq_op(NULL),
 	m_mdid_neq_op(NULL),
 	m_mdid_lt_op(NULL),
