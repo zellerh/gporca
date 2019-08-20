@@ -228,8 +228,6 @@ CDXLUtils::GetParseHandlerForDXLFile
 		delete sax_2_xml_reader;
 		delete[] xsd_path;
 		
-		GPOS_RAISE(gpdxl::ExmaDXL, gpdxl::ExmiDXLXercesParseError);
-
 		return NULL;
 	}
 	catch (const SAXException&)
