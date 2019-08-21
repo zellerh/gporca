@@ -245,7 +245,7 @@ CMemoryPoolTracker::Free
 
 #ifdef GPOS_DEBUG
 	// mark user memory as unused in debug mode
-	clib::Memset(ptr, GPOS_MEM_INIT_PATTERN_CHAR, user_size);
+	clib::Memset(ptr, GPOS_MEM_FREED_PATTERN_CHAR, user_size);
 #endif // GPOS_DEBUG
 
 	ULONG total_size = GPOS_MEM_BYTES_TOTAL(user_size);
@@ -277,17 +277,13 @@ CMemoryPoolTracker::Free
 void
 CMemoryPoolTracker::TearDown()
 {
+	dlmalloc_delete_segments(false);
 	while (!m_allocations_list.IsEmpty())
 	{
 		SAllocHeader *header = m_allocations_list.First();
 		void *user_data = header + 1;
 		Free(user_data);
 	}
-
-	dlmalloc_delete_segments(false);
-	m_malloc_state.seg.base = NULL;
-	m_malloc_state.seg.size = 0;
-	m_malloc_state.seg.next = NULL;
 
 	CMemoryPool::TearDown();
 }
@@ -299,10 +295,8 @@ CMemoryPoolTracker::AggregatedNew
 #ifdef GPOS_DEBUG
 	 const CHAR * filename,
 	 ULONG line,
-	 EAllocationType type
-#else
-	 EAllocationType
 #endif
+	 EAllocationType type
 	 )
 {
 	if (m_aggregate)

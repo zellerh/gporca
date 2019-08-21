@@ -823,8 +823,9 @@ typedef struct malloc_tree_chunk* tchunkptr;
   ((char*)(A) >= S->base && (char*)(A) < S->base + S->size)
 
 #define is_segment_empty(S)\
- (!cinuse((mchunkptr)(S->base)) && chunksize((mchunkptr)(S->base)) + TOP_FOOT_SIZE == S->size)
+ (!cinuse((mchunkptr)(S->base)) && chunksize((mchunkptr)(S->base)) + TOP_FOOT_SIZE + MIN_CHUNK_SIZE - 1 >= S->size)
 
+#ifdef GPOS_DEBUG
 /* Return segment holding given address */
 static msegmentptr segment_holding(malloc_state * m, char* addr) {
   msegmentptr sp = &m->seg;
@@ -835,6 +836,7 @@ static msegmentptr segment_holding(malloc_state * m, char* addr) {
       return 0;
   }
 }
+#endif
 
 /*
   TOP_FOOT_SIZE is padding at the end of a segment, including space
@@ -1614,6 +1616,7 @@ static void init_top(malloc_state * m, mchunkptr p, size_t psize) {
   m->top = p;
   m->topsize = psize;
   p->head = psize | PINUSE_BIT;
+  p->prev_foot = 0;
   /* set size of fake trailing chunk holding overhead space only once */
   chunk_plus_offset(p, psize)->head = TOP_FOOT_SIZE;
 }
@@ -1687,8 +1690,9 @@ static void add_segment(malloc_state * m, char* tbase, size_t tsize) {
 /* Unlink an empty segment from the data structures in preparation to deleting its memory,
    return whether we were able to unlink the segment
  */
-static bool unlink_segment(malloc_state * m, msegmentptr s) {
+static bool unlink_segment(malloc_state * m, msegmentptr s, msegmentptr *next_seg) {
 	GPOS_ASSERT(NULL != s->base);
+	*next_seg = s->next;
 	if (!is_segment_empty(s)) {
 		return false;
 	}
@@ -1705,7 +1709,6 @@ static bool unlink_segment(malloc_state * m, msegmentptr s) {
 	else {
 		/* unlink it from the bins, if needed */
 		mchunkptr p = (mchunkptr) s->base;
-		GPOS_ASSERT(chunksize(p) == (s->size - TOP_FOOT_SIZE));
 		unlink_chunk(m, p, chunksize(p));
 	}
 	/* unlink the segment from the list of segments */
@@ -1715,12 +1718,14 @@ static bool unlink_segment(malloc_state * m, msegmentptr s) {
 		if (s->next != NULL) {
 			/* restore the next segment in the list back into m */
 			*ls = *(s->next);
+			*next_seg = ls;
 		}
 		else {
 			/* we unlinked the last segment, set m->seg back to an empty state */
 			ls->base = NULL;
 			ls->size = 0;
 			ls->next = NULL;
+			*next_seg = NULL;
 		}
 	}
 	else {
@@ -1730,6 +1735,7 @@ static bool unlink_segment(malloc_state * m, msegmentptr s) {
 				ls->next = s->next;
 				break;
 			}
+			ls = ls->next;
 		}
 		GPOS_ASSERT(ls != NULL);
 	}
@@ -2055,6 +2061,10 @@ void gpos::CMemoryPoolTracker::dlfree(void* mem) {
     if (RTCHECK(ok_address(mstate, p) && ok_cinuse(p))) {
       size_t psize = chunksize(p);
       mchunkptr next = chunk_plus_offset(p, psize);
+
+#ifdef GPOS_DEBUG
+      clib::Memset(mem, GPOS_MEM_FREED_PATTERN_CHAR, chunksize(p) - CHUNK_OVERHEAD);
+#endif
       if (!pinuse(p)) {
         size_t prevsize = p->prev_foot;
         mchunkptr prev = chunk_minus_offset(p, prevsize);
@@ -2131,20 +2141,16 @@ void gpos::CMemoryPoolTracker::dlmalloc_delete_segments(bool check_free) {
   while (s != 0) {
     /* deferred deletion, since s might be part of the segment to delete */
     msegmentptr next_segment = s->next;
-    if (NULL != s->base) {
-      if (check_free) {
-        if (!unlink_segment(&m_malloc_state, s)) {
-          /* couldn't unlink the segment, keep it */
-          s = next_segment;
-          continue;
-        }
-        /* this segment contains no allocated memory and can be removed,
-           unlink it from the small or large bins, top chunk and dv
-         */
-      }
-      /* delete the memory of the segment */
-      (*(m_malloc_state.ll_dealloc_func))(this, s->base);
-    }
+    void *segment_memory = s->base;
+
+    if (NULL != segment_memory &&
+		(!check_free || unlink_segment(&m_malloc_state, s, &next_segment)))
+	  {
+		  /* We have a segment allocated and it is empty (if we checked).
+		     Note that in some cases we may have needed to adjust next_segment.
+		   */
+		  (*(m_malloc_state.ll_dealloc_func))(this, segment_memory);
+	  }
     s = next_segment;
   }
 
