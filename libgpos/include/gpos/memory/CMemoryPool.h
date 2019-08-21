@@ -220,6 +220,23 @@ namespace gpos
 				 EAllocationType type
 				 );
 
+			static
+			void *AllocFuncForAggregator
+				(
+				 CMemoryPool *mp,
+				 SIZE_T size
+				 );
+
+			static
+			void DeallocFuncForAggregator
+				(
+				 CMemoryPool *mp,
+				 void *mem
+				);
+
+			virtual
+			void ReleaseUnusedAggregatedMemory();
+
 			// implementation of array-new with memory pool
 			template <typename T>
 			T* NewArrayImpl

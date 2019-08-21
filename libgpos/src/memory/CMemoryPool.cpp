@@ -201,6 +201,34 @@ CMemoryPool::AggregatedNew
 				   type);
 }
 
+void *CMemoryPool::AllocFuncForAggregator
+	(
+	 CMemoryPool *mp,
+	 SIZE_T size
+	 )
+{
+	return mp->NewImpl(size,
+#ifdef GPOS_DEBUG
+					   __FILE__,
+					   __LINE__,
+#endif
+					   EatSingleton);
+}
+
+void CMemoryPool::DeallocFuncForAggregator
+	(
+	 CMemoryPool *mp,
+	 void *mem
+	 )
+{
+	mp->FreeAlloc(mem, EatSingleton);
+}
+
+void CMemoryPool::ReleaseUnusedAggregatedMemory()
+{
+}
+
+
 //---------------------------------------------------------------------------
 //	@function:
 //		DeleteImpl

@@ -91,8 +91,8 @@ namespace gpos
 
 			void* dlmalloc(size_t bytes);
 			int init_mstate();
-			void dlmalloc_delete_all_segments();
-			void* sys_alloc(size_t nb);
+			void dlmalloc_delete_segments(bool check_free);
+			void* sys_alloc(malloc_state *m, size_t nb);
 			size_t dlmalloc_footprint();
 			size_t dlmalloc_max_footprint();
 
@@ -152,6 +152,9 @@ namespace gpos
 #endif
 				 EAllocationType type
 				 );
+
+			virtual
+			void ReleaseUnusedAggregatedMemory();
 
 			static void dlfree(void* mem);
 

@@ -287,24 +287,16 @@ REALLOC_ZERO_BYTES_FREES    default: not defined
 
 LACKS_UNISTD_H, LACKS_FCNTL_H, LACKS_SYS_PARAM_H, LACKS_SYS_MMAN_H
 LACKS_STRINGS_H, LACKS_STRING_H, LACKS_SYS_TYPES_H,  LACKS_ERRNO_H
-LACKS_STDLIB_H                default: NOT defined unless on WIN32
+LACKS_STDLIB_H             ---- removed
   Define these if your system does not have these header files.
   You might need to manually insert some of the declarations they provide.
 
-DEFAULT_GRANULARITY        default: page size if MORECORE_CONTIGUOUS,
-                                system_info.dwAllocationGranularity in WIN32,
-                                otherwise 256K.
-      Also settable using mallopt(M_GRANULARITY, x)
-  The unit for allocating and deallocating memory from the system.  On
-  most systems with contiguous MORECORE, there is no reason to
-  make this more than a page. However, systems with MMAP tend to
-  either require or encourage larger granularities.  You can increase
-  this value to prevent system allocation functions to be called so
-  often, especially if they are slow.  The value must be at least one
-  page and must be a power of two.  Setting to 0 causes initialization
-  to either page size or win32 region size.  (Note: In previous
-  versions of malloc, the equivalent of this option was called
-  "TOP_PAD")
+DEFAULT_GRANULARITY        ---- replaced with MIN_GRANULARITY,
+                                INC_GRANULARITY and MAX_GRANULARITY
+ default: 32KB min, increasing in factors of 8, up to 64 MB
+  The unit for allocating and deallocating memory from the system.
+  We start with a relatively small size and then increase it exponentially
+  to be able to handle larger memories without too much fragmentation.
 
 DEFAULT_TRIM_THRESHOLD    ---- removed
 
@@ -312,28 +304,22 @@ DEFAULT_MMAP_THRESHOLD    ---- removed
 
 */
 
-#ifndef LACKS_SYS_TYPES_H
 #include <sys/types.h>  /* For size_t */
-#endif  /* LACKS_SYS_TYPES_H */
 
 /* The maximum possible size_t value has all bits set */
 #define MAX_SIZE_T           (~(size_t)0)
 
-#ifndef MALLOC_ALIGNMENT
 #define MALLOC_ALIGNMENT ((size_t)8U)
-#endif  /* MALLOC_ALIGNMENT */
-#ifndef PROCEED_ON_ERROR
 #define PROCEED_ON_ERROR 0
-#endif  /* PROCEED_ON_ERROR */
-#ifndef INSECURE
 #define INSECURE 0
-#endif  /* INSECURE */
-#ifndef DEFAULT_GRANULARITY
-#define DEFAULT_GRANULARITY ((size_t)256U * (size_t)1024U)
-#endif  /* DEFAULT_GRANULARITY */
-#ifndef USE_BUILTIN_FFS
 #define USE_BUILTIN_FFS 0
-#endif  /* USE_BUILTIN_FFS */
+
+/* granularity (size of chunks allocated from underlying layers,
+   increasing exponentially
+ */
+#define MIN_GRANULARITY ((size_t)32U * (size_t)1024U)
+#define INC_GRANULARITY 8
+#define MAX_GRANULARITY ((size_t)64U * (size_t)1024U * (size_t)1024U)
 
 /* used to validate footer points to a valid malloc_state */
 #define MALLOC_STATE_MAGIC 0x58585858U
@@ -344,8 +330,6 @@ DEFAULT_MMAP_THRESHOLD    ---- removed
   are used in this malloc, so setting them has no effect. But this
   malloc does support the following options.
 */
-
-#define M_GRANULARITY        (-2)
 
 
 /* ------------------- Declarations of public routines ------------------- */
@@ -439,9 +423,6 @@ DEFAULT_MMAP_THRESHOLD    ---- removed
 /* MORECORE and MMAP must return MFAIL on failure */
 #define MFAIL                ((void*)(MAX_SIZE_T))
 #define CMFAIL               ((char*)(MFAIL)) /* defined for convenience */
-
-/* segment bit set in create_mspace_with_base */
-#define EXTERN_BIT            (8U)
 
 
 /* -----------------------  Chunk representations ------------------------ */
@@ -579,9 +560,10 @@ typedef unsigned long bindex_t;         /* Described below */
 
 #define MCHUNK_SIZE         (sizeof(mchunk))
 
+/* the overhead a chunk adds to the allocated memory, 16 bytes */
 #define CHUNK_OVERHEAD      (TWO_SIZE_T_SIZES)
 
-/* The smallest size we can malloc is an aligned minimal chunk */
+/* The smallest size we can malloc is an aligned minimal chunk, 32 bytes */
 #define MIN_CHUNK_SIZE\
   ((MCHUNK_SIZE + CHUNK_ALIGN_MASK) & ~CHUNK_ALIGN_MASK)
 
@@ -609,9 +591,8 @@ typedef unsigned long bindex_t;         /* Described below */
 /*
   The head field of a chunk is or'ed with PINUSE_BIT when previous
   adjacent chunk in use, and or'ed with CINUSE_BIT if this chunk is in
-  use. If the chunk was obtained with mmap, the prev_foot field has
-  IS_MMAPPED_BIT set, otherwise holding the offset of the base of the
-  mmapped region to the base of the chunk.
+  use. The prev_foot field has a pointer to the malloc_segment, if the
+  previous chunk is in use.
 */
 
 #define PINUSE_BIT          (SIZE_T_ONE)
@@ -813,10 +794,6 @@ typedef struct malloc_tree_chunk* tchunkptr;
   containing malloc_state *.
 
   Segment flags control allocation/merge/deallocation policies:
-  * If EXTERN_BIT set, then we did not allocate this segment,
-    and so should not try to deallocate or merge with others.
-    (This currently holds only for the initial segment passed
-    into create_mspace_with_base.)
   * If IS_MMAPPED_BIT set, the segment may be merged with
     other surrounding mmapped segments and trimmed/de-allocated
     using munmap.
@@ -841,12 +818,12 @@ typedef struct malloc_tree_chunk* tchunkptr;
 #define granularity_align(S)\
   (((S) + (m_malloc_state.granularity)) & ~(m_malloc_state.granularity - SIZE_T_ONE))
 
-#define is_granularity_aligned(S)\
-   (((size_t)(S) & (m_malloc_state.granularity - SIZE_T_ONE)) == 0)
-
 /*  True if segment S holds address A */
 #define segment_holds(S, A)\
   ((char*)(A) >= S->base && (char*)(A) < S->base + S->size)
+
+#define is_segment_empty(S)\
+ (!cinuse((mchunkptr)(S->base)) && chunksize((mchunkptr)(S->base)) + TOP_FOOT_SIZE == S->size)
 
 /* Return segment holding given address */
 static msegmentptr segment_holding(malloc_state * m, char* addr) {
@@ -879,28 +856,8 @@ static msegmentptr segment_holding(malloc_state * m, char* addr) {
   useful in custom actions that try to help diagnose errors.
 */
 
-#if PROCEED_ON_ERROR
-
-/* A count of the number of corruption errors causing resets */
-int malloc_corruption_error_count;
-
-/* default corruption action */
-static void reset_on_error(malloc_state * m);
-
-#define CORRUPTION_ERROR_ACTION(m)  reset_on_error(m)
-#define USAGE_ERROR_ACTION(m, p)
-
-#else /* PROCEED_ON_ERROR */
-
-#ifndef CORRUPTION_ERROR_ACTION
 #define CORRUPTION_ERROR_ACTION(m) GPOS_ABORT
-#endif /* CORRUPTION_ERROR_ACTION */
-
-#ifndef USAGE_ERROR_ACTION
 #define USAGE_ERROR_ACTION(m,p) GPOS_ABORT
-#endif /* USAGE_ERROR_ACTION */
-
-#endif /* PROCEED_ON_ERROR */
 
 /* -------------------------- Debugging setup ---------------------------- */
 
@@ -1110,7 +1067,7 @@ int gpos::CMemoryPoolTracker::init_mstate() {
   if (m_malloc_state.page_size == 0) {
 	m_malloc_state.magic = (size_t) MALLOC_STATE_MAGIC;
     m_malloc_state.page_size = 4096;
-    m_malloc_state.granularity = DEFAULT_GRANULARITY;
+    m_malloc_state.granularity = MIN_GRANULARITY;
 
     /* Sanity-check configuration:
        size_t must be unsigned and as wide as pointer type.
@@ -1325,7 +1282,7 @@ static int bin_find(malloc_state * m, mchunkptr x) {
 /* Traverse each chunk and check it; return total */
 static size_t traverse_and_check(malloc_state * m) {
   size_t sum = 0;
-  if (is_initialized(m)) {
+  if (dlmalloc_is_initialized(m)) {
     msegmentptr s = &m->seg;
     sum += m->topsize + TOP_FOOT_SIZE;
     while (s != 0) {
@@ -1391,7 +1348,7 @@ static void do_check_malloc_state(malloc_state * m) {
 //    size_t fp = 0;
 //    size_t used = 0;
 //    check_malloc_state(m);
-//    if (is_initialized(m)) {
+//    if (dlmalloc_is_initialized(m)) {
 //      msegmentptr s = &m->seg;
 //      maxfp = m->max_footprint;
 //      fp = m->footprint;
@@ -1659,7 +1616,6 @@ static void init_top(malloc_state * m, mchunkptr p, size_t psize) {
   p->head = psize | PINUSE_BIT;
   /* set size of fake trailing chunk holding overhead space only once */
   chunk_plus_offset(p, psize)->head = TOP_FOOT_SIZE;
-  m->trim_check = 0;
 }
 
 /* Initialize bins for a new malloc_state * that is otherwise zeroed out */
@@ -1672,37 +1628,20 @@ static void init_bins(malloc_state * m) {
   }
 }
 
-#if PROCEED_ON_ERROR
-
-/* default corruption action */
-static void reset_on_error(malloc_state * m) {
-  int i;
-  ++malloc_corruption_error_count;
-  /* Reinitialize fields to forget about all memory */
-  m->smallbins = m->treebins = 0;
-  m->dvsize = m->topsize = 0;
-  m->seg.base = 0;
-  m->seg.size = 0;
-  m->seg.next = 0;
-  m->top = m->dv = 0;
-  for (i = 0; i < NTREEBINS; ++i)
-    *treebin_at(m, i) = 0;
-  init_bins(m);
-}
-#endif /* PROCEED_ON_ERROR */
-
 /* Add a segment to hold a new noncontiguous region */
 static void add_segment(malloc_state * m, char* tbase, size_t tsize) {
   /* Determine locations and sizes of segment, fenceposts, old top */
   char* old_top = (char*)m->top;
   /* segment holding the top */
-  msegmentptr oldsp = segment_holding(m, old_top);
+  msegmentptr oldsp = &(m->seg);
+  GPOS_ASSERT(old_top == NULL || oldsp == segment_holding(m, old_top));
   char* old_end = oldsp->base + oldsp->size;
   size_t ssize = pad_request(sizeof(struct malloc_segment));
   char* rawsp = old_end - (ssize + FOUR_SIZE_T_SIZES + CHUNK_ALIGN_MASK);
   size_t offset = align_offset(chunk2mem(rawsp));
   char* asp = rawsp + offset;
-  char* csp = (asp < (old_top + MIN_CHUNK_SIZE))? old_top : asp;
+  /* if old_top is a chunk too small to be used, then discard it */
+  char* csp = (old_top != NULL && asp < (old_top + MIN_CHUNK_SIZE))? old_top : asp;
   mchunkptr sp = (mchunkptr)csp;
   msegmentptr ss = (msegmentptr)(chunk2mem(sp));
   mchunkptr tnext = chunk_plus_offset(sp, ssize);
@@ -1734,7 +1673,7 @@ static void add_segment(malloc_state * m, char* tbase, size_t tsize) {
   GPOS_ASSERT(nfences >= 2);
 
   /* Insert the rest of old top into a bin as an ordinary free chunk */
-  if (csp != old_top) {
+  if (old_top != NULL && csp != old_top) {
     mchunkptr q = (mchunkptr)old_top;
     size_t psize = csp - old_top;
     mchunkptr tn = chunk_plus_offset(q, psize);
@@ -1745,10 +1684,62 @@ static void add_segment(malloc_state * m, char* tbase, size_t tsize) {
   check_top_chunk(m, m->top);
 }
 
+/* Unlink an empty segment from the data structures in preparation to deleting its memory,
+   return whether we were able to unlink the segment
+ */
+static bool unlink_segment(malloc_state * m, msegmentptr s) {
+	GPOS_ASSERT(NULL != s->base);
+	if (!is_segment_empty(s)) {
+		return false;
+	}
+	if (segment_holds(s, m->top)) {
+		/* this segment is the top chunk, set the top chunk to NULL */
+		m->top = NULL;
+		m->topsize = 0;
+	}
+	else if (segment_holds(s, m->dv)) {
+		/* this segment is the designated victim (dv), reset the dv */
+		m->dvsize = 0;
+		m->dv = 0;
+	}
+	else {
+		/* unlink it from the bins, if needed */
+		mchunkptr p = (mchunkptr) s->base;
+		GPOS_ASSERT(chunksize(p) == (s->size - TOP_FOOT_SIZE));
+		unlink_chunk(m, p, chunksize(p));
+	}
+	/* unlink the segment from the list of segments */
+	msegmentptr ls = &(m->seg);
+
+	if (ls == s) {
+		if (s->next != NULL) {
+			/* restore the next segment in the list back into m */
+			*ls = *(s->next);
+		}
+		else {
+			/* we unlinked the last segment, set m->seg back to an empty state */
+			ls->base = NULL;
+			ls->size = 0;
+			ls->next = NULL;
+		}
+	}
+	else {
+		/* we unlinked a segment other than the one in m, unlink it from the list */
+		while (ls != NULL) {
+			if (ls->next == s) {
+				ls->next = s->next;
+				break;
+			}
+		}
+		GPOS_ASSERT(ls != NULL);
+	}
+	return true;
+}
+
 /* -------------------------- System allocation -------------------------- */
 
 /* Get memory from system using MORECORE or MMAP */
-void* gpos::CMemoryPoolTracker::sys_alloc(size_t nb) {
+void* gpos::CMemoryPoolTracker::sys_alloc(malloc_state *m, size_t nb) {
   char* tbase = CMFAIL;
   size_t tsize = 0;
   flag_t mmap_flag = 0;
@@ -1761,12 +1752,16 @@ void* gpos::CMemoryPoolTracker::sys_alloc(size_t nb) {
 
   size_t asize = granularity_align(nb + TOP_FOOT_SIZE + SIZE_T_ONE);
   if (asize < HALF_MAX_SIZE_T) {
-	/* TODO: Call a CMemoryPool method */
-	char* br = (char*) malloc(asize);
+	/* Call the function pointer provided to get memory from a lower layer */
+	char* br = (char*) (*(m->ll_alloc_func))(m->pool, asize);
 	if (br != NULL) {
       tbase = br;
       tsize = asize;
-	}
+      if (m->granularity < MAX_GRANULARITY) {
+        /* as our memory pool grows, increase the size allocated through sys_alloc */
+        m->granularity *= INC_GRANULARITY;
+      }
+    }
   }
 
   if (tbase != NULL) {
@@ -1774,14 +1769,13 @@ void* gpos::CMemoryPoolTracker::sys_alloc(size_t nb) {
     if ((m_malloc_state.footprint += tsize) > m_malloc_state.max_footprint)
       m_malloc_state.max_footprint = m_malloc_state.footprint;
 
-    if (!is_initialized(&m_malloc_state)) { /* first-time initialization */
+    if (!dlmalloc_is_initialized(&m_malloc_state)) { /* first-time initialization */
       m_malloc_state.seg.base = tbase;
       m_malloc_state.seg.size = tsize;
       m_malloc_state.seg.sflags = mmap_flag;
       init_bins(&m_malloc_state);
 	  init_top(&m_malloc_state, (mchunkptr)tbase, tsize - TOP_FOOT_SIZE);
     }
-
     else {
       add_segment(&m_malloc_state, tbase, tsize);
     }
@@ -2041,7 +2035,7 @@ void* gpos::CMemoryPoolTracker::dlmalloc(size_t bytes) {
   do_check_malloc_state(&m_malloc_state);
 #endif
 
-  mem = sys_alloc(nb);
+  mem = sys_alloc(&m_malloc_state, nb);
 
   return mem;
 }
@@ -2132,12 +2126,33 @@ size_t gpos::CMemoryPoolTracker::dlmalloc_max_footprint(void) {
   return m_malloc_state.max_footprint;
 }
 
-void gpos::CMemoryPoolTracker::dlmalloc_delete_all_segments() {
+void gpos::CMemoryPoolTracker::dlmalloc_delete_segments(bool check_free) {
   msegmentptr s = &(m_malloc_state.seg);
   while (s != 0) {
-	void *toDelete = s->base;
-    s = s->next;
-	free(toDelete);
+    /* deferred deletion, since s might be part of the segment to delete */
+    msegmentptr next_segment = s->next;
+    if (NULL != s->base) {
+      if (check_free) {
+        if (!unlink_segment(&m_malloc_state, s)) {
+          /* couldn't unlink the segment, keep it */
+          s = next_segment;
+          continue;
+        }
+        /* this segment contains no allocated memory and can be removed,
+           unlink it from the small or large bins, top chunk and dv
+         */
+      }
+      /* delete the memory of the segment */
+      (*(m_malloc_state.ll_dealloc_func))(this, s->base);
+    }
+    s = next_segment;
+  }
+
+  if (!check_free) {
+    /* we deleted all the segments, set segment pointer to NULL */
+    m_malloc_state.seg.base = NULL;
+    m_malloc_state.seg.size = 0;
+    m_malloc_state.seg.next = NULL;
   }
 }
 

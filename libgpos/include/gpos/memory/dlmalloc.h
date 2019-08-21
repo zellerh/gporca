@@ -48,8 +48,6 @@ struct malloc_segment {
 	flag_t       sflags;           /* mmap and extern flag */
 };
 
-#define is_extern_segment(S)   ((S)->sflags & EXTERN_BIT)
-
 typedef struct malloc_segment  msegment;
 typedef struct malloc_segment* msegmentptr;
 
@@ -67,9 +65,7 @@ typedef struct malloc_tree_chunk* tbinptr; /* The type of bins of trees */
  cached in topsize.  The actual size of topmost space is
  topsize+TOP_FOOT_SIZE, which includes space reserved for adding
  fenceposts and segment records if necessary when getting more
- space from the system.  The size at which to autotrim top is
- cached from mparams in trim_check, except that it is disabled if
- an autotrim fails.
+ space from the system.
 
  Designated victim (dv)
  This is the preferred chunk for servicing small requests that
@@ -128,6 +124,18 @@ typedef struct malloc_tree_chunk* tbinptr; /* The type of bins of trees */
 
  */
 
+/* forward declaration */
+namespace gpos
+{
+  class CMemoryPool;
+}
+
+/* function pointers used to allocate and free larger chunks of memory
+   from the underlying layers
+ */
+typedef void *dlmalloc_ll_alloc_func(gpos::CMemoryPool *, size_t);
+typedef void dlmalloc_ll_dealloc_func(gpos::CMemoryPool *, void *);
+
 struct malloc_state {
 	binmap_t   smallmap;
 	binmap_t   treemap;
@@ -135,10 +143,12 @@ struct malloc_state {
 	size_t     topsize;
 	mchunkptr  dv;
 	mchunkptr  top;
-	size_t     trim_check;
 	size_t     magic;
 	size_t     page_size;
 	size_t     granularity;
+	gpos::CMemoryPool *pool;
+	dlmalloc_ll_alloc_func *ll_alloc_func;
+	dlmalloc_ll_dealloc_func *ll_dealloc_func;
 	mchunkptr  smallbins[(NSMALLBINS+1)*2];
 	tbinptr    treebins[NTREEBINS];
 	size_t     footprint;
@@ -146,6 +156,6 @@ struct malloc_state {
 	msegment   seg;
 };
 
-#define is_initialized(M)  ((M)->top != 0)
+#define dlmalloc_is_initialized(M)  ((M)->top != 0)
 
 #endif /* dlmalloc_h */

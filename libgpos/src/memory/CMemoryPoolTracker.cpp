@@ -71,6 +71,9 @@ CMemoryPoolTracker::CMemoryPoolTracker
 
 	m_allocations_list.Init(GPOS_OFFSET(SAllocHeader, m_link));
 	memset(&m_malloc_state, 0, sizeof(m_malloc_state));
+	m_malloc_state.pool = this;
+	m_malloc_state.ll_alloc_func = AllocFuncForAggregator;
+	m_malloc_state.ll_dealloc_func = DeallocFuncForAggregator;
 }
 
 
@@ -85,6 +88,7 @@ CMemoryPoolTracker::CMemoryPoolTracker
 CMemoryPoolTracker::~CMemoryPoolTracker()
 {
 	GPOS_ASSERT(m_allocations_list.IsEmpty());
+	GPOS_ASSERT(0 == m_malloc_state.seg.size && NULL == m_malloc_state.seg.next);
 }
 
 
@@ -280,6 +284,11 @@ CMemoryPoolTracker::TearDown()
 		Free(user_data);
 	}
 
+	dlmalloc_delete_segments(false);
+	m_malloc_state.seg.base = NULL;
+	m_malloc_state.seg.size = 0;
+	m_malloc_state.seg.next = NULL;
+
 	CMemoryPool::TearDown();
 }
 
@@ -298,7 +307,11 @@ CMemoryPoolTracker::AggregatedNew
 {
 	if (m_aggregate)
 	{
-		return dlmalloc(size);
+		void *ptr_result = dlmalloc(size);
+#ifdef GPOS_DEBUG
+		clib::Memset(ptr_result, GPOS_MEM_INIT_PATTERN_CHAR, size);
+#endif
+		return ptr_result;
 	}
 	else
 	{
@@ -309,6 +322,11 @@ CMemoryPoolTracker::AggregatedNew
 #endif
 					   type);
 	}
+}
+
+void CMemoryPoolTracker::ReleaseUnusedAggregatedMemory()
+{
+	dlmalloc_delete_segments(true);
 }
 
 
