@@ -17,7 +17,7 @@
 #include "gpos/memory/CCacheFactory.h"
 
 #include "gpos/task/CAutoTaskProxy.h"
-
+#include "gpos/task/CAutoTraceFlag.h"
 #include "gpos/test/CUnittest.h"
 
 #include "unittest/gpos/memory/CCacheTest.h"
@@ -529,6 +529,7 @@ CCacheTest::CheckGenerationSanityAfterEviction(CCache<SSimpleObject*, ULONG*>* p
 void
 CCacheTest::TestEvictionForOneCacheSize(ULLONG ullCacheQuota)
 {
+	CAutoTraceFlag NoAggMem(EtraceAggregateMemoryAllocations, false);
 	CAutoP<CCache<SSimpleObject*, ULONG*> > apCache;
 	apCache = CCacheFactory::CreateCache<SSimpleObject*, ULONG*>(false, /* not an unique cache */
 			ullCacheQuota, SSimpleObject::UlMyHash, SSimpleObject::FMyEqual);

@@ -72,6 +72,8 @@ namespace gpos
 		private:
 
 			// common header for each allocation
+			// The order of the struct members matters, be
+			// very cautious when modifying
 			struct AllocHeader
 			{
 				// pointer to pool
