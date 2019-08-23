@@ -57,9 +57,12 @@ CMemoryPoolInjectFault::CMemoryPoolInjectFault
 void *
 CMemoryPoolInjectFault::Allocate
 	(
-	const ULONG num_bytes,
+	const ULONG num_bytes
+#ifdef GPOS_DEBUG
+	,
 	const CHAR *filename,
 	const ULONG line
+#endif
 	)
 {
 #ifdef GPOS_FPSIMULATOR
@@ -71,7 +74,11 @@ CMemoryPoolInjectFault::Allocate
 	}
 #endif
 
-	return GetUnderlyingMemoryPool()->Allocate(num_bytes, filename, line);
+	return GetUnderlyingMemoryPool()->Allocate(num_bytes
+#ifdef GPOS_DEBUG
+											   , filename, line
+#endif
+											  );
 }
 
 

@@ -89,9 +89,12 @@ CMemoryPoolStack::~CMemoryPoolStack()
 void *
 CMemoryPoolStack::Allocate
 	(
-	ULONG bytes,
+	ULONG bytes
+#ifdef GPOS_DEBUG
+	,
 	const CHAR *,  // szFile
 	const ULONG    // line
+#endif
 	)
 {
 	GPOS_ASSERT(GPOS_MEM_ALLOC_MAX >= bytes);
@@ -182,7 +185,13 @@ CMemoryPoolStack::New
 	// allocate memory and put block descriptor to the beginning of it
 	SBlockDescriptor *desc = static_cast<SBlockDescriptor*>
 			(
-			GetUnderlyingMemoryPool()->Allocate(block_size, __FILE__, __LINE__)
+			GetUnderlyingMemoryPool()->Allocate(block_size
+#ifdef GPOS_DEBUG
+												,
+												__FILE__,
+												__LINE__
+#endif
+											   )
 			);
 
 	if (NULL != desc)
