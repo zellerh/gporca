@@ -291,12 +291,12 @@ CMemoryPoolTracker::TearDown()
 void*
 CMemoryPoolTracker::AggregatedNew
 	(
-	 SIZE_T size,
+	 SIZE_T size
 #ifdef GPOS_DEBUG
+	 ,
 	 const CHAR * filename,
-	 ULONG line,
+	 ULONG line
 #endif
-	 EAllocationType type
 	 )
 {
 	if (m_aggregate)
@@ -314,7 +314,34 @@ CMemoryPoolTracker::AggregatedNew
 					   filename,
 					   line,
 #endif
-					   type);
+					   EatSingleton);
+	}
+}
+
+void *
+CMemoryPoolTracker::AggregatedArrayNew
+	(
+	 SIZE_T size,
+#ifdef GPOS_DEBUG
+	 const CHAR * filename,
+	 ULONG line,
+#endif
+	 ULONG num_elements
+	)
+{
+	if (m_aggregate)
+	{
+		return dlmalloc_array(size, num_elements);
+	}
+	else
+	{
+		return NewImpl(size,
+#ifdef GPOS_DEBUG
+					   filename,
+					   line,
+#endif
+					   EatArray
+					  );
 	}
 }
 

@@ -106,15 +106,23 @@ CMemoryPool::FinalizeAlloc
 
 
 ULONG
-CMemoryPool::SizeOfAlloc
+CMemoryPool::NumArrayElementsAllocated
 	(
-	const void *ptr
+	 const void *ptr,
+	 SIZE_T size_of_one_element
 	)
 {
 	GPOS_ASSERT(NULL != ptr);
 
 	const AllocHeader *header = static_cast<const AllocHeader*>(ptr) - 1;
-	return header->m_alloc;
+	if (0 != header->m_zero_marker)
+	{
+		return (ULONG) CMemoryPoolTracker::dlmalloc_num_array_elements(ptr);
+	}
+	else
+	{
+		return header->m_alloc / size_of_one_element;
+	}
 }
 
 
@@ -185,20 +193,40 @@ CMemoryPool::NewImpl
 void*
 CMemoryPool::AggregatedNew
 	(
-	 SIZE_T size,
+	 SIZE_T size
 #ifdef GPOS_DEBUG
+	 ,
 	 const CHAR * filename,
-	 ULONG line,
+	 ULONG line
 #endif
-	 EAllocationType type
-	 )
+	)
 {
 	return NewImpl(size,
 #ifdef GPOS_DEBUG
 				   filename,
 				   line,
 #endif
-				   type);
+				   EatSingleton);
+}
+
+void *
+CMemoryPool::AggregatedArrayNew
+	(
+	 SIZE_T size,
+#ifdef GPOS_DEBUG
+	 const CHAR * filename,
+	 ULONG line,
+#endif
+	 ULONG
+	)
+{
+	return NewImpl(size,
+#ifdef GPOS_DEBUG
+				   filename,
+				   line,
+#endif
+				   EatArray
+				  );
 }
 
 void *CMemoryPool::AllocFuncForAggregator

@@ -395,6 +395,7 @@ DEFAULT_MMAP_THRESHOLD    ---- removed
 #define SIZE_T_ZERO         ((size_t)0)
 #define SIZE_T_ONE          ((size_t)1)
 #define SIZE_T_TWO          ((size_t)2)
+#define SIZE_T_FOUR         ((size_t)4)
 #define TWO_SIZE_T_SIZES    (SIZE_T_SIZE<<1)
 #define FOUR_SIZE_T_SIZES   (SIZE_T_SIZE<<2)
 #define SIX_SIZE_T_SIZES    (FOUR_SIZE_T_SIZES+TWO_SIZE_T_SIZES)
@@ -597,25 +598,30 @@ typedef unsigned long bindex_t;         /* Described below */
 
 #define PINUSE_BIT          (SIZE_T_ONE)
 #define CINUSE_BIT          (SIZE_T_TWO)
+#define ARRAY_BIT           (SIZE_T_FOUR)
 #define INUSE_BITS          (PINUSE_BIT|CINUSE_BIT)
+#define RESERVED_BITS       (INUSE_BITS|ARRAY_BIT)
 
 /* Head value for fenceposts */
-#define FENCEPOST_HEAD      (INUSE_BITS|SIZE_T_SIZE)
+#define FENCEPOST_HEAD      (RESERVED_BITS|SIZE_T_SIZE)
 
 /* extraction of fields from head words */
 #define cinuse(p)           ((p)->head & CINUSE_BIT)
 #define pinuse(p)           ((p)->head & PINUSE_BIT)
-#define chunksize(p)        ((p)->head & ~(INUSE_BITS))
+#define is_array_alloc(p)   ((p)->head & ARRAY_BIT)
+#define chunksize(p)        ((p)->head & ~(RESERVED_BITS))
 
 #define clear_pinuse(p)     ((p)->head &= ~PINUSE_BIT)
 #define clear_cinuse(p)     ((p)->head &= ~CINUSE_BIT)
+
+#define set_is_array_alloc(p) ((p)->head |= ARRAY_BIT)
 
 /* Treat space at ptr +/- offset as a chunk */
 #define chunk_plus_offset(p, s)  ((mchunkptr)(((char*)(p)) + (s)))
 #define chunk_minus_offset(p, s) ((mchunkptr)(((char*)(p)) - (s)))
 
 /* Ptr to next or previous physical malloc_chunk. */
-#define next_chunk(p) ((mchunkptr)( ((char*)(p)) + ((p)->head & ~INUSE_BITS)))
+#define next_chunk(p) ((mchunkptr)( ((char*)(p)) + ((p)->head & ~RESERVED_BITS)))
 #define prev_chunk(p) ((mchunkptr)( ((char*)(p)) - ((p)->prev_foot) ))
 
 /* extract next chunk's pinuse bit */
@@ -2127,6 +2133,38 @@ void gpos::CMemoryPoolTracker::dlfree(void* mem) {
 
   }
 }
+
+void* gpos::CMemoryPoolTracker::dlmalloc_array(size_t bytes, int32_t num_elems) {
+	/* add an integer value to the end and store the number of elements in it */
+	void *result = dlmalloc(bytes + sizeof(int32_t));
+	int32_t *num_elems_in_mem = (int32_t *) (((char *) result)               /* start of memory after chunk header */
+											 + chunksize(mem2chunk(result))  /* end of trailing chunk header */
+											 - TWO_SIZE_T_SIZES              /* beginning of trailing chunk header */
+											 - sizeof(int32_t));             /* the last four bytes of usable memory
+																			    in the chunk */
+
+	*num_elems_in_mem = num_elems;
+	set_is_array_alloc(mem2chunk(result));
+
+	return result;
+}
+
+int gpos::CMemoryPoolTracker::dlmalloc_num_array_elements(const void *mem) {
+	mchunkptr p = mem2chunk(mem);
+
+	if (is_array_alloc(p)) {
+		int32_t *num_elems_in_mem = (int32_t *) (((char *) mem)               /* start of memory after chunk header */
+												 + chunksize(mem2chunk(mem))  /* end of trailing chunk header */
+												 - TWO_SIZE_T_SIZES           /* beginning of trailing chunk header */
+												 - sizeof(int32_t));          /* the last four bytes of usable memory
+																				 in the chunk */
+		GPOS_ASSERT(0 < *num_elems_in_mem);
+		return *num_elems_in_mem;
+	}
+
+	return -1;
+}
+
 
 size_t gpos::CMemoryPoolTracker::dlmalloc_footprint(void) {
   return m_malloc_state.footprint;

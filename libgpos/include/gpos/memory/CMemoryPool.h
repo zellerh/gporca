@@ -215,13 +215,24 @@ namespace gpos
 			virtual
 			void *AggregatedNew
 				(
+				 SIZE_T size
+#ifdef GPOS_DEBUG
+				 ,
+				 const CHAR * filename,
+				 ULONG line
+#endif
+				 );
+
+			virtual
+			void *AggregatedArrayNew
+				(
 				 SIZE_T size,
 #ifdef GPOS_DEBUG
 				 const CHAR * filename,
 				 ULONG line,
 #endif
-				 EAllocationType type
-				 );
+				 ULONG num_elements
+				);
 
 			static
 			void *AllocFuncForAggregator
@@ -252,13 +263,14 @@ namespace gpos
 #endif
 				)
 			{
-				T *array = static_cast<T*>(NewImpl(
-												   sizeof(T) * num_elements,
+				T *array = static_cast<T*>(AggregatedArrayNew(
+															  sizeof(T) * num_elements,
 #ifdef GPOS_DEBUG
-												   filename,
-												   line,
+															  filename,
+															  line,
 #endif
-												   EatArray));
+															  num_elements)
+															 );
 				for (SIZE_T idx = 0; idx < num_elements; ++idx) {
 					try {
 						new(array + idx) T();
@@ -316,10 +328,10 @@ namespace gpos
 				return 0;
 			}
 
-			// determine the size (in bytes) of an allocation that
+			// determine the number of array elements of an array allocation that
 			// was made from a CMemoryPool
 			static
-			ULONG SizeOfAlloc(const void *ptr);
+			ULONG NumArrayElementsAllocated(const void *ptr, SIZE_T size_of_one_element);
 
 #ifdef GPOS_DEBUG
 
@@ -418,7 +430,7 @@ namespace gpos
 
 				// Invoke destructor on each array element in reverse
 				// order from construction.
-				const SIZE_T  num_elements = CMemoryPool::SizeOfAlloc(object_array) / sizeof(T);
+				const SIZE_T  num_elements = CMemoryPool::NumArrayElementsAllocated(object_array, sizeof(T));
 				for (SIZE_T idx = num_elements - 1; idx < num_elements; --idx) {
 					object_array[idx].~T();
 				}
@@ -458,12 +470,13 @@ inline void *operator new
 #endif
 	)
 {
-	return mp->AggregatedNew(size,
+	return mp->AggregatedNew(size
 #ifdef GPOS_DEBUG
+							 ,
 							 filename,
-							 line,
+							 line
 #endif
-							 gpos::CMemoryPool::EatSingleton);
+							);
 }
 
 // Corresponding placement variant of delete operator. Note that, for delete

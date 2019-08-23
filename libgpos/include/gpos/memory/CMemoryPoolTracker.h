@@ -90,6 +90,7 @@ namespace gpos
 			struct malloc_state m_malloc_state;
 
 			void* dlmalloc(size_t bytes);
+			void* dlmalloc_array(size_t bytes, int32_t num_elems);
 			int init_mstate();
 			void dlmalloc_delete_segments(bool check_free);
 			void* sys_alloc(malloc_state *m, size_t nb);
@@ -145,18 +146,31 @@ namespace gpos
 			virtual
 			void *AggregatedNew
 				(
+				 SIZE_T size
+#ifdef GPOS_DEBUG
+				 ,
+				 const CHAR * filename,
+				 ULONG line
+#endif
+				 );
+
+			virtual
+			void *AggregatedArrayNew
+				(
 				 SIZE_T size,
 #ifdef GPOS_DEBUG
 				 const CHAR * filename,
 				 ULONG line,
 #endif
-				 EAllocationType type
-				 );
+				 ULONG num_elements
+				);
 
 			virtual
 			void ReleaseUnusedAggregatedMemory();
 
 			static void dlfree(void* mem);
+
+			static int dlmalloc_num_array_elements(const void *mem);
 
 			// check if the pool stores a pointer to itself at the end of
 			// the header of each allocated object;
