@@ -21,6 +21,7 @@
 #include "gpos/utils.h"
 #include "gpos/memory/CAutoMemoryPool.h"
 #include "gpos/memory/CMemoryPoolManager.h"
+#include "gpos/memory/CMemoryPoolTracker.h"
 #include "gpos/error/CErrorContext.h"
 #include "gpos/error/CErrorHandler.h"
 #include "gpos/task/ITask.h"
@@ -106,6 +107,7 @@ CAutoMemoryPool::~CAutoMemoryPool()
 			gpos::IOstream &os = gpos::oswcerr;
 
 			// check for leaks, use this to trigger standard Assert handling
+			m_mp->ReleaseUnusedAggregatedMemory();
 			m_mp->AssertEmpty(os);
 		}
 

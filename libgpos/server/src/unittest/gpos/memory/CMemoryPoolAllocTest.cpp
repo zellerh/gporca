@@ -109,7 +109,11 @@ CMemoryPoolAllocTest::EresUnittest_AllocFree() {
   CMemoryPoolAlloc customAlloc(CCustomAllocator::fnAlloc, CCustomAllocator::fnFree);
 
   SIZE_T ulTotalMemoryAllocated = CCustomAllocator::UlGetTotalMemoryAllocation();
-  void * pMem = customAlloc.Allocate(100, __FILE__, __LINE__);
+  void * pMem = customAlloc.Allocate(100
+#ifdef GPOS_DEBUG
+									 , __FILE__, __LINE__
+#endif
+									);
   GPOS_RTL_ASSERT
     (
       (ulTotalMemoryAllocated + 100) ==
