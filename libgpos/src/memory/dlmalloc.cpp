@@ -853,7 +853,7 @@ static msegmentptr segment_holding(malloc_state * m, char* addr) {
 
 /* -------------------------- Debugging setup ---------------------------- */
 
-#ifndef DLMALLOC_DEBUG
+#ifndef GPOS_DEBUG
 
 #define check_free_chunk(M,P)
 #define check_inuse_chunk(M,P)
@@ -861,7 +861,7 @@ static msegmentptr segment_holding(malloc_state * m, char* addr) {
 #define check_malloc_state(M)
 #define check_top_chunk(M,P)
 
-#else /* DLMALLOC_DEBUG */
+#else /* GPOS_DEBUG */
 #define check_free_chunk(M,P)       do_check_free_chunk(M,P)
 #define check_inuse_chunk(M,P)      do_check_inuse_chunk(M,P)
 #define check_top_chunk(M,P)        do_check_top_chunk(M,P)
@@ -879,7 +879,7 @@ static void   do_check_smallbin(malloc_state * m, bindex_t i);
 static void   do_check_malloc_state(malloc_state * m);
 static int    bin_find(malloc_state * m, mchunkptr x);
 static size_t traverse_and_check(malloc_state * m);
-#endif /* DLMALLOC_DEBUG */
+#endif /* GPOS_DEBUG */
 
 /* ---------------------------- Indexing Bins ---------------------------- */
 
@@ -1079,7 +1079,7 @@ int gpos::CMemoryPoolTracker::init_mstate() {
   return 0;
 }
 
-#ifdef DLMALLOC_DEBUG
+#ifdef GPOS_DEBUG
 /* ------------------------- Debugging Support --------------------------- */
 
 /* Check properties of any chunk, whether free, inuse etc  */
@@ -1329,7 +1329,14 @@ static void do_check_malloc_state(malloc_state * m) {
   GPOS_ASSERT(total <= m->footprint);
   GPOS_ASSERT(m->footprint <= m->max_footprint);
 }
-#endif /* DLMALLOC_DEBUG */
+
+void
+CMemoryPoolTracker::checkConsistency()
+{
+	do_check_malloc_state(&m_malloc_state);
+}
+
+#endif /* GPOS_DEBUG */
 
 ///* ----------------------------- statistics ------------------------------ */
 //
@@ -2026,7 +2033,7 @@ void* gpos::CMemoryPoolTracker::dlmalloc(size_t bytes) {
     return mem;
   }
 
-#ifdef DLMALLOC_DEBUG
+#ifdef GPOS_DEBUG
   do_check_malloc_state(&m_malloc_state);
 #endif
 

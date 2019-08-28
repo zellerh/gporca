@@ -31,6 +31,8 @@ namespace gpos
 	// memory pool with statistics and debugging support
 	class CMemoryPoolTracker : public CMemoryPool
 	{
+		friend class CMemoryPoolTrackerTest;
+
 		private:
 
 			//---------------------------------------------------------------------------
@@ -222,6 +224,9 @@ namespace gpos
 			// return the current statistics
 			virtual
 			void UpdateStatistics(CMemoryPoolStatistics &memory_pool_statistics);
+
+			void
+			checkConsistency();
 
 #endif // GPOS_DEBUG
 

@@ -53,6 +53,7 @@
 #include "unittest/gpos/io/CFileTest.h"
 
 #include "unittest/gpos/memory/CMemoryPoolAllocTest.h"
+#include "unittest/gpos/memory/CMemoryPoolTrackerTest.h"
 #include "unittest/gpos/memory/CMemoryPoolBasicTest.h"
 #include "unittest/gpos/memory/CCacheTest.h"
 
@@ -108,6 +109,7 @@ static gpos::CUnittest rgut[] =
 	GPOS_UNITTEST_STD(CMemoryPoolBasicTest),
 	GPOS_UNITTEST_STD(CCacheTest),
 	GPOS_UNITTEST_STD(CMemoryPoolAllocTest),
+	GPOS_UNITTEST_STD(CMemoryPoolTrackerTest),
 
 	// string
 	GPOS_UNITTEST_STD(CWStringTest),

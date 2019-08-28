@@ -96,6 +96,7 @@ add_gpos_test(CFileTest)
 # memory
 add_gpos_test(CMemoryPoolTest)
 add_gpos_test(CMemoryPoolBasicTest)
+add_gpos_test(CMemoryPoolTrackerTest)
 add_gpos_test(CCacheTest)
 
 # custom allocator
