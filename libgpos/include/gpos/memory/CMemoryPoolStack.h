@@ -135,9 +135,12 @@ namespace gpos
 			virtual
 			void *Allocate
 				(
-				const ULONG bytes,
+				const ULONG bytes
+#ifdef GPOS_DEBUG
+				,
 				const CHAR *file,
 				const ULONG line
+#endif
 				);
 
 			// free memory - memory is released when the memory pool is torn down

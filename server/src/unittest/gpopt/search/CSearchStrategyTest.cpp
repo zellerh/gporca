@@ -48,12 +48,7 @@ CSearchStrategyTest::EresUnittest()
 			gpopt::ExmaGPOPT,
 			gpopt::ExmiNoPlanFound
 			),
-		GPOS_UNITTEST_FUNC_THROW
-			(
-			CSearchStrategyTest::EresUnittest_ParsingWithException,
-			gpdxl::ExmaDXL,
-			gpdxl::ExmiDXLXercesParseError
-			),
+		GPOS_UNITTEST_FUNC(CSearchStrategyTest::EresUnittest_ParsingWithException),
 		};
 
 	return CUnittest::EresExecute(rgut, GPOS_ARRAY_SIZE(rgut));

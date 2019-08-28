@@ -25,6 +25,8 @@
 #include "gpos/memory/CMemoryPoolManager.h"
 #include "gpos/memory/CMemoryPoolTracker.h"
 #include "gpos/memory/IMemoryVisitor.h"
+#include "gpos/memory/dlmalloc.h"
+#include "gpos/task/traceflags.h"
 
 using namespace gpos;
 
@@ -55,11 +57,21 @@ CMemoryPoolTracker::CMemoryPoolTracker
 	CMemoryPool(underlying_memory_pool, owns_underlying_memory_pool, thread_safe),
 	m_alloc_sequence(0),
 	m_capacity(max_size),
-	m_reserved(0)
+	m_reserved(0),
+	m_aggregate(false)
 {
 	GPOS_ASSERT(NULL != underlying_memory_pool);
 
+	if (ITask::Self())
+	{
+		m_aggregate = !GPOS_FTRACE(EtraceDisableAggregateMemoryAllocations);
+	}
+
 	m_allocations_list.Init(GPOS_OFFSET(SAllocHeader, m_link));
+	memset(&m_malloc_state, 0, sizeof(m_malloc_state));
+	m_malloc_state.pool = this;
+	m_malloc_state.ll_alloc_func = AllocFuncForAggregator;
+	m_malloc_state.ll_dealloc_func = DeallocFuncForAggregator;
 }
 
 
@@ -74,6 +86,7 @@ CMemoryPoolTracker::CMemoryPoolTracker
 CMemoryPoolTracker::~CMemoryPoolTracker()
 {
 	GPOS_ASSERT(m_allocations_list.IsEmpty());
+	GPOS_ASSERT(0 == m_malloc_state.seg.size && NULL == m_malloc_state.seg.next);
 }
 
 
@@ -88,9 +101,12 @@ CMemoryPoolTracker::~CMemoryPoolTracker()
 void *
 CMemoryPoolTracker::Allocate
 	(
-	const ULONG bytes,
+	const ULONG bytes
+#ifdef GPOS_DEBUG
+	,
 	const CHAR *file,
 	const ULONG line
+#endif
 	)
 {
 	GPOS_ASSERT(GPOS_MEM_ALLOC_MAX >= bytes);
@@ -102,7 +118,11 @@ CMemoryPoolTracker::Allocate
 	void *ptr;
 	if (mem_available)
 	{
-		ptr = GetUnderlyingMemoryPool()->Allocate(alloc, file, line);
+		ptr = GetUnderlyingMemoryPool()->Allocate(alloc
+#ifdef GPOS_DEBUG
+												  , file, line
+#endif
+												 );
 	}
 	else
 	{
@@ -125,8 +145,13 @@ CMemoryPoolTracker::Allocate
 	header->m_serial = m_alloc_sequence;
 	++m_alloc_sequence;
 
+#ifdef GPOS_DEBUG
 	header->m_filename = file;
 	header->m_line = line;
+#else
+	header->m_filename = "";
+	header->m_line = 0;
+#endif
 	header->m_size = bytes;
 
 	void *ptr_result = header + 1;
@@ -218,7 +243,7 @@ CMemoryPoolTracker::Free
 
 #ifdef GPOS_DEBUG
 	// mark user memory as unused in debug mode
-	clib::Memset(ptr, GPOS_MEM_INIT_PATTERN_CHAR, user_size);
+	clib::Memset(ptr, GPOS_MEM_FREED_PATTERN_CHAR, user_size);
 #endif // GPOS_DEBUG
 
 	ULONG total_size = GPOS_MEM_BYTES_TOTAL(user_size);
@@ -250,6 +275,7 @@ CMemoryPoolTracker::Free
 void
 CMemoryPoolTracker::TearDown()
 {
+	dlmalloc_delete_segments(false);
 	while (!m_allocations_list.IsEmpty())
 	{
 		SAllocHeader *header = m_allocations_list.First();
@@ -258,6 +284,68 @@ CMemoryPoolTracker::TearDown()
 	}
 
 	CMemoryPool::TearDown();
+}
+
+void*
+CMemoryPoolTracker::AggregatedNew
+	(
+	 SIZE_T size
+#ifdef GPOS_DEBUG
+	 ,
+	 const CHAR * filename,
+	 ULONG line
+#endif
+	 )
+{
+	if (m_aggregate)
+	{
+		void *ptr_result = dlmalloc(size);
+#ifdef GPOS_DEBUG
+		clib::Memset(ptr_result, GPOS_MEM_INIT_PATTERN_CHAR, size);
+#endif
+		return ptr_result;
+	}
+	else
+	{
+		return NewImpl(size,
+#ifdef GPOS_DEBUG
+					   filename,
+					   line,
+#endif
+					   EatSingleton);
+	}
+}
+
+void *
+CMemoryPoolTracker::AggregatedArrayNew
+	(
+	 SIZE_T size,
+#ifdef GPOS_DEBUG
+	 const CHAR * filename,
+	 ULONG line,
+#endif
+	 ULONG num_elements
+	)
+{
+	if (m_aggregate)
+	{
+		return dlmalloc_array(size, num_elements);
+	}
+	else
+	{
+		return NewImpl(size,
+#ifdef GPOS_DEBUG
+					   filename,
+					   line,
+#endif
+					   EatArray
+					  );
+	}
+}
+
+void CMemoryPoolTracker::ReleaseUnusedAggregatedMemory()
+{
+	dlmalloc_delete_segments(true);
 }
 
 

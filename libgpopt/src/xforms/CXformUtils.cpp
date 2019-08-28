@@ -131,8 +131,7 @@ CXformUtils::ExfpExpandJoinOrder
 		// if handle is attached to a group expression, transformation is applied
 		// to the Memo and we need to check if stats are derivable on child groups
 		CGroup *pgroup = exprhdl.Pgexpr()->Pgroup();
-		CAutoMemoryPool amp;
-		CMemoryPool *mp = amp.Pmp();
+		CMemoryPool *mp = CTask::Self()->Pmp();
 		if (!pgroup->FStatsDerivable(mp))
 		{
 			// stats must be derivable before applying xforms
