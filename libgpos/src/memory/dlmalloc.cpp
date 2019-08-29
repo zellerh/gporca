@@ -171,7 +171,7 @@ Be careful in setting #define values for numerical constants of type
 size_t. On some systems, literal values are not automatically extended
 to size_t precision unless they are explicitly casted.
 
-WIN32                    ---- code has been removed, now 32 bit support
+WIN32                    ---- code has been removed, no 32 bit support
 
 MALLOC_ALIGNMENT         default: (size_t)8
   Controls the minimum alignment for malloc'ed chunks.  It must be a
@@ -186,10 +186,10 @@ ONLY_MSPACES             ---- code has been removed, no support for mspace_mallo
 
 USE_LOCKS                ---- code has been removed, no multi-threading support
 
-FOOTERS                  ---- code has been removed, we always must use FOOTERS
+FOOTERS                  ---- we always must use FOOTERS
 
 INSECURE                 ---- code has been partially removed,
-                              use DLMALLOC_DEBUG for partial check
+                              use GPOS_DEBUG for partial check
 
 USE_DL_PREFIX            default: NOT defined
   Causes compiler to prefix all public routines with the string 'dl'.
