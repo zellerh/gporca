@@ -78,36 +78,40 @@ CMemoryPoolManager::CMemoryPoolManager
 GPOS_RESULT
 CMemoryPoolManager::Init
 	(
-		void* (*alloc) (SIZE_T) __attribute__ ((unused)),
-		void (*free_func) (void*) __attribute__ ((unused))
+		CMemoryPoolManager *manager
 	)
 {
 	GPOS_ASSERT(NULL == CMemoryPoolManager::m_memory_pool_mgr);
 
-	// raw allocation of memory for internal memory pools
-	void *alloc_internal = Malloc(sizeof(CMemoryPoolTracker));
-
-	// create internal memory pool
-	CMemoryPool *internal = new(alloc_internal) CMemoryPoolTracker();
-
-	// instantiate manager
-	GPOS_TRY
+	if (manager != NULL)
+		CMemoryPoolManager::m_memory_pool_mgr = manager;
+	else
 	{
-		CMemoryPoolManager::m_memory_pool_mgr = GPOS_NEW(internal) CMemoryPoolManager
-				(
-				internal
-				);
-	}
-	GPOS_CATCH_EX(ex)
-	{
-		if (GPOS_MATCH_EX(ex, CException::ExmaSystem, CException::ExmiOOM))
+		// raw allocation of memory for internal memory pools
+		void *alloc_internal = Malloc(sizeof(CMemoryPoolTracker));
+
+		// create internal memory pool
+		CMemoryPool *internal = new(alloc_internal) CMemoryPoolTracker();
+
+		// instantiate manager
+		GPOS_TRY
 		{
-			Free(alloc_internal);
-
-			return GPOS_OOM;
+			CMemoryPoolManager::m_memory_pool_mgr = GPOS_NEW(internal) CMemoryPoolManager
+					(
+					internal
+					);
 		}
+		GPOS_CATCH_EX(ex)
+		{
+			if (GPOS_MATCH_EX(ex, CException::ExmaSystem, CException::ExmiOOM))
+			{
+				Free(alloc_internal);
+
+				return GPOS_OOM;
+			}
+		}
+		GPOS_CATCH_END;
 	}
-	GPOS_CATCH_END;
 
 	return GPOS_OK;
 }

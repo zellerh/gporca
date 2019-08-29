@@ -35,7 +35,7 @@ namespace gpos
 	//
 	//---------------------------------------------------------------------------
 	class CMemoryPoolManager
-	{	
+	{
 		public:
 
 			// different types of pools
@@ -44,6 +44,17 @@ namespace gpos
 				EatTracker,
 				EatStack
 			};
+
+		protected:
+
+			// private ctor
+			CMemoryPoolManager()
+			{
+			}
+
+			// memory pool in which all objects created using global new operator
+			// are allocated
+			CMemoryPool *m_global_memory_pool;
 
 		private:
 
@@ -59,10 +70,6 @@ namespace gpos
 			// memory pool in which all objects created by the manager itself
 			// are allocated - must be thread-safe
 			CMemoryPool *m_internal_memory_pool;
-
-			// memory pool in which all objects created using global new operator
-			// are allocated
-			CMemoryPool *m_global_memory_pool;
 
 			// are allocations using global new operator allowed?
 			BOOL m_allow_global_new;
@@ -95,14 +102,14 @@ namespace gpos
 		public:
 
 			// create new memory pool
-			CMemoryPool *Create
+			virtual CMemoryPool *Create
 				(
 				CMemoryPoolManager::AllocType alloc_type
 				);
-				
+
 			// release memory pool
-			void Destroy(CMemoryPool *);
-			
+			virtual void Destroy(CMemoryPool *);
+
 #ifdef GPOS_DEBUG
 			// print internal contents of allocated memory pools
 			IOstream &OsPrint(IOstream &os);
@@ -112,10 +119,10 @@ namespace gpos
 #endif // GPOS_DEBUG
 
 			// delete memory pools and release manager
-			void Shutdown();
+			virtual void Shutdown();
 
 			// accessor of memory pool used in global new allocations
-			CMemoryPool *GetGlobalMemoryPool()
+			virtual CMemoryPool *GetGlobalMemoryPool()
 			{
 				return m_global_memory_pool;
 			}
@@ -139,11 +146,11 @@ namespace gpos
 			}
 
 			// return total allocated size in bytes
-			ULLONG TotalAllocatedSize();
+			virtual ULLONG TotalAllocatedSize();
 
 			// initialize global instance
 			static
-			GPOS_RESULT Init(void* (*) (SIZE_T), void (*) (void*));
+			GPOS_RESULT Init(CMemoryPoolManager *manager);
 
 			// global accessor
 			static
