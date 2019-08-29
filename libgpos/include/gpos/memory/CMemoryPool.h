@@ -105,7 +105,12 @@ namespace gpos
 				EatArray = 0x7e
 			};
 
-			// prepare the memory pool to be deleted
+			// dtor
+			virtual
+			~CMemoryPool()
+			{}
+
+		// prepare the memory pool to be deleted
 			virtual void TearDown() = 0;
 
 			// hash key accessor
