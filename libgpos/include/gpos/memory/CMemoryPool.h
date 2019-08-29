@@ -41,6 +41,7 @@ GPOS_CPL_ASSERT(GPOS_MEM_ALIGNED_STRUCT_SIZE(gpos::CHAR) == GPOS_MEM_ARCH);
 GPOS_CPL_ASSERT(GPOS_MEM_ALIGNED_STRUCT_SIZE(gpos::ULONG) == GPOS_MEM_ARCH);
 
 // static pattern to init memory
+// NOTE: When changing this, also change GPOS_WIPED_MEMORY_PATTERN in file CRefCount.h
 #define GPOS_MEM_INIT_PATTERN_CHAR	(0xCC)
 #define GPOS_MEM_FREED_PATTERN_CHAR	(0xCD)
 
@@ -79,9 +80,6 @@ namespace gpos
 				// pointer to pool
 				CMemoryPool *m_mp;
 
-				// Marker, used to distinguish aggregating allocations
-				// (non-zero marker value) from regular memory pool allocations
-				// with a zero marker.
 				// When we deallocate memory, we'll have to find out whether it
 				// was allocated using CMemoryPoolTracker::dlmalloc() or
 				// using CMemoryPool::NewImpl(). In the dlmalloc() case, the 16 bytes
@@ -199,7 +197,7 @@ namespace gpos
 				(
 				void *ptr,
 				EAllocationType eat
-				 );
+				);
 
 			// implementation of placement new with memory pool
 			// allocates memory using legacy method and if too large

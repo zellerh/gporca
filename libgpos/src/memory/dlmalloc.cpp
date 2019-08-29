@@ -171,7 +171,7 @@ Be careful in setting #define values for numerical constants of type
 size_t. On some systems, literal values are not automatically extended
 to size_t precision unless they are explicitly casted.
 
-WIN32                    ---- code has been removed
+WIN32                    ---- code has been removed, now 32 bit support
 
 MALLOC_ALIGNMENT         default: (size_t)8
   Controls the minimum alignment for malloc'ed chunks.  It must be a
@@ -180,13 +180,13 @@ MALLOC_ALIGNMENT         default: (size_t)8
   though. Note however that code and data structures are optimized for
   the case of 8-byte alignment.
 
-MSPACES                  ---- code has been removed
+MSPACES                  ---- code has been removed, no support for mspace_malloc
 
-ONLY_MSPACES             ---- code has been removed
+ONLY_MSPACES             ---- code has been removed, no support for mspace_malloc
 
-USE_LOCKS                ---- code has been removed
+USE_LOCKS                ---- code has been removed, no multi-threading support
 
-FOOTERS                  ---- code has been removed, always set
+FOOTERS                  ---- code has been removed, we always must use FOOTERS
 
 INSECURE                 ---- code has been partially removed,
                               use DLMALLOC_DEBUG for partial check
@@ -196,7 +196,7 @@ USE_DL_PREFIX            default: NOT defined
   This can be useful when you only want to use this malloc in one part
   of a program, using your regular system malloc elsewhere.
 
-ABORT                    ---- code has been removed, use GPOS_ABORT
+ABORT                    ---- code has been removed, use GPOS_ABORT instead
 
 PROCEED_ON_ERROR           default: defined as 0 (false)
   Controls whether detected bad addresses cause them to bypassed
@@ -227,11 +227,11 @@ ABORT_ON_ASSERT_FAILURE   default: defined as 1 (true)
   ABORT_ON_ASSERT_FAILURE cause assertions failures to call abort(),
   which will usually make debugging easier.
 
-MALLOC_FAILURE_ACTION     ---- code removed
-HAVE_MORECORE             ---- code removed
+MALLOC_FAILURE_ACTION     ---- code has been removed, return NULL
+HAVE_MORECORE             ---- code has been removed, don't have MORECORE
 MORECORE                  ---- replaced with malloc or lower-layer call
 
-MORECORE_CONTIGUOUS       ---- code removed, always 0
+MORECORE_CONTIGUOUS       ---- code has been removed, always 0
   If true, take advantage of fact that consecutive calls to MORECORE
   with positive arguments always return contiguous increasing
   addresses.  This is true of unix sbrk. It does not hurt too much to
@@ -239,19 +239,19 @@ MORECORE_CONTIGUOUS       ---- code removed, always 0
   Setting it false when definitely non-contiguous saves time
   and possibly wasted space it would take to discover this though.
 
-MORECORE_CANNOT_TRIM      ---- code removed, trim is not allowed
+MORECORE_CANNOT_TRIM      ---- code has been removed, trim is not allowed
   True if MORECORE cannot release space back to the system when given
   negative arguments. This is generally necessary only if you are
   using a hand-crafted MORECORE function that cannot handle negative
   arguments.
 
-HAVE_MMAP                 ---- code removed
+HAVE_MMAP                 ---- code has been removed, no mmap support
 
 HAVE_MREMAP               default: 1 on linux, else 0
   If true realloc() uses mremap() to re-allocate large blocks and
   extend or shrink allocation spaces.
 
-MMAP_CLEARS               ---- code removed
+MMAP_CLEARS               ---- code has been removed, no mmap support
   True if mmap clears memory so calloc doesn't need to. This is true
   for standard unix mmap using /dev/zero.
 
@@ -263,18 +263,13 @@ USE_BUILTIN_FFS            default: 0 (i.e., not used)
   this setting has no effect. (On most x86s, the asm version is only
   slightly faster than the C version.)
 
-malloc_getpagesize         default: derive from system includes, or 4096.
-  The system page size. To the extent possible, this malloc manages
-  memory from the system in page-size units.  This may be (and
-  usually is) a function rather than a constant. This is ignored
-  if WIN32, where page size is determined using getSystemInfo during
-  initialization.
+malloc_getpagesize         ---- code has been removed, hard-coded to 4096
 
-USE_DEV_RANDOM             ---- removed
+USE_DEV_RANDOM             ---- code has been removed, hard-coded single magic field
 
-NO_MALLINFO                ---- removed, no mallinfo
+NO_MALLINFO                ---- code has been removed, no mallinfo
 
-MALLINFO_FIELD_TYPE        ---- removed
+MALLINFO_FIELD_TYPE        ---- code has been removed, no mallinfo
   The type of the fields in the mallinfo struct. This was originally
   defined as "int" in SVID etc, but is more usefully defined as
   size_t. The value is used only if  HAVE_USR_INCLUDE_MALLOC_H is not set
@@ -298,9 +293,9 @@ DEFAULT_GRANULARITY        ---- replaced with MIN_GRANULARITY,
   We start with a relatively small size and then increase it exponentially
   to be able to handle larger memories without too much fragmentation.
 
-DEFAULT_TRIM_THRESHOLD    ---- removed
+DEFAULT_TRIM_THRESHOLD    ---- code has been removed, no trim
 
-DEFAULT_MMAP_THRESHOLD    ---- removed
+DEFAULT_MMAP_THRESHOLD    ---- code has been removed, no trim
 
 */
 
@@ -1366,39 +1361,6 @@ static void do_check_malloc_state(malloc_state * m) {
   GPOS_ASSERT(m->footprint <= m->max_footprint);
 }
 #endif /* DLMALLOC_DEBUG */
-
-///* ----------------------------- statistics ------------------------------ */
-//
-//static void internal_malloc_stats(malloc_state * m) {
-//  if (!PREACTION(m)) {
-//    size_t maxfp = 0;
-//    size_t fp = 0;
-//    size_t used = 0;
-//    check_malloc_state(m);
-//    if (dlmalloc_is_initialized(m)) {
-//      msegmentptr s = &m->seg;
-//      maxfp = m->max_footprint;
-//      fp = m->footprint;
-//      used = fp - (m->topsize + TOP_FOOT_SIZE);
-//
-//      while (s != 0) {
-//        mchunkptr q = align_as_chunk(s->base);
-//        while (segment_holds(s, q) &&
-//               q != m->top && q->head != FENCEPOST_HEAD) {
-//          if (!cinuse(q))
-//            used -= chunksize(q);
-//          q = next_chunk(q);
-//        }
-//        s = s->next;
-//      }
-//    }
-//
-//    fprintf(stderr, "max system bytes = %10lu\n", (unsigned long)(maxfp));
-//    fprintf(stderr, "system bytes     = %10lu\n", (unsigned long)(fp));
-//    fprintf(stderr, "in use bytes     = %10lu\n", (unsigned long)(used));
-//
-//  }
-//}
 
 /* ----------------------- Operations on smallbins ----------------------- */
 
