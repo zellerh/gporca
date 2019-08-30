@@ -795,7 +795,7 @@ CLogical::PpcDeriveConstraintFromTable
 		GPOS_ASSERT(CUtils::FPredicate(pexprCheckConstraint));
 
 		CColRefSetArray *pdrgpcrsChild = NULL;
-		CConstraint *pcnstr = CConstraint::PcnstrFromScalarExpr(mp, pexprCheckConstraint, &pdrgpcrsChild);
+		CConstraint *pcnstr = CConstraint::PcnstrFromScalarExpr(mp, pexprCheckConstraint, &pdrgpcrsChild, true);
 		if (NULL != pcnstr)
 		{
 			pdrgpcnstr->Append(pcnstr);

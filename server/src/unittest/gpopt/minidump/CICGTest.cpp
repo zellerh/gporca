@@ -49,6 +49,8 @@ const CHAR *rgszFileNames[] =
 		"../data/dxl/minidump/3WayJoinOnMultiDistributionColumnsTablesNoMotion.mdp",
 		"../data/dxl/minidump/4WayJoinInferredPredsRemovedWith2Motion.mdp",
 		"../data/dxl/minidump/NoRedistributeOnAppend.mdp",
+		"../data/dxl/minidump/ConstraintIntervalIncludesNull.mdp",
+		"../data/dxl/minidump/ConstraintIntervalNotIncludesNull.mdp",
 
 #ifndef GPOS_DEBUG
 		// TODO:  - Jul 14 2015; disabling it for debug build to reduce testing time

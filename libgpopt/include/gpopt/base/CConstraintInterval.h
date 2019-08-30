@@ -104,7 +104,8 @@ namespace gpopt
 									(
 									CMemoryPool *mp,
 									CExpression *pexpr,
-									CColRef *colref
+									CColRef *colref,
+									BOOL in_constraint = false
 									);
 
 			static
@@ -276,7 +277,8 @@ namespace gpopt
 				CMemoryPool *mp,
 				CColRef *colref,
 				IMDType::ECmpType cmp_type,
-				CScalarConst *popScConst
+				CScalarConst *popScConst,
+				BOOL in_constraint = false
 				);
 
 			// create interval from scalar expression
@@ -285,7 +287,8 @@ namespace gpopt
 				(
 				CMemoryPool *mp,
 				CExpression *pexpr,
-				CColRef *colref
+				CColRef *colref,
+				BOOL in_constraint = false
 				);
 
 			// create interval from any general constraint that references

@@ -131,7 +131,8 @@ CConstraintInterval::PciIntervalFromScalarExpr
 	(
 	CMemoryPool *mp,
 	CExpression *pexpr,
-	CColRef *colref
+	CColRef *colref,
+	BOOL in_constraint
 	)
 {
 
@@ -153,7 +154,7 @@ CConstraintInterval::PciIntervalFromScalarExpr
 			pci =  PciIntervalFromScalarBoolOp(mp, pexpr, colref);
 			break;
 		case COperator::EopScalarCmp:
-			pci =  PciIntervalFromScalarCmp(mp, pexpr, colref);
+			pci =  PciIntervalFromScalarCmp(mp, pexpr, colref, in_constraint);
 			break;
 		case COperator::EopScalarIsDistinctFrom:
 			pci = PciIntervalFromScalarIDF(mp, pexpr, colref);
@@ -390,14 +391,16 @@ CConstraintInterval::PciIntervalFromColConstCmp
 	CMemoryPool *mp,
 	CColRef *colref,
 	IMDType::ECmpType cmp_type,
-	CScalarConst *popScConst
+	CScalarConst *popScConst,
+	BOOL in_constraint
 	)
 {
 	CConstraintInterval *pcri = NULL;
 	CRangeArray *pdrngprng = PciRangeFromColConstCmp(mp, cmp_type, popScConst);
 	if (NULL != pdrngprng)
 	{
-		pcri = GPOS_NEW(mp) CConstraintInterval(mp, colref, pdrngprng, false /*fIncludesNull*/);
+		// if we are in a constraint, a NULL value of the column satisfies the constraint
+		pcri = GPOS_NEW(mp) CConstraintInterval(mp, colref, pdrngprng, in_constraint /*fIncludesNull*/);
 	}
 	return pcri;
 
@@ -417,7 +420,8 @@ CConstraintInterval::PciIntervalFromScalarCmp
 	(
 	CMemoryPool *mp,
 	CExpression *pexpr,
-	CColRef *colref
+	CColRef *colref,
+	BOOL in_constraint
 	)
 {
 	GPOS_ASSERT(NULL != pexpr);
@@ -458,7 +462,7 @@ CConstraintInterval::PciIntervalFromScalarCmp
 		}
 		CScalarCmp *popScCmp = CScalarCmp::PopConvert(pexpr->Pop());
 
-		return PciIntervalFromColConstCmp(mp, colref, popScCmp->ParseCmpType(), popScConst);
+		return PciIntervalFromColConstCmp(mp, colref, popScCmp->ParseCmpType(), popScConst, in_constraint);
 	}
 
 	return NULL;
