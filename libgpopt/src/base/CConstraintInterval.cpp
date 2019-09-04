@@ -132,7 +132,7 @@ CConstraintInterval::PciIntervalFromScalarExpr
 	CMemoryPool *mp,
 	CExpression *pexpr,
 	CColRef *colref,
-	BOOL in_constraint
+	BOOL infer_nullability
 	)
 {
 
@@ -154,7 +154,7 @@ CConstraintInterval::PciIntervalFromScalarExpr
 			pci =  PciIntervalFromScalarBoolOp(mp, pexpr, colref);
 			break;
 		case COperator::EopScalarCmp:
-			pci =  PciIntervalFromScalarCmp(mp, pexpr, colref, in_constraint);
+			pci =  PciIntervalFromScalarCmp(mp, pexpr, colref, infer_nullability);
 			break;
 		case COperator::EopScalarIsDistinctFrom:
 			pci = PciIntervalFromScalarIDF(mp, pexpr, colref);
@@ -392,15 +392,19 @@ CConstraintInterval::PciIntervalFromColConstCmp
 	CColRef *colref,
 	IMDType::ECmpType cmp_type,
 	CScalarConst *popScConst,
-	BOOL in_constraint
+	BOOL infer_nullability
 	)
 {
 	CConstraintInterval *pcri = NULL;
 	CRangeArray *pdrngprng = PciRangeFromColConstCmp(mp, cmp_type, popScConst);
+
 	if (NULL != pdrngprng)
 	{
-		// if we are in a constraint, a NULL value of the column satisfies the constraint
-		pcri = GPOS_NEW(mp) CConstraintInterval(mp, colref, pdrngprng, in_constraint /*fIncludesNull*/);
+		// (col = const) usually implies (col IS NOT NULL) for these ops. But,
+		// if asked not infer this (e.g in table constraints), include NULL in
+		// the final interval.
+		BOOL include_null = !infer_nullability;
+		pcri = GPOS_NEW(mp) CConstraintInterval(mp, colref, pdrngprng, include_null);
 	}
 	return pcri;
 
@@ -421,7 +425,7 @@ CConstraintInterval::PciIntervalFromScalarCmp
 	CMemoryPool *mp,
 	CExpression *pexpr,
 	CColRef *colref,
-	BOOL in_constraint
+	BOOL infer_nullability
 	)
 {
 	GPOS_ASSERT(NULL != pexpr);
@@ -462,7 +466,7 @@ CConstraintInterval::PciIntervalFromScalarCmp
 		}
 		CScalarCmp *popScCmp = CScalarCmp::PopConvert(pexpr->Pop());
 
-		return PciIntervalFromColConstCmp(mp, colref, popScCmp->ParseCmpType(), popScConst, in_constraint);
+		return PciIntervalFromColConstCmp(mp, colref, popScCmp->ParseCmpType(), popScConst, infer_nullability);
 	}
 
 	return NULL;

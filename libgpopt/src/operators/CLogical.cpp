@@ -795,7 +795,13 @@ CLogical::PpcDeriveConstraintFromTable
 		GPOS_ASSERT(CUtils::FPredicate(pexprCheckConstraint));
 
 		CColRefSetArray *pdrgpcrsChild = NULL;
-		CConstraint *pcnstr = CConstraint::PcnstrFromScalarExpr(mp, pexprCheckConstraint, &pdrgpcrsChild, true);
+
+		// Check constraints are satisfied if the check expression evaluates to
+		// true or NULL, so do not infer nullability for check constraint exprs.
+		CConstraint *pcnstr = CConstraint::PcnstrFromScalarExpr(mp,
+																pexprCheckConstraint,
+																&pdrgpcrsChild,
+																false /* infer_nullability */);
 		if (NULL != pcnstr)
 		{
 			pdrgpcnstr->Append(pcnstr);

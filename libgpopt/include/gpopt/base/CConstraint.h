@@ -252,7 +252,7 @@ namespace gpopt
 							CMemoryPool *mp,
 							CExpression *pexpr,
 							CColRefSetArray **ppdrgpcrs,
-							BOOL in_constraint = false
+							BOOL infer_nullability = true
 							);
 
 			// create conjunction from array of constraints
