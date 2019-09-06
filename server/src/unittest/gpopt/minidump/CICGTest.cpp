@@ -51,6 +51,8 @@ const CHAR *rgszFileNames[] =
 		"../data/dxl/minidump/NoRedistributeOnAppend.mdp",
 		"../data/dxl/minidump/ConstraintIntervalIncludesNull.mdp",
 		"../data/dxl/minidump/ConstraintIntervalNotIncludesNull.mdp",
+		"../data/dxl/minidump/ConstraintIntervalWithBoolNotIncludesNull.mdp",
+		"../data/dxl/minidump/ConstraintIntervalWithBoolNotIncludesNull.mdp",
 
 #ifndef GPOS_DEBUG
 		// TODO:  - Jul 14 2015; disabling it for debug build to reduce testing time

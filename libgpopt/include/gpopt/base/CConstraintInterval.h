@@ -122,7 +122,8 @@ namespace gpopt
 									(
 									CMemoryPool *mp,
 									CExpression *pexpr,
-									CColRef *colref
+									CColRef *colref,
+									BOOL infer_nullability = true
 									);
 
 			// create interval from scalar bool AND
@@ -131,7 +132,8 @@ namespace gpopt
 									(
 									CMemoryPool *mp,
 									CExpression *pexpr,
-									CColRef *colref
+									CColRef *colref,
+									BOOL infer_nullability = true
 									);
 
 			// create interval from scalar bool OR
@@ -140,7 +142,8 @@ namespace gpopt
 									(
 									CMemoryPool *mp,
 									CExpression *pexpr,
-									CColRef *colref
+									CColRef *colref,
+									BOOL infer_nullability = true
 									);
 
 			// create interval from scalar null test
