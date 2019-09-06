@@ -156,7 +156,13 @@ namespace gpopt
 			// create constraint from scalar array comparison expression originally generated for
 			// "scalar op ANY/ALL (array)" construct
 			static
-			CConstraint *PcnstrFromScalarArrayCmp(CMemoryPool *mp, CExpression *pexpr, CColRef *colref);
+			CConstraint *PcnstrFromScalarArrayCmp
+							(
+							CMemoryPool *mp,
+							CExpression *pexpr,
+							CColRef *colref,
+							BOOL infer_nullability = true
+							);
 
 		public:
 
