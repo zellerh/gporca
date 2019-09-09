@@ -310,7 +310,8 @@ namespace gpopt
 				(
 				CMemoryPool *mp,
 				CExpression *pexpr,
-				CColRef *colref
+				CColRef *colref,
+				BOOL infer_nullability = true
 				);
 
 

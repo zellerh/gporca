@@ -174,7 +174,7 @@ CConstraintInterval::PciIntervalFromScalarExpr
 		case COperator::EopScalarArrayCmp:
 			if (GPOS_FTRACE(EopttraceArrayConstraints))
 			{
-				pci = CConstraintInterval::PcnstrIntervalFromScalarArrayCmp(mp, pexpr, colref);
+				pci = CConstraintInterval::PcnstrIntervalFromScalarArrayCmp(mp, pexpr, colref, infer_nullability);
 			}
 			break;
 		default:
@@ -199,7 +199,8 @@ CConstraintInterval::PcnstrIntervalFromScalarArrayCmp
 	(
 	CMemoryPool *mp,
 	CExpression *pexpr,
-	CColRef *colref
+	CColRef *colref,
+	BOOL infer_nullability
 	)
 {
 	if (!(CPredicateUtils::FCompareIdentToConstArray(pexpr) || CPredicateUtils::FCompareCastIdentToConstArray(pexpr)))
@@ -294,7 +295,7 @@ CConstraintInterval::PcnstrIntervalFromScalarArrayCmp
 		}
 	}
 
-	BOOL fContainsNull = apdatumsortedset->FIncludesNull();
+	BOOL fContainsNull = !infer_nullability;
 
 	return GPOS_NEW(mp) CConstraintInterval(mp, colref, prgrng, fContainsNull);
 }
@@ -923,18 +924,18 @@ CConstraintInterval::PexprConstructArrayScalar(CMemoryPool *mp, bool fIn) const
 		prngexpr->Append(pexpr);
 	}
 
+	CExpression *pexpr = CUtils::PexprScalarArrayCmp(mp, earraycmptype, ecmptype, prngexpr, m_pcr);
+
 	if (m_fIncludesNull)
 	{
-		CMDAccessor *md_accessor = COptCtxt::PoctxtFromTLS()->Pmda();
-		IDatum *datum = (*m_pdrgprng)[0]->PdatumRight();
-		GPOS_ASSERT(NULL != datum);
-		IDatum *pdatumNull = md_accessor->RetrieveType(datum->MDId())->DatumNull();
-		pdatumNull->AddRef();
-		CScalarConst *popScConst = GPOS_NEW(mp) CScalarConst(mp, pdatumNull);
-		prngexpr->Append(GPOS_NEW(mp) CExpression(mp, popScConst));
+		CExpression *pexprIsNull = CUtils::PexprIsNull(mp, CUtils::PexprScalarIdent(mp, m_pcr));
+		CExpression *pexprDisjuction = CPredicateUtils::PexprDisjunction(mp, pexpr, pexprIsNull);
+		pexpr->Release();
+		pexprIsNull->Release();
+		pexpr = pexprDisjuction;
 	}
 
-	return CUtils::PexprScalarArrayCmp(mp, earraycmptype, ecmptype, prngexpr, m_pcr);
+	return pexpr;
 }
 
 //---------------------------------------------------------------------------
