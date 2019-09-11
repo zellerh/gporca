@@ -797,11 +797,11 @@ CLogical::PpcDeriveConstraintFromTable
 		CColRefSetArray *pdrgpcrsChild = NULL;
 
 		// Check constraints are satisfied if the check expression evaluates to
-		// true or NULL, so do not infer nullability for check constraint exprs.
+		// true or NULL, so infer NULLs as true here.
 		CConstraint *pcnstr = CConstraint::PcnstrFromScalarExpr(mp,
 																pexprCheckConstraint,
 																&pdrgpcrsChild,
-																false /* infer_nullability */);
+																true /* infer_nulls_as */);
 		if (NULL != pcnstr)
 		{
 			pdrgpcnstr->Append(pcnstr);

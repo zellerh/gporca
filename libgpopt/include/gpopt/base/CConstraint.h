@@ -161,7 +161,7 @@ namespace gpopt
 							CMemoryPool *mp,
 							CExpression *pexpr,
 							CColRef *colref,
-							BOOL infer_nullability = true
+							BOOL infer_nulls_as=false
 							);
 
 		public:
@@ -258,7 +258,7 @@ namespace gpopt
 							CMemoryPool *mp,
 							CExpression *pexpr,
 							CColRefSetArray **ppdrgpcrs,
-							BOOL infer_nullability = true
+							BOOL infer_nulls_as=false
 							);
 
 			// create conjunction from array of constraints

@@ -105,7 +105,7 @@ namespace gpopt
 									CMemoryPool *mp,
 									CExpression *pexpr,
 									CColRef *colref,
-									BOOL infer_nullability = true
+									BOOL infer_nulls_as=false
 									);
 
 			static
@@ -123,7 +123,7 @@ namespace gpopt
 									CMemoryPool *mp,
 									CExpression *pexpr,
 									CColRef *colref,
-									BOOL infer_nullability = true
+									BOOL infer_nulls_as=false
 									);
 
 			// create interval from scalar bool AND
@@ -133,7 +133,7 @@ namespace gpopt
 									CMemoryPool *mp,
 									CExpression *pexpr,
 									CColRef *colref,
-									BOOL infer_nullability = true
+									BOOL infer_nulls_as=false
 									);
 
 			// create interval from scalar bool OR
@@ -143,7 +143,7 @@ namespace gpopt
 									CMemoryPool *mp,
 									CExpression *pexpr,
 									CColRef *colref,
-									BOOL infer_nullability = true
+									BOOL infer_nulls_as=false
 									);
 
 			// create interval from scalar null test
@@ -281,7 +281,7 @@ namespace gpopt
 				CColRef *colref,
 				IMDType::ECmpType cmp_type,
 				CScalarConst *popScConst,
-				BOOL infer_nullability = true
+				BOOL infer_nulls_as=false
 				);
 
 			// create interval from scalar expression
@@ -291,7 +291,7 @@ namespace gpopt
 				CMemoryPool *mp,
 				CExpression *pexpr,
 				CColRef *colref,
-				BOOL infer_nullability = true
+				BOOL infer_nulls_as=false
 				);
 
 			// create interval from any general constraint that references
@@ -311,7 +311,7 @@ namespace gpopt
 				CMemoryPool *mp,
 				CExpression *pexpr,
 				CColRef *colref,
-				BOOL infer_nullability = true
+				BOOL infer_nulls_as=false
 				);
 
 

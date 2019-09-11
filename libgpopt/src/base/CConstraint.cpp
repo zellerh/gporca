@@ -87,7 +87,7 @@ CConstraint::PcnstrFromScalarArrayCmp
 	CMemoryPool *mp,
 	CExpression *pexpr,
 	CColRef *colref,
-	BOOL infer_nullability
+	BOOL infer_nulls_as
 	)
 {
 	GPOS_ASSERT(NULL != pexpr);
@@ -142,7 +142,7 @@ CConstraint::PcnstrFromScalarArrayCmp
 		for (ULONG ul = 0; ul < arity; ul++)
 		{
 			CScalarConst *popScConst = CUtils::PScalarArrayConstChildAt(pexprArray,ul);
-			CConstraintInterval *pci =  CConstraintInterval::PciIntervalFromColConstCmp(mp, colref, cmp_type, popScConst, infer_nullability);
+			CConstraintInterval *pci =  CConstraintInterval::PciIntervalFromColConstCmp(mp, colref, cmp_type, popScConst, infer_nulls_as);
 			pdrgpcnstr->Append(pci);
 		}
 
@@ -176,7 +176,7 @@ CConstraint::PcnstrFromScalarExpr
 	CMemoryPool *mp,
 	CExpression *pexpr,
 	CColRefSetArray **ppdrgpcrs, // output equivalence classes
-	BOOL infer_nullability
+	BOOL infer_nulls_as
 	)
 {
 	GPOS_ASSERT(NULL != pexpr);
@@ -209,12 +209,12 @@ CConstraint::PcnstrFromScalarExpr
 		*ppdrgpcrs = GPOS_NEW(mp) CColRefSetArray(mp);
 
 		// first, try creating a single interval constraint from the expression
-		pcnstr = CConstraintInterval::PciIntervalFromScalarExpr(mp, pexpr, colref, infer_nullability);
+		pcnstr = CConstraintInterval::PciIntervalFromScalarExpr(mp, pexpr, colref, infer_nulls_as);
 		if (NULL == pcnstr && CUtils::FScalarArrayCmp(pexpr))
 		{
 			// if the interval creation failed, try creating a disjunction or conjunction
 			// of several interval constraints in the array case
-			pcnstr = PcnstrFromScalarArrayCmp(mp, pexpr, colref, infer_nullability);
+			pcnstr = PcnstrFromScalarArrayCmp(mp, pexpr, colref, infer_nulls_as);
 		}
 
 		if (NULL != pcnstr)

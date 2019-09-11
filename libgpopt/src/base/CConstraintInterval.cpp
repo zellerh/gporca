@@ -132,7 +132,7 @@ CConstraintInterval::PciIntervalFromScalarExpr
 	CMemoryPool *mp,
 	CExpression *pexpr,
 	CColRef *colref,
-	BOOL infer_nullability
+	BOOL infer_nulls_as
 	)
 {
 
@@ -151,10 +151,10 @@ CConstraintInterval::PciIntervalFromScalarExpr
 			pci = PciIntervalFromScalarNullTest(mp, pexpr, colref);
 			break;
 		case COperator::EopScalarBoolOp:
-			pci =  PciIntervalFromScalarBoolOp(mp, pexpr, colref, infer_nullability);
+			pci =  PciIntervalFromScalarBoolOp(mp, pexpr, colref, infer_nulls_as);
 			break;
 		case COperator::EopScalarCmp:
-			pci =  PciIntervalFromScalarCmp(mp, pexpr, colref, infer_nullability);
+			pci =  PciIntervalFromScalarCmp(mp, pexpr, colref, infer_nulls_as);
 			break;
 		case COperator::EopScalarIsDistinctFrom:
 			pci = PciIntervalFromScalarIDF(mp, pexpr, colref);
@@ -174,7 +174,7 @@ CConstraintInterval::PciIntervalFromScalarExpr
 		case COperator::EopScalarArrayCmp:
 			if (GPOS_FTRACE(EopttraceArrayConstraints))
 			{
-				pci = CConstraintInterval::PcnstrIntervalFromScalarArrayCmp(mp, pexpr, colref, infer_nullability);
+				pci = CConstraintInterval::PcnstrIntervalFromScalarArrayCmp(mp, pexpr, colref, infer_nulls_as);
 			}
 			break;
 		default:
@@ -200,7 +200,7 @@ CConstraintInterval::PcnstrIntervalFromScalarArrayCmp
 	CMemoryPool *mp,
 	CExpression *pexpr,
 	CColRef *colref,
-	BOOL infer_nullability
+	BOOL infer_nulls_as
 	)
 {
 	if (!(CPredicateUtils::FCompareIdentToConstArray(pexpr) || CPredicateUtils::FCompareCastIdentToConstArray(pexpr)))
@@ -295,9 +295,7 @@ CConstraintInterval::PcnstrIntervalFromScalarArrayCmp
 		}
 	}
 
-	BOOL fContainsNull = !infer_nullability;
-
-	return GPOS_NEW(mp) CConstraintInterval(mp, colref, prgrng, fContainsNull);
+	return GPOS_NEW(mp) CConstraintInterval(mp, colref, prgrng, infer_nulls_as);
 }
 
 //---------------------------------------------------------------------------
@@ -393,7 +391,7 @@ CConstraintInterval::PciIntervalFromColConstCmp
 	CColRef *colref,
 	IMDType::ECmpType cmp_type,
 	CScalarConst *popScConst,
-	BOOL infer_nullability
+	BOOL infer_nulls_as
 	)
 {
 	CConstraintInterval *pcri = NULL;
@@ -401,11 +399,10 @@ CConstraintInterval::PciIntervalFromColConstCmp
 
 	if (NULL != pdrngprng)
 	{
-		// (col = const) usually implies (col IS NOT NULL) for these ops. But,
-		// if asked not infer this (e.g in table constraints), include NULL in
-		// the final interval.
-		BOOL include_null = !infer_nullability;
-		pcri = GPOS_NEW(mp) CConstraintInterval(mp, colref, pdrngprng, include_null);
+		// (col = const) usually implies (col IS NOT NULL) for these ops since
+		// NULLs are inferred as false.  But, if asked to infer NULLS as true (e.g
+		// in table constraints), include NULL in the final interval.
+		pcri = GPOS_NEW(mp) CConstraintInterval(mp, colref, pdrngprng, infer_nulls_as);
 	}
 	return pcri;
 
@@ -426,7 +423,7 @@ CConstraintInterval::PciIntervalFromScalarCmp
 	CMemoryPool *mp,
 	CExpression *pexpr,
 	CColRef *colref,
-	BOOL infer_nullability
+	BOOL infer_nulls_as
 	)
 {
 	GPOS_ASSERT(NULL != pexpr);
@@ -467,7 +464,7 @@ CConstraintInterval::PciIntervalFromScalarCmp
 		}
 		CScalarCmp *popScCmp = CScalarCmp::PopConvert(pexpr->Pop());
 
-		return PciIntervalFromColConstCmp(mp, colref, popScCmp->ParseCmpType(), popScConst, infer_nullability);
+		return PciIntervalFromColConstCmp(mp, colref, popScCmp->ParseCmpType(), popScConst, infer_nulls_as);
 	}
 
 	return NULL;
@@ -542,7 +539,7 @@ CConstraintInterval::PciIntervalFromScalarBoolOp
 	CMemoryPool *mp,
 	CExpression *pexpr,
 	CColRef *colref,
-	BOOL infer_nullability
+	BOOL infer_nulls_as
 	)
 {
 	GPOS_ASSERT(NULL != pexpr);
@@ -554,10 +551,10 @@ CConstraintInterval::PciIntervalFromScalarBoolOp
 	switch (eboolop)
 	{
 		case CScalarBoolOp::EboolopAnd:
-			return PciIntervalFromScalarBoolAnd(mp, pexpr, colref, infer_nullability);
+			return PciIntervalFromScalarBoolAnd(mp, pexpr, colref, infer_nulls_as);
 
 		case CScalarBoolOp::EboolopOr:
-			return PciIntervalFromScalarBoolOr(mp, pexpr, colref, infer_nullability);
+			return PciIntervalFromScalarBoolOr(mp, pexpr, colref, infer_nulls_as);
 
 		case CScalarBoolOp::EboolopNot:
 		{
@@ -590,7 +587,7 @@ CConstraintInterval::PciIntervalFromScalarBoolOr
 	CMemoryPool *mp,
 	CExpression *pexpr,
 	CColRef *colref,
-	BOOL infer_nullability
+	BOOL infer_nulls_as
 	)
 {
 	GPOS_ASSERT(NULL != pexpr);
@@ -603,7 +600,7 @@ CConstraintInterval::PciIntervalFromScalarBoolOr
 	CConstraintIntervalArray *child_constraints = GPOS_NEW(mp) CConstraintIntervalArray(mp);
 	for (ULONG ul = 0; ul < arity; ul++)
 	{
-		CConstraintInterval *pciChild = PciIntervalFromScalarExpr(mp, (*pexpr)[ul], colref, infer_nullability);
+		CConstraintInterval *pciChild = PciIntervalFromScalarExpr(mp, (*pexpr)[ul], colref, infer_nulls_as);
 
 		if (NULL == pciChild)
 		{
@@ -668,7 +665,7 @@ CConstraintInterval::PciIntervalFromScalarBoolAnd
 	CMemoryPool *mp,
 	CExpression *pexpr,
 	CColRef *colref,
-	BOOL infer_nullability
+	BOOL infer_nulls_as
 	)
 {
 	GPOS_ASSERT(NULL != pexpr);
@@ -678,10 +675,10 @@ CConstraintInterval::PciIntervalFromScalarBoolAnd
 	const ULONG arity = pexpr->Arity();
 	GPOS_ASSERT(0 < arity);
 
-	CConstraintInterval *pci = PciIntervalFromScalarExpr(mp, (*pexpr)[0], colref, infer_nullability);
+	CConstraintInterval *pci = PciIntervalFromScalarExpr(mp, (*pexpr)[0], colref, infer_nulls_as);
 	for (ULONG ul = 1; ul < arity; ul++)
 	{
-		CConstraintInterval *pciChild = PciIntervalFromScalarExpr(mp, (*pexpr)[ul], colref, infer_nullability);
+		CConstraintInterval *pciChild = PciIntervalFromScalarExpr(mp, (*pexpr)[ul], colref, infer_nulls_as);
 		// here is where we will return a NULL child from not being able to create a
 		// CConstraint interval from the ScalarExpr
 		if (NULL != pciChild && NULL != pci)
