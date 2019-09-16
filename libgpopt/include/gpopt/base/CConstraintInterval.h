@@ -228,10 +228,10 @@ namespace gpopt
 			CConstraintInterval *PciUnion(CMemoryPool *mp, CConstraintInterval *pci);
 
 			// interval difference
-			CConstraintInterval *PciDifference(CMemoryPool *mp, CConstraintInterval *pci, BOOL preserve_nulls=false);
+			CConstraintInterval *PciDifference(CMemoryPool *mp, CConstraintInterval *pci);
 
 			// interval complement
-			CConstraintInterval *PciComplement(CMemoryPool *mp, BOOL preserve_nulls=false);
+			CConstraintInterval *PciComplement(CMemoryPool *mp);
 
 			// does the current interval contain the given interval?
 			BOOL FContainsInterval(CMemoryPool *mp, CConstraintInterval *pci);

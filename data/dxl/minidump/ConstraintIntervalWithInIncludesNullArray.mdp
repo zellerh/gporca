@@ -4,7 +4,11 @@
 	create table td (a int check(a = any (array[1,2])));
 	insert into td values(null);
 	explain select a from td where a is null;
-	]]>
+
+    Gather Motion 1:1  (slice1; segments: 1)  (cost=0.00..431.00 rows=1 width=4)
+       ->  Seq Scan on td  (cost=0.00..431.00 rows=1 width=4)
+             Filter: (a IS NULL)
+    ]]>
 	</dxl:Comment>
   <dxl:Thread Id="0">
     <dxl:OptimizerConfig>

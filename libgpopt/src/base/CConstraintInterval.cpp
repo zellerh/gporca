@@ -125,6 +125,27 @@ CConstraintInterval::PcnstrCopyWithRemappedColumns
 //	@doc:
 //		Create interval from scalar expression
 //
+//		For a given expression pexpr on colref colref, return the CConstraintInterval
+//		for which pexpr
+//		- evaluates to true (if infer_null_as is false).
+//		  This is used for WHERE predicates, which return a row only if the predicate is true.
+//		- evaluates to true or null (if infer_null_as is set to true).
+//		  This is used for constraints, which are satisfied if the predicate is true or null.
+//
+//		Let's call the function result r(pexpr) when infer_null_as is set to false,
+//		and r'(pexpr) when infer_null_as is set to true. The table below shows how we
+//		calculate the intervals for boolean operations AND, OR and NOT:
+//
+//		Range of a			Equivalent				Comment
+//		Boolean expression	expression
+//		------------------	---------------------	--------------------------------------------------------
+//		r(x and y)			r(x) intersect r(y)		Both x and y must be true for a value of c to qualify
+//		r(x or y)			r(x) union r(y)			One of x or y must be true for a value of c to qualify
+//		r(not x)			complement(r’(x))		x must be false
+//		r’(x and y)			r’(x) intersect r’(y)	Both x and y must not be false
+//		r’(x or y)			r'(x) union r'(y)		At least one of x and y must not be false
+//		r’(not x)			complement (r(x))		x must not be true
+//
 //---------------------------------------------------------------------------
 CConstraintInterval *
 CConstraintInterval::PciIntervalFromScalarExpr
@@ -558,13 +579,13 @@ CConstraintInterval::PciIntervalFromScalarBoolOp
 
 		case CScalarBoolOp::EboolopNot:
 		{
-			CConstraintInterval *pciChild = PciIntervalFromScalarExpr(mp, (*pexpr)[0], colref, infer_nulls_as);
+			CConstraintInterval *pciChild = PciIntervalFromScalarExpr(mp, (*pexpr)[0], colref, !infer_nulls_as);
 			if (NULL == pciChild)
 			{
 				return NULL;
 			}
 
-			CConstraintInterval *pciNot = pciChild->PciComplement(mp, infer_nulls_as);
+			CConstraintInterval *pciNot = pciChild->PciComplement(mp);
 			pciChild->Release();
 			return pciNot;
 		}
@@ -1165,8 +1186,7 @@ CConstraintInterval *
 CConstraintInterval::PciDifference
 	(
 	CMemoryPool *mp,
-	CConstraintInterval *pci,
-	BOOL preserve_nulls
+	CConstraintInterval *pci
 	)
 {
 	GPOS_ASSERT(NULL != pci);
@@ -1220,7 +1240,7 @@ CConstraintInterval::PciDifference
 						mp,
 						m_pcr,
 						pdrgprngNew,
-						preserve_nulls ? (m_fIncludesNull && pci->FIncludesNull()) : (m_fIncludesNull && !pci->FIncludesNull())
+						m_fIncludesNull && !pci->FIncludesNull()
 						);
 }
 
@@ -1366,14 +1386,13 @@ CConstraintInterval::MdidType()
 CConstraintInterval *
 CConstraintInterval::PciComplement
 	(
-	CMemoryPool *mp,
-	BOOL preserve_nulls
+	CMemoryPool *mp
 	)
 {
 	// create an unbounded interval
 	CConstraintInterval *pciUniversal = PciUnbounded(mp, m_pcr, true /*fIncludesNull*/);
 
-	CConstraintInterval *pciComp = pciUniversal->PciDifference(mp, this, preserve_nulls);
+	CConstraintInterval *pciComp = pciUniversal->PciDifference(mp, this);
 	pciUniversal->Release();
 
 	return pciComp;
