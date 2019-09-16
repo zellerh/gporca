@@ -558,13 +558,13 @@ CConstraintInterval::PciIntervalFromScalarBoolOp
 
 		case CScalarBoolOp::EboolopNot:
 		{
-			CConstraintInterval *pciChild = PciIntervalFromScalarExpr(mp, (*pexpr)[0], colref);
+			CConstraintInterval *pciChild = PciIntervalFromScalarExpr(mp, (*pexpr)[0], colref, infer_nulls_as);
 			if (NULL == pciChild)
 			{
 				return NULL;
 			}
 
-			CConstraintInterval *pciNot = pciChild->PciComplement(mp);
+			CConstraintInterval *pciNot = pciChild->PciComplement(mp, infer_nulls_as);
 			pciChild->Release();
 			return pciNot;
 		}
@@ -1165,7 +1165,8 @@ CConstraintInterval *
 CConstraintInterval::PciDifference
 	(
 	CMemoryPool *mp,
-	CConstraintInterval *pci
+	CConstraintInterval *pci,
+	BOOL preserve_nulls
 	)
 {
 	GPOS_ASSERT(NULL != pci);
@@ -1219,7 +1220,7 @@ CConstraintInterval::PciDifference
 						mp,
 						m_pcr,
 						pdrgprngNew,
-						m_fIncludesNull && !pci->FIncludesNull()
+						preserve_nulls ? (m_fIncludesNull && pci->FIncludesNull()) : (m_fIncludesNull && !pci->FIncludesNull())
 						);
 }
 
@@ -1365,13 +1366,14 @@ CConstraintInterval::MdidType()
 CConstraintInterval *
 CConstraintInterval::PciComplement
 	(
-	CMemoryPool *mp
+	CMemoryPool *mp,
+	BOOL preserve_nulls
 	)
 {
 	// create an unbounded interval
 	CConstraintInterval *pciUniversal = PciUnbounded(mp, m_pcr, true /*fIncludesNull*/);
 
-	CConstraintInterval *pciComp = pciUniversal->PciDifference(mp, this);
+	CConstraintInterval *pciComp = pciUniversal->PciDifference(mp, this, preserve_nulls);
 	pciUniversal->Release();
 
 	return pciComp;
