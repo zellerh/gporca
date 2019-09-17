@@ -101,11 +101,11 @@ namespace gpopt
 
 			// create constraint from scalar comparison
 			static
-			CConstraint *PcnstrFromScalarCmp(CMemoryPool *mp, CExpression *pexpr, CColRefSetArray **ppdrgpcrs);
+			CConstraint *PcnstrFromScalarCmp(CMemoryPool *mp, CExpression *pexpr, CColRefSetArray **ppdrgpcrs, BOOL infer_nulls_as=false);
 
 			// create constraint from scalar boolean expression
 			static
-			CConstraint *PcnstrFromScalarBoolOp(CMemoryPool *mp, CExpression *pexpr, CColRefSetArray **ppdrgpcrs);
+			CConstraint *PcnstrFromScalarBoolOp(CMemoryPool *mp, CExpression *pexpr, CColRefSetArray **ppdrgpcrs, BOOL infer_nulls_as=false);
 
 			// create conjunction/disjunction from array of constraints
 			static
