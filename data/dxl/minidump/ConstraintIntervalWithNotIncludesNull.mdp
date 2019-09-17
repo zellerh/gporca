@@ -3,7 +3,7 @@
 <dxl:Comment><![CDATA[
 create table tx (a int check (not(not(a = 5) and not(a = 6))));
 insert into tx values (null);
-explain select a from td where a is null;
+explain select a from tx where a is null;
 
 Gather Motion 1:1  (slice1; segments: 1)  (cost=0.00..431.00 rows=1 width=4)
 Rows out:  1 rows at destination with 0.250 ms to first row, 0.251 ms to end.
