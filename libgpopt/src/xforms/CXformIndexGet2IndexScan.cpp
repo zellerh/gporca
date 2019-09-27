@@ -69,42 +69,45 @@ CXformIndexGet2IndexScan::Transform
 	CMemoryPool *mp = pxfctxt->Pmp();
 
 	CIndexDescriptor *pindexdesc = pop->Pindexdesc();
-	pindexdesc->AddRef();
 
 	CTableDescriptor *ptabdesc = pop->Ptabdesc();
-	ptabdesc->AddRef();
 
-	CColRefArray *pdrgpcrOutput = pop->PdrgpcrOutput();
-	GPOS_ASSERT(NULL != pdrgpcrOutput);
-	pdrgpcrOutput->AddRef();
+	if (!(pindexdesc->IndexType() == IMDIndex::EmdindBtree && ptabdesc->IsAOTable())) {
+		pindexdesc->AddRef();
+		ptabdesc->AddRef();
 
-	COrderSpec *pos = pop->Pos();
-	GPOS_ASSERT(NULL != pos);
-	pos->AddRef();
+		CColRefArray *pdrgpcrOutput = pop->PdrgpcrOutput();
+		GPOS_ASSERT(NULL != pdrgpcrOutput);
+		pdrgpcrOutput->AddRef();
 
-	// extract components
-	CExpression *pexprIndexCond = (*pexpr)[0];
+		COrderSpec *pos = pop->Pos();
+		GPOS_ASSERT(NULL != pos);
+		pos->AddRef();
 
-	// addref all children
-	pexprIndexCond->AddRef();
+		// extract components
+		CExpression *pexprIndexCond = (*pexpr)[0];
 
-	CExpression *pexprAlt =
-		GPOS_NEW(mp) CExpression
-			(
-			mp,
-			GPOS_NEW(mp) CPhysicalIndexScan
+		// addref all children
+		pexprIndexCond->AddRef();
+
+		CExpression *pexprAlt =
+			GPOS_NEW(mp) CExpression
 				(
 				mp,
-				pindexdesc,
-				ptabdesc,
-				pexpr->Pop()->UlOpId(),
-				GPOS_NEW(mp) CName (mp, pop->NameAlias()),
-				pdrgpcrOutput,
-				pos
-				),
-			pexprIndexCond
-			);
-	pxfres->Add(pexprAlt);
+				GPOS_NEW(mp) CPhysicalIndexScan
+					(
+					mp,
+					pindexdesc,
+					ptabdesc,
+					pexpr->Pop()->UlOpId(),
+					GPOS_NEW(mp) CName (mp, pop->NameAlias()),
+					pdrgpcrOutput,
+					pos
+					),
+				pexprIndexCond
+				);
+		pxfres->Add(pexprAlt);
+	}
 }
 
 

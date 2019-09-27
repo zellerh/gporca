@@ -57,7 +57,7 @@ namespace gpopt
 			// check if given expression is a comparison over the given column
 			static
 			BOOL FComparison(CExpression *pexpr, CColRef *colref, CColRefSet *pcrsAllowedRefs);
-			
+
 			// check whether the given expression contains references to only the given
 			// columns. If pcrsAllowedRefs is NULL, then check whether the expression has
 			// no column references and no volatile functions
@@ -197,6 +197,13 @@ namespace gpopt
 			// either the constant or the column can be casted
 			static
 			BOOL FIdentCompareConstIgnoreCast(CExpression *pexpr, COperator::EOperatorId);
+
+			// check if a given expression is a comparison between a column and a constant or
+			// an outer reference (from a given ColRefSet), it returns the colref of the local table
+			static
+			BOOL FIdentCompareOuterRefIgnoreCast(CExpression *pexpr,
+												 CColRefSet *pcrsAllowedRefs,
+												 CColRef **localColRef = NULL);
 
 			// is the given expression a comparison between scalar ident and a const array
 			// either the ident or constant array can be casted
@@ -580,7 +587,7 @@ namespace gpopt
 			// check if the predicate is a simple scalar cmp or a simple conjuct that can be used directly
 			// for bitmap index looup without breaking it down.
 			static
-			BOOL FBitmapLookupSupportedPredicateOrConjunct(CExpression *pexpr);
+			BOOL FBitmapLookupSupportedPredicateOrConjunct(CExpression *pexpr, CColRefSet *outer_refs);
 
 			// Check if a given comparison operator is "very strict", meaning that it is strict
 			// (NULL operands result in NULL result) and that it never produces a NULL result on

@@ -480,6 +480,7 @@ namespace gpopt
 				const IMDRelation *pmdrel,
 				CColRefArray *pdrgpcrOutput,
 				CColRefSet *pcrsReqd,
+				CColRefSet *pcrsOuterRefs,
 				CExpression **ppexprRecheck,
 				CExpression **ppexprResidual
 				);

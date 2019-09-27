@@ -37,7 +37,7 @@
 #include "gpopt/exception.h"
 #include "gpopt/engine/CHint.h"
 
-
+#include "naucrates/statistics/CFilterStatsProcessor.h"
 using namespace gpopt;
 
 
@@ -2347,6 +2347,12 @@ CXformUtils::FIndexApplicable
 			return false;
 		}
 	}
+	else if (emdindtype == IMDIndex::EmdindBitmap &&
+			 pmdindex->IndexType() == IMDIndex::EmdindBtree &&
+			 pmdrel->IsAOTable())
+	{
+		// continue, Btree indexes on AO tables can be treated as Bitmap tables
+	}
 	else if (emdindtype != pmdindex->IndexType() || // otherwise make sure the index matches the given type
 		0 == pcrsScalar->Size()) // no columns to match index against
 	{
@@ -3236,7 +3242,41 @@ CXformUtils::PexprBitmapFromChildren
 
 	if (fConjunction)
 	{
-		pdrgpexpr = CPredicateUtils::PdrgpexprConjuncts(mp, pexprPred);
+		// Combine all the supported conjuncts into a single CExpression, to be able to
+		// pass them as one unit to PexprScalarBitmapBoolOp and to PexprBitmap, since we
+		// have optimizations that find the best multi-column index.
+
+		CExpressionArray *temp_conjuncts = CPredicateUtils::PdrgpexprConjuncts(mp, pexprPred);
+		CExpressionArray *supported_conjuncts = GPOS_NEW(mp) CExpressionArray(mp);
+
+		pdrgpexpr = GPOS_NEW(mp) CExpressionArray(mp);
+
+		const ULONG size = temp_conjuncts->Size();
+		for (ULONG ul=0; ul < size; ul++)
+		{
+			CExpression *pexpr = (*temp_conjuncts)[ul];
+
+			pexpr->AddRef();
+			if (CPredicateUtils::FBitmapLookupSupportedPredicateOrConjunct(pexpr, outer_refs))
+			{
+				supported_conjuncts->Append(pexpr);
+			}
+			else
+			{
+				pdrgpexpr->Append(pexpr);
+			}
+		}
+		temp_conjuncts->Release();
+
+		if (0 < supported_conjuncts->Size())
+		{
+			CExpression *anded_expr = CPredicateUtils::PexprConjunction(mp, supported_conjuncts);
+			pdrgpexpr->Append(anded_expr);
+		}
+		else
+		{
+			supported_conjuncts->Release();
+		}
 	}
 	else
 	{
@@ -3315,6 +3355,7 @@ CXformUtils::PexprBitmapLookupWithPredicateBreakDown
 
 	if (NULL != pexprBitmapForIndexLookup)
 	{
+		GPOS_ASSERT(false);
 		return pexprBitmapForIndexLookup;
 	}
 
@@ -3367,6 +3408,7 @@ CXformUtils::PexprBitmap
 	const IMDRelation *pmdrel,
 	CColRefArray *pdrgpcrOutput,
 	CColRefSet *pcrsReqd,
+	CColRefSet *pcrsOuterRefs,
 	CExpression **ppexprRecheck,
 	CExpression **ppexprResidual
 	)
@@ -3374,7 +3416,9 @@ CXformUtils::PexprBitmap
 	CColRefSet *pcrsScalar = CDrvdPropScalar::GetDrvdScalarProps(pexprPred->PdpDerive())->PcrsUsed();
 	ULONG ulBestIndex = 0;
 	CExpression *pexprIndexFinal = NULL;
-	ULONG minResidual = gpos::ulong_max;
+	CDouble bestSelectivity = CDouble(2.0); // selectivity can be a max value of 1
+	ULONG bestNumResiduals = gpos::ulong_max;
+	ULONG bestNumIndexCols = gpos::ulong_max;
 
 	const ULONG ulIndexes = pmdrel->IndexCount();
 	for (ULONG ul = 0; ul < ulIndexes; ul++)
@@ -3407,7 +3451,7 @@ CXformUtils::PexprBitmap
 				pdrgpcrIndexCols,
 				pdrgpexprIndex,
 				pdrgpexprResidual,
-				NULL  // pcrsAcceptedOuterRefs
+				pcrsOuterRefs
 				);
 
 			pdrgpexprScalar->Release();
@@ -3432,6 +3476,21 @@ CXformUtils::PexprBitmap
 				continue;
 			}
 
+			pdrgpexprIndex->AddRef();
+			CExpression *pexprIndex = CPredicateUtils::PexprConjunction(mp, pdrgpexprIndex);
+
+			CDouble selectivity = CFilterStatsProcessor::SelectivityOfPredicate(mp, pexprIndex, ptabdesc, pcrsOuterRefs);
+
+			pexprIndex->Release();
+
+			// Btree indexes on AO tables are only great when the NDV is high. Do this check here
+			if (selectivity > 0.05 && pmdrel->IsAOTable() && pmdindex->IndexType() == IMDIndex::EmdindBtree)
+			{
+				pdrgpexprIndex->Release();
+				pdrgpexprResidual->Release();
+				continue;
+			}
+
 			CColRefArray *indexColumns = CXformUtils::PdrgpcrIndexKeys(mp,pdrgpcrOutput, pmdindex, pmdrel);
 
 			// make sure the first key of index is included in the scalar predicate
@@ -3445,10 +3504,17 @@ CXformUtils::PexprBitmap
 				continue;
 			}
 
-			// if this index covers more columns or in other words, generates lesser residuals than a
-			// previously found index, then replace best index match.
-			ULONG ulResidualLength = pdrgpexprResidual->Size();
-			if (minResidual > ulResidualLength)
+			ULONG numResiduals = pdrgpexprResidual->Size();
+			ULONG numIndexCols = indexColumns->Size();
+			// Score indexes by using three criteria:
+			// - selectivity of the index predicate (more selective, i.e. smaller selectivity value, is better)
+			// - number of residual predicates (fewer is better)
+			// - number of columns in the index
+			//   (with the same selectivity and # of residual preds, a smaller index is better)
+			if (bestSelectivity > selectivity ||
+				(bestSelectivity == selectivity && (bestNumResiduals > numResiduals ||
+													(bestNumResiduals == numResiduals && bestNumIndexCols >
+																						 numIndexCols))))
 			{
 				CRefCount::SafeRelease((*ppexprResidual));
 				pdrgpexprResidual->AddRef();
@@ -3463,7 +3529,9 @@ CXformUtils::PexprBitmap
 				}
 
 				ulBestIndex = ul;
-				minResidual = ulResidualLength;
+				bestSelectivity = selectivity;
+				bestNumResiduals = numResiduals;
+				bestNumIndexCols = numIndexCols;
 				pdrgpexprIndex->AddRef();
 				CRefCount::SafeRelease(pexprIndexFinal);
 				pexprIndexFinal = CPredicateUtils::PexprConjunction(mp, pdrgpexprIndex);
@@ -3639,7 +3707,7 @@ CXformUtils::CreateBitmapIndexProbeOps
 		 pdrgpexprResidual
 		 );
 
-		// for simple conjuncts, there may be multiple index paths genearted by CreateBitmapIndexProbes()
+		// for simple conjuncts, there may be multiple index paths generated by CreateBitmapIndexProbes()
 		// due to the retry, in that case we combine them with BitmapAnd expression.
 		const ULONG ulBitmapExpr = pdrgpexprBitmapTemp->Size();
 		if (0 < ulBitmapExpr)
@@ -3690,7 +3758,7 @@ CXformUtils::CreateBitmapIndexProbes
 	{
 		pexprRecheck = pexprResidual = pexprBitmap = NULL;
 
-		if (CPredicateUtils::FBitmapLookupSupportedPredicateOrConjunct(pexprPred))
+		if (CPredicateUtils::FBitmapLookupSupportedPredicateOrConjunct(pexprPred, pcrsOuterRefs))
 		{
 			// do not break the predicate down and lookup for an index covering maximum predicate columns,
 			// this is done in following scenario to generate optimal index paths.
@@ -3715,6 +3783,7 @@ CXformUtils::CreateBitmapIndexProbes
 							pmdrel,
 							pdrgpcrOutput,
 							pcrsReqd,
+							pcrsOuterRefs,
 							&pexprRecheck,
 							&pexprResidual
 							);
