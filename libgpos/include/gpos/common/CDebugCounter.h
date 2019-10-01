@@ -82,6 +82,7 @@
 #include "gpos/common/CRefCount.h"
 #include "gpos/common/CHashMap.h"
 #include "gpos/common/CHashMapIter.h"
+#include "gpos/common/CTimerUser.h"
 
 #ifdef GPOS_DEBUG
 // enable this feature
@@ -94,15 +95,15 @@
 #define GPOS_DEBUG_COUNTER_BUMP(q)             gpos::CDebugCounter::Bump(q)
 #define GPOS_DEBUG_COUNTER_ADD(q, d)           gpos::CDebugCounter::Add(q, d)
 #define GPOS_DEBUG_COUNTER_ADD_DOUBLE(q, d)    gpos::CDebugCounter::AddDouble(q, d)
-#define GPOS_DEBUG_COUNTER_START_TIME(q)       gpos::CDebugCounter::StartTime(q)
-#define GPOS_DEBUG_COUNTER_END_TIME(q)         gpos::CDebugCounter::EndTime(q)
+#define GPOS_DEBUG_COUNTER_START_CPU_TIME(q)   gpos::CDebugCounter::StartCpuTime(q)
+#define GPOS_DEBUG_COUNTER_STOP_CPU_TIME(q)    gpos::CDebugCounter::StopCpuTime(q)
 #else
 // empty definitions otherwise
 #define GPOS_DEBUG_COUNTER_BUMP(q)
 #define GPOS_DEBUG_COUNTER_ADD(q, d)
 #define GPOS_DEBUG_COUNTER_ADD_DOUBLE(q, d)
-#define GPOS_DEBUG_COUNTER_START(q)
-#define GPOS_DEBUG_COUNTER_END(q)
+#define GPOS_DEBUG_COUNTER_START_CPU_TIME(q)
+#define GPOS_DEBUG_COUNTER_STOP_CPU_TIME(q)
 #endif
 
 namespace gpos
@@ -111,6 +112,17 @@ namespace gpos
 #ifdef GPOS_DEBUG_COUNTERS
 	class CDebugCounter
 	{
+		// types of supported counters
+		enum ECounterType
+		{
+			ECounterTypeCount,
+			ECounterTypeSum,
+			ECounterTypeSumDouble,
+			ECounterTypeCpuTime,
+			ECounterTypeSentinel
+		};
+
+		// a key that identifies a counter for a given query
 		struct SDebugCounterKey : public CRefCount
 		{
 			SDebugCounterKey(const char *counter_name) :
@@ -128,12 +140,26 @@ namespace gpos
 			std::string m_counter_name;
 		};
 
+		// a counter value (a union of all possible counter types)
 		struct SDebugCounterValue : public CRefCount
 		{
-			SDebugCounterValue() : m_counter(0) {}
-			~SDebugCounterValue() {}
+			SDebugCounterValue(ECounterType typ) :
+				m_type(typ),
+				m_counter_val_long(0),
+				m_counter_val_double(0.0),
+				m_cpu_timer(NULL),
+				m_timer_is_running(false)
+			{}
+			~SDebugCounterValue() { if (NULL != m_cpu_timer) GPOS_DELETE(m_cpu_timer); }
 
-			ULLONG m_counter;
+			enum ECounterType m_type;
+			// longs are used for counts and sums of integers
+			ULLONG m_counter_val_long;
+			// doubles are used for sums of floating point values
+			double m_counter_val_double;
+			// longs, in conjunction with a timer, are used for CPU timer measurements
+			ITimer *m_cpu_timer;
+			BOOL m_timer_is_running;
 		};
 
 		// hash map from component pair to connecting edges
@@ -144,7 +170,6 @@ namespace gpos
 		typedef CHashMapIter<SDebugCounterKey, SDebugCounterValue, SDebugCounterKey::HashValue, SDebugCounterKey::Equals,
 		CleanupRelease<SDebugCounterKey>, CleanupRelease<SDebugCounterValue> >
 		CounterKeyToValueMapIterator;
-
 
 	public:
 
@@ -162,15 +187,14 @@ namespace gpos
 
 		// record an event to be counted
 		static void Bump(const char *counter_name);
-/*
+
 		// add an integer or floating point quantity
 		static void Add(const char *counter_name, long delta);
 		static void AddDouble(const char *counter_name, double delta);
 
 		// start/stop recording time for a time-based event
-		static void StartTime(const char *counter_name);
-		static void StopTime(const char *counter_name);
- */
+		static void StartCpuTime(const char *counter_name);
+		static void StopCpuTime(const char *counter_name);
 
 	private:
 
@@ -190,7 +214,8 @@ namespace gpos
 		// allocated (existing or new) key and value structs
 		BOOL FindByName(const char *counter_name,
 						SDebugCounterKey **key,
-						SDebugCounterValue **val);
+						SDebugCounterValue **val,
+						enum ECounterType typ);
 
 		// insert or update a key value pair that was generated
 		// by FindByName()
@@ -202,6 +227,9 @@ namespace gpos
 
 		// the single instance of this object, allocated by Init()
 		static CDebugCounter *m_instance;
+
+		// add a start marker to help finding events from one session
+		BOOL m_start_marker_has_been_logged;
 
 		// turn off debug counters triggered by internal calls
 		BOOL m_suppress_counting;

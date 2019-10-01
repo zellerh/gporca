@@ -315,8 +315,6 @@ COptimizer::PdxlnOptimize
 			CExpression *pexprPlan = PexprOptimize(mp, pqc, search_stage_array);
 			GPOS_CHECK_ABORT;
 
-			GPOS_DEBUG_COUNTER_BUMP("My first counter, hooray");
-
 			PrintQueryOrPlan(mp, pexprPlan);
 
 			// translate plan into DXL
