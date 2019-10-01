@@ -79,6 +79,9 @@
 
 
 #include "gpos/base.h"
+#include "gpos/common/CRefCount.h"
+#include "gpos/common/CHashMap.h"
+#include "gpos/common/CHashMapIter.h"
 
 #ifdef GPOS_DEBUG
 // enable this feature
@@ -108,6 +111,40 @@ namespace gpos
 #ifdef GPOS_DEBUG_COUNTERS
 	class CDebugCounter
 	{
+		struct SDebugCounterKey : public CRefCount
+		{
+			SDebugCounterKey(const char *counter_name) :
+			m_counter_name(counter_name) {}
+
+			~SDebugCounterKey() {}
+
+			static
+			ULONG HashValue(const SDebugCounterKey *key);
+			static
+			BOOL Equals(const SDebugCounterKey *first,
+						const SDebugCounterKey *second)
+			{ return first->m_counter_name == second->m_counter_name; }
+
+			std::string m_counter_name;
+		};
+
+		struct SDebugCounterValue : public CRefCount
+		{
+			SDebugCounterValue() : m_counter(0) {}
+			~SDebugCounterValue() {}
+
+			ULLONG m_counter;
+		};
+
+		// hash map from component pair to connecting edges
+		typedef CHashMap<SDebugCounterKey, SDebugCounterValue, SDebugCounterKey::HashValue, SDebugCounterKey::Equals,
+		CleanupRelease<SDebugCounterKey>, CleanupRelease<SDebugCounterValue> >
+		CounterKeyToValueMap;
+
+		typedef CHashMapIter<SDebugCounterKey, SDebugCounterValue, SDebugCounterKey::HashValue, SDebugCounterKey::Equals,
+		CleanupRelease<SDebugCounterKey>, CleanupRelease<SDebugCounterValue> >
+		CounterKeyToValueMapIterator;
+
 
 	public:
 
@@ -126,12 +163,13 @@ namespace gpos
 		// record an event to be counted
 		static void Bump(const char *counter_name);
 /*
+		// add an integer or floating point quantity
 		static void Add(const char *counter_name, long delta);
 		static void AddDouble(const char *counter_name, double delta);
 
-		// start recording time for a time-based event
+		// start/stop recording time for a time-based event
 		static void StartTime(const char *counter_name);
-		static void EndTime(const char *counter_name);
+		static void StopTime(const char *counter_name);
  */
 
 	private:
@@ -148,13 +186,25 @@ namespace gpos
 		// prevent crashes and infinite recursion when trying to call these methods at the wrong time
 		static bool OkToProceed() { return (NULL != m_instance && !m_instance->m_suppress_counting); }
 
+		// search for a counter by name and return
+		// allocated (existing or new) key and value structs
+		BOOL FindByName(const char *counter_name,
+						SDebugCounterKey **key,
+						SDebugCounterValue **val);
+
+		// insert or update a key value pair that was generated
+		// by FindByName()
+		void InsertOrUpdateCounter(SDebugCounterKey *key,
+								   SDebugCounterValue *val,
+								   BOOL update);
+
 		CMemoryPool *m_mp;
-		
+
 		// the single instance of this object, allocated by Init()
 		static CDebugCounter *m_instance;
 
 		// turn off debug counters triggered by internal calls
-		bool m_suppress_counting;
+		BOOL m_suppress_counting;
 
 		// statement number, increased every time a SQL statement gets optimized by ORCA
 		ULONG m_qry_number;
@@ -162,6 +212,12 @@ namespace gpos
 		// optional query name, assigned by explaining or running a query of a special form,
 		// see above
 		std::string m_qry_name;
+		// is this statement a constant get to name the next query?
+		BOOL m_is_name_constant_get;
+
+		// hash map, holding all the counter values for
+		// the current query
+		CounterKeyToValueMap *m_hashmap;
 
 	};
 
