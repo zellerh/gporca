@@ -59,7 +59,6 @@ void CDebugCounter::Init()
 
 void CDebugCounter::NextQry(const char *next_qry_name)
 {
-	m_instance->m_qry_number++;
 	if (NULL != next_qry_name && '\0' != *next_qry_name)
 	{
 		m_instance->m_qry_name = next_qry_name;
@@ -67,10 +66,11 @@ void CDebugCounter::NextQry(const char *next_qry_name)
 	}
 	else
 	{
+		m_instance->m_qry_number++;
 		if (m_instance->m_is_name_constant_get)
 		{
-			// use the previously specified name and
-			// suppress logging for this simple constant get
+			// the previous query specified our name, use it
+			// and reset the flag, as this is now a real query
 			m_instance->m_is_name_constant_get = false;
 		}
 		else
