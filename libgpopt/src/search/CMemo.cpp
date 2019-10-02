@@ -11,6 +11,7 @@
 
 #include "gpos/base.h"
 #include "gpos/common/CAutoTimer.h"
+#include "gpos/common/CDebugCounter.h"
 #include "gpos/common/CSyncHashtableAccessByIter.h"
 #include "gpos/common/CSyncHashtableAccessByKey.h"
 #include "gpos/io/COstreamString.h"
@@ -282,6 +283,7 @@ CMemo::PgroupInsert
 	{
 		// we may add a new group to Memo, so we derive props here
 		(void) pexprOrigin->PdpDerive();
+		GPOS_DEBUG_COUNTER_BUMP("memo_groups");
 	}
 
 	if (NULL != pgexprFound)

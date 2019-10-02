@@ -9,6 +9,7 @@
 //		Implementation of group optimization job
 //---------------------------------------------------------------------------
 
+#include "gpos/common/CDebugCounter.h"
 #include "gpopt/engine/CEngine.h"
 #include "gpopt/search/CGroup.h"
 #include "gpopt/search/CGroupExpression.h"
@@ -392,6 +393,10 @@ CJobGroupOptimization::ScheduleJob
 	CJobGroupOptimization *pjgo = PjConvert(pj);
 	pjgo->Init(pgroup, pgexprOrigin, poc);
 	psc->Psched()->Add(pjgo, pjParent);
+	if (pgroup->FScalar())
+		GPOS_DEBUG_COUNTER_BUMP("group_optimization_jobs_scalar");
+	else
+		GPOS_DEBUG_COUNTER_BUMP("group_optimization_jobs_relational");
 }
 
 #ifdef GPOS_DEBUG

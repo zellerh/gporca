@@ -11,6 +11,7 @@
 #include "gpos/base.h"
 #include "gpos/common/CAutoTimer.h"
 #include "gpos/common/syslibwrapper.h"
+#include "gpos/common/CDebugCounter.h"
 #include "gpos/io/COstreamString.h"
 #include "gpos/string/CWStringDynamic.h"
 #include "gpos/task/CAutoTaskProxy.h"
@@ -235,6 +236,7 @@ CEngine::AddEnforcers
 		CGroup * pgroup =
 #endif // GPOS_DEBUG
 			PgroupInsert(pgexpr->Pgroup(), pexprEnforcer, CXform::ExfInvalid, NULL /*pgexprOrigin*/, false /*fIntermediate*/);
+		GPOS_DEBUG_COUNTER_BUMP("enforcers");
 		GPOS_ASSERT(pgroup == pgexpr->Pgroup());
 	}
 }
@@ -308,6 +310,13 @@ CEngine::PgroupInsert
 	GPOS_CHECK_STACK_SIZE;
 	GPOS_CHECK_ABORT;
 	GPOS_ASSERT_IMP(CXform::ExfInvalid != exfidOrigin, NULL != pgexprOrigin);
+	GPOS_DEBUG_COUNTER_BUMP("expressions_in_memo");
+	if (pexpr->Pop()->FLogical())
+		GPOS_DEBUG_COUNTER_BUMP("logical_expressions_in_memo");
+	else if (pexpr->Pop()->FPhysical())
+		GPOS_DEBUG_COUNTER_BUMP("physical_expressions_in_memo");
+	else if (pexpr->Pop()->FScalar())
+		GPOS_DEBUG_COUNTER_BUMP("scalar_expressions_in_memo");
 
 	CGroup *pgroupOrigin = NULL;
 	
@@ -389,13 +398,16 @@ CEngine::InsertXformResult
 		(*m_pdrgpulpXformBindings)[m_ulCurrSearchStage][exfidOrigin] += ulNumberOfBindings;
 		(*m_pdrgpulpXformResults)[m_ulCurrSearchStage][exfidOrigin] += pxfres->Pdrgpexpr()->Size();
 	}
+	GPOS_DEBUG_COUNTER_BUMP("xforms");
 
 	CExpression *pexpr = pxfres->PexprNext();
 	while (NULL != pexpr)
 	{
+		GPOS_DEBUG_COUNTER_BUMP("xform_results");
 		CGroup *pgroupContainer = PgroupInsert(pgroupOrigin, pexpr, exfidOrigin, pgexprOrigin, false /*fIntermediate*/);
 		if (pgroupContainer != pgroupOrigin && FPossibleDuplicateGroups(pgroupContainer, pgroupOrigin))
 		{
+			GPOS_DEBUG_COUNTER_BUMP("duplicate_groups");
 			m_pmemo->MarkDuplicates(pgroupOrigin, pgroupContainer);
 		}
 
