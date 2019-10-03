@@ -1,10 +1,16 @@
 #!/usr/local/bin/python
-#
-# gets the values of debug counters collected with the code in the
-# CDebugCounter class, see file ../libgpos/include/gpos/common/CDebugCounter.h
-#
-# usage: get_debug_event_counters.py [--logFile <file>] [--allRuns]
-#
+
+import sys
+import subprocess
+import re
+import argparse
+import os
+
+_help = """
+Gets the values of debug counters collected with the code in the
+CDebugCounter class, see file ../libgpos/include/gpos/common/CDebugCounter.h
+"""
+
 # Description:
 #
 # We start by getting relevant log file lines using grep, looking for the pattern
@@ -19,12 +25,80 @@
 # Finally, for each run, we massage the log file lines into a CSV format by removing
 # leading and trailing elements. The result is a CSV file printed to stdout.
 
-import sys
-import subprocess
-import re
-import argparse
-import os
+try:
+	from gppylib.db import dbconn
+except ImportError, e:
+	sys.exit('ERROR: Cannot import modules.  Please check that you have sourced greenplum_path.sh to set PYTHONPATH. '
+			 'Detail: ' + str(e))
 
+glob_use_sql = False
+glob_sql_drop = False
+glob_conn = None
+
+# SQL queries
+# -----------------------------------------------------------------------------
+
+glob_drop_table = """
+drop table if exists debug_counters;
+"""
+
+glob_create_table = """
+create table if not exists debug_counters
+   (run int,
+    query_number int,
+    query_name text,
+    counter_name text,
+    counter_type text,
+    counter_value double precision)
+distributed by (query_number, counter_name)
+"""
+
+glob_insert = """
+insert into debug_counters values(%s, %s, '%s', '%s', '%s', %s)
+"""
+
+
+# SQL related methods
+# -----------------------------------------------------------------------------
+
+def connect(host, port_num, db_name):
+	try:
+		dburl = dbconn.DbURL(hostname=host, port=port_num, dbname=db_name)
+		conn = dbconn.connect(dburl, encoding="UTF8")
+	except Exception as e:
+		print("Exception during connect: %s" % e)
+		quit()
+	return conn
+
+
+def execute_sql(conn, sqlStr):
+	try:
+		dbconn.execSQL(conn, sqlStr)
+	except Exception as e:
+		print("")
+		print("Error executing query: %s; Reason: %s" % (sqlStr, e))
+		dbconn.execSQL(conn, "abort")
+
+
+def commit_db(conn):
+	execute_sql(conn, "commit")
+
+
+def print_or_insert_row(csv):
+	if glob_use_sql:
+		columns = csv.split(',')
+		execute_sql(glob_conn, glob_insert % tuple(columns))
+	else:
+		print(csv)
+
+
+def print_or_insert_header_row(csv):
+	if not glob_use_sql:
+		print(csv)
+
+
+# Methods related to reading and processing log files
+# -----------------------------------------------------------------------------
 
 def run_command(command):
 	p = subprocess.Popen(command,
@@ -54,13 +128,13 @@ def processLogFile(logFileLines, allruns):
 				if allruns or eof_match:
 					if not header_printed:
 						# print this header only once
-						print("run, query num, query name, counter name, counter_type, counter_value")
+						print_or_insert_header_row("run, query num, query name, counter name, counter_type, counter_value")
 						header_printed = True
 					# print a dummy counter line that indicates the starting time of the run
-					print("%d, 0, , %s, run_start_time, 0" % (current_run_number, current_run_name))
+					print_or_insert_row("%d, 0, , %s, run_start_time, 0" % (current_run_number, current_run_name))
 					# now print the actual counter values
 					for l in current_output:
-						print(l)
+						print_or_insert_row(l)
 
 			# prepare for the next run by cleaning out our output list, this happens whether
 			# we printed the previous run or whether we ignored it
@@ -88,24 +162,55 @@ def processLogFile(logFileLines, allruns):
 			current_output.append(csv)
 
 
+def parseargs():
+	parser = argparse.ArgumentParser(description=_help, version='1.0')
+
+	parser.add_argument("--logFile", default="",
+						help="GPDB log file saved from a run with debug event counters enabled (default is to search "
+							 "GPDB master log directory)")
+	parser.add_argument("--allRuns", action="store_true",
+						help="Record all runs, instead of just the last one, use this if you had several psql runs")
+	parser.add_argument("--sql", action="store_true",
+						help="Instead of printing the results on stdout, record them in an SQL database")
+	parser.add_argument("--host", default="localhost",
+						help="Host to connect to (default is localhost).")
+	parser.add_argument("--port", type=int, default="0",
+						help="Port on the host to connect to")
+	parser.add_argument("--dbName", default="",
+						help="Database name to connect to")
+	parser.add_argument("--recreateTable", action="store_true",
+						help="Drop and recreate the debug_counters table, erasing any pre-existing data")
+
+	parser.set_defaults(verbose=False, filters=[], slice=(None, None))
+
+	# Parse the command line arguments
+	args = parser.parse_args()
+	return args, parser
+
 
 def main():
-	parser = argparse.ArgumentParser(description='Get logged debug event counter data')
-	parser.add_argument('--logFile',
-						help='GPDB log file saved from a run with debug event counters enabled (default is to search '
-							 'GPDB master log directory)')
-	parser.add_argument('--allRuns', action='store_true',
-						help='record all runs, instead of just the last one, use this if you had several psql runs')
+	global glob_use_sql
+	global glob_conn
+	global glob_sql_drop
 
-	args = parser.parse_args()
+	args, parser = parseargs()
 
 	logfile = args.logFile
 	allruns = args.allRuns
+	glob_use_sql = args.sql
+	glob_sql_drop = args.recreateTable
+
+	if glob_use_sql:
+		glob_conn = connect(args.host, args.port, args.dbName)
+		if glob_sql_drop:
+			execute_sql(glob_conn, glob_drop_table)
+		execute_sql(glob_conn, glob_create_table)
+		commit_db(glob_conn)
 
 	grep_command = 'grep CDebugCounterEvent '
 	gather_command = ['sh', '-c']
 
-	if logfile is None:
+	if logfile is None or len(logfile) == 0:
 		if 'MASTER_DATA_DIRECTORY' in os.environ:
 			master_data_dir = os.environ['MASTER_DATA_DIRECTORY']
 		else:
@@ -123,6 +228,9 @@ def main():
 
 	processLogFile(all_lines, allruns)
 
+	if glob_use_sql:
+		commit_db(glob_conn)
+		glob_conn.close()
 
 if __name__ == "__main__":
 	main()
