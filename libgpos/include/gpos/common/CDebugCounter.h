@@ -92,18 +92,18 @@
 // define macros
 #ifdef GPOS_DEBUG_COUNTERS
 
-#define GPOS_DEBUG_COUNTER_BUMP(q)             gpos::CDebugCounter::Bump(q)
-#define GPOS_DEBUG_COUNTER_ADD(q, d)           gpos::CDebugCounter::Add(q, d)
-#define GPOS_DEBUG_COUNTER_ADD_DOUBLE(q, d)    gpos::CDebugCounter::AddDouble(q, d)
-#define GPOS_DEBUG_COUNTER_START_CPU_TIME(q)   gpos::CDebugCounter::StartCpuTime(q)
-#define GPOS_DEBUG_COUNTER_STOP_CPU_TIME(q)    gpos::CDebugCounter::StopCpuTime(q)
+#define GPOS_DEBUG_COUNTER_BUMP(c)             gpos::CDebugCounter::Bump(c)
+#define GPOS_DEBUG_COUNTER_ADD(c, d)           gpos::CDebugCounter::Add(c, d)
+#define GPOS_DEBUG_COUNTER_ADD_DOUBLE(c, d)    gpos::CDebugCounter::AddDouble(c, d)
+#define GPOS_DEBUG_COUNTER_START_CPU_TIME(c)   gpos::CDebugCounter::StartCpuTime(c)
+#define GPOS_DEBUG_COUNTER_STOP_CPU_TIME(c)    gpos::CDebugCounter::StopCpuTime(c)
 #else
 // empty definitions otherwise
-#define GPOS_DEBUG_COUNTER_BUMP(q)
-#define GPOS_DEBUG_COUNTER_ADD(q, d)
-#define GPOS_DEBUG_COUNTER_ADD_DOUBLE(q, d)
-#define GPOS_DEBUG_COUNTER_START_CPU_TIME(q)
-#define GPOS_DEBUG_COUNTER_STOP_CPU_TIME(q)
+#define GPOS_DEBUG_COUNTER_BUMP(c)
+#define GPOS_DEBUG_COUNTER_ADD(c, d)
+#define GPOS_DEBUG_COUNTER_ADD_DOUBLE(c, d)
+#define GPOS_DEBUG_COUNTER_START_CPU_TIME(c)
+#define GPOS_DEBUG_COUNTER_STOP_CPU_TIME(c)
 #endif
 
 namespace gpos
