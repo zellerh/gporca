@@ -931,9 +931,9 @@ namespace gpopt
 				CColRefArray *pdrgpcrOutput,
 				CColRefSet *outer_refs,
 				CColRefSet *pcrsReqd,
-				CExpressionArray *pdrgpexprBitmapNew,
-				CExpressionArray *pdrgpexprRecheckNew,
-				CExpressionArray *pdrgpexprResidual
+				CExpression **pexprBitmapResult,
+				CExpression **pexprRecheckResult,
+				CExpressionArray *pdrgpexprResidualResult
 				);
 
 			// check if expression has any scalar node with ambiguous return type

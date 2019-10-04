@@ -183,10 +183,8 @@ CPredicateUtils::FIdentCompareOuterRefIgnoreCast
 	CExpression *pexprLeft = (*pexpr)[0];
 	CExpression *pexprRight = (*pexpr)[1];
 
-	BOOL leftIsACol = (CUtils::FScalarIdent(pexprLeft) ||
-					   CScalarIdent::FCastedScId(pexprLeft));
-	BOOL rightIsACol = (CUtils::FScalarIdent(pexprRight) ||
-						CScalarIdent::FCastedScId(pexprRight));
+	BOOL leftIsACol = (CUtils::FScalarIdentIgnoreCast(pexprLeft));
+	BOOL rightIsACol = (CUtils::FScalarIdentIgnoreCast(pexprRight));
     CColRefSet *pcrsUsedLeft = CDrvdPropScalar::GetDrvdScalarProps(pexprLeft->PdpDerive())->PcrsUsed();
 	CColRefSet *pcrsUsedRight = CDrvdPropScalar::GetDrvdScalarProps(pexprRight->PdpDerive())->PcrsUsed();
 
@@ -1356,7 +1354,7 @@ CPredicateUtils::FArrayCompareIdentToConstIgnoreCast(CExpression *pexpr)
 	CExpression *pexprLeft = (*pexpr)[0];
 	CExpression *pexprRight = (*pexpr)[1];
 
-	if (CUtils::FScalarIdent(pexprLeft) || CScalarIdent::FCastedScId(pexprLeft))
+	if (CUtils::FScalarIdentIgnoreCast(pexprLeft))
 	{
 		if((CUtils::FScalarArray(pexprRight) || CUtils::FScalarArrayCoerce(pexprRight)))
 		{
