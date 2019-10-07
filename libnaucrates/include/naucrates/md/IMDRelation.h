@@ -228,12 +228,11 @@ namespace gpmd
 			static
 			const CWStringConst *GetStorageTypeStr(IMDRelation::Erelstoragetype rel_storage_type);
 
-			BOOL IsAOTable() const
+			BOOL IsAORowOrColTable() const
 			{
 				Erelstoragetype st = RetrieveRelStorageType();
 				return st == ErelstorageAppendOnlyCols ||
-						st == ErelstorageAppendOnlyRows ||
-						st == ErelstorageAppendOnlyParquet;
+					   st == ErelstorageAppendOnlyRows;
 			}
 	};
 

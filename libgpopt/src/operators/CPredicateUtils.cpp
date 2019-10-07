@@ -166,16 +166,16 @@ CPredicateUtils::FComparison
 }
 
 BOOL
-CPredicateUtils::FIdentCompareOuterRefIgnoreCast
+CPredicateUtils::FIdentCompareOuterRefExprIgnoreCast
 (
  CExpression *pexpr,
- CColRefSet *pcrsAllowedRefs, // other column references allowed in the comparison
+ CColRefSet *pcrsOuterRefs, // other column references allowed in the comparison
  CColRef **localColRef
 )
 {
 	GPOS_ASSERT(NULL != pexpr);
 
-	if (COperator::EopScalarCmp != pexpr->Pop()->Eopid() || NULL == pcrsAllowedRefs)
+	if (COperator::EopScalarCmp != pexpr->Pop()->Eopid() || NULL == pcrsOuterRefs)
 	{
 		return false;
 	}
@@ -183,25 +183,25 @@ CPredicateUtils::FIdentCompareOuterRefIgnoreCast
 	CExpression *pexprLeft = (*pexpr)[0];
 	CExpression *pexprRight = (*pexpr)[1];
 
-	BOOL leftIsACol = (CUtils::FScalarIdentIgnoreCast(pexprLeft));
-	BOOL rightIsACol = (CUtils::FScalarIdentIgnoreCast(pexprRight));
+	BOOL leftIsACol = CUtils::FScalarIdentIgnoreCast(pexprLeft);
+	BOOL rightIsACol = CUtils::FScalarIdentIgnoreCast(pexprRight);
     CColRefSet *pcrsUsedLeft = CDrvdPropScalar::GetDrvdScalarProps(pexprLeft->PdpDerive())->PcrsUsed();
 	CColRefSet *pcrsUsedRight = CDrvdPropScalar::GetDrvdScalarProps(pexprRight->PdpDerive())->PcrsUsed();
 
 	// allow any expressions of the form
 	//  col = expr(outer refs)
 	//  expr(outer refs) = col
-	BOOL colOpOuterref = (leftIsACol && !pcrsAllowedRefs->FIntersects(pcrsUsedLeft) && pcrsAllowedRefs->ContainsAll(pcrsUsedRight));
-	BOOL outerRefOpCol = (rightIsACol && !pcrsAllowedRefs->FIntersects(pcrsUsedRight) && pcrsAllowedRefs->ContainsAll(pcrsUsedLeft));
+	BOOL colOpOuterrefExpr = (leftIsACol && !pcrsOuterRefs->FIntersects(pcrsUsedLeft) && pcrsOuterRefs->ContainsAll(pcrsUsedRight));
+	BOOL outerRefExprOpCol = (rightIsACol && !pcrsOuterRefs->FIntersects(pcrsUsedRight) && pcrsOuterRefs->ContainsAll(pcrsUsedLeft));
 
 	if (NULL != localColRef)
 	{
-		if (colOpOuterref)
+		if (colOpOuterrefExpr)
 		{
 			GPOS_ASSERT(pcrsUsedLeft->Size() == 1);
 			*localColRef = pcrsUsedLeft->PcrFirst();
 		}
-		else if (outerRefOpCol)
+		else if (outerRefExprOpCol)
 		{
 			GPOS_ASSERT(pcrsUsedRight->Size() == 1);
 			*localColRef = pcrsUsedRight->PcrFirst();
@@ -213,7 +213,7 @@ CPredicateUtils::FIdentCompareOuterRefIgnoreCast
 		}
 	}
 
-	return colOpOuterref || outerRefOpCol;
+	return colOpOuterrefExpr || outerRefExprOpCol;
 }
 
 // Check whether the given expression contains references to only the given
@@ -2916,7 +2916,7 @@ CPredicateUtils::FBitmapLookupSupportedPredicateOrConjunct
 
 	// indexes allow ident cmp const and ident cmp outerref
 	if(CPredicateUtils::FIdentCompareConstIgnoreCast(pexpr, COperator::EopScalarCmp) ||
-	   CPredicateUtils::FIdentCompareOuterRefIgnoreCast(pexpr, outer_refs) ||
+	   CPredicateUtils::FIdentCompareOuterRefExprIgnoreCast(pexpr, outer_refs) ||
 	   CPredicateUtils::FArrayCompareIdentToConstIgnoreCast(pexpr) ||
 	   CUtils::FScalarIdentBoolType(pexpr) ||
 	   (!CUtils::FScalarIdentBoolType(pexpr) && CPredicateUtils::FNotIdent(pexpr)))

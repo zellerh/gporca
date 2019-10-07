@@ -86,6 +86,7 @@ CFilterStatsProcessor::SelectivityOfPredicate
 
 	CColRefSet *used_col_refs = CDrvdPropScalar::GetDrvdScalarProps(pred->PdpDerive())->PcrsUsed();
 	CColRefSet *used_local_col_refs = GPOS_NEW(mp) CColRefSet(mp, *used_col_refs);
+	ULONG num_outer_ref_preds = 0;
 
 	if (NULL != outer_refs)
 	{
@@ -137,7 +138,7 @@ CFilterStatsProcessor::SelectivityOfPredicate
 			CExpression *pexpr = (*outer_ref_exprs)[ul];
 			CColRef *local_col_ref = NULL;
 
-			if (CPredicateUtils::FIdentCompareOuterRefIgnoreCast(pexpr, outer_refs, &local_col_ref))
+			if (CPredicateUtils::FIdentCompareOuterRefExprIgnoreCast(pexpr, outer_refs, &local_col_ref))
 			{
 				CScalarCmp *sc_cmp = CScalarCmp::PopConvert(pexpr->Pop());
 				// Use more accurate NDV calculation if the comparison is an equality type
@@ -161,6 +162,7 @@ CFilterStatsProcessor::SelectivityOfPredicate
 					// a comparison col op <outer ref> other than an equals
 					result = result * CHistogram::DefaultSelectivity;
 				}
+				num_outer_ref_preds++;
 			}
 			else
 			{
@@ -170,12 +172,29 @@ CFilterStatsProcessor::SelectivityOfPredicate
 					// some other expression, not of the form col op <outer ref>,
 					// e.g. an OR expression
 					result = result * CHistogram::DefaultSelectivity;
+					num_outer_ref_preds++;
 				}
 			}
 		}
 
 		expr_with_outer_refs->Release();
 		outer_ref_exprs->Release();
+	}
+
+	// apply damping factor to the outer ref predicates whose selectivities we multiplied above
+	if (result < 1.0)
+	{
+		// add one for the combined non-outer refs which were dampened internally,
+		// but not in combination with the preds on outer refs
+		num_outer_ref_preds++;
+	}
+	if (1 < num_outer_ref_preds)
+	{
+		CStatisticsConfig *stats_config = CStatisticsConfig::PstatsconfDefault(mp);
+
+		result = result * CScaleFactorUtils::DampedFilterScaleFactor(stats_config, num_outer_ref_preds);
+
+		stats_config->Release();
 	}
 	result_stats->Release();
 	local_expr->Release();

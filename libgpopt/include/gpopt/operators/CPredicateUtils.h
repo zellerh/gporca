@@ -198,12 +198,13 @@ namespace gpopt
 			static
 			BOOL FIdentCompareConstIgnoreCast(CExpression *pexpr, COperator::EOperatorId);
 
-			// check if a given expression is a comparison between a column and a constant or
-			// an outer reference (from a given ColRefSet), it returns the colref of the local table
+			// check if a given expression is a comparison between a column and an expression
+			// using only constants and one or more outer references from a given ColRefSet,
+			// it optionally returns the colref of the local table
 			static
-			BOOL FIdentCompareOuterRefIgnoreCast(CExpression *pexpr,
-												 CColRefSet *pcrsAllowedRefs,
-												 CColRef **localColRef = NULL);
+			BOOL FIdentCompareOuterRefExprIgnoreCast(CExpression *pexpr,
+													 CColRefSet *pcrsOuterRefs,
+													 CColRef **localColRef = NULL);
 
 			// is the given expression a comparison between scalar ident and a const array
 			// either the ident or constant array can be casted

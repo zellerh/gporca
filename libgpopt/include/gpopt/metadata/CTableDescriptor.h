@@ -216,11 +216,10 @@ namespace gpopt
 				return m_fHasPartialIndexes;
 			}
 
-			BOOL IsAOTable() const
+			BOOL IsAORowOrColTable() const
 			{
 				return m_erelstoragetype == IMDRelation::ErelstorageAppendOnlyCols ||
-					   m_erelstoragetype == IMDRelation::ErelstorageAppendOnlyRows ||
-					   m_erelstoragetype == IMDRelation::ErelstorageAppendOnlyParquet;
+					   m_erelstoragetype == IMDRelation::ErelstorageAppendOnlyRows;
 			}
 
 	}; // class CTableDescriptor

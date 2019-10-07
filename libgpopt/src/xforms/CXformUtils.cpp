@@ -40,6 +40,10 @@
 #include "naucrates/statistics/CFilterStatsProcessor.h"
 using namespace gpopt;
 
+// predicates less selective than this threshold
+// (selectivity is greater than this number) lead to
+// disqualification of a btree index on an AO table
+#define AO_TABLE_BTREE_INDEX_SELECTIVITY_THRESHOLD 0.05
 
 //---------------------------------------------------------------------------
 //	@function:
@@ -2349,7 +2353,7 @@ CXformUtils::FIndexApplicable
 	}
 	else if (emdindtype == IMDIndex::EmdindBitmap &&
 			 pmdindex->IndexType() == IMDIndex::EmdindBtree &&
-			 pmdrel->IsAOTable())
+			 pmdrel->IsAORowOrColTable())
 	{
 		// continue, Btree indexes on AO tables can be treated as Bitmap tables
 	}
@@ -3415,7 +3419,8 @@ CXformUtils::PexprBitmapSelectBestIndex
 			pexprIndex->Release();
 
 			// Btree indexes on AO tables are only great when the NDV is high. Do this check here
-			if (selectivity > 0.05 && pmdrel->IsAOTable() && pmdindex->IndexType() == IMDIndex::EmdindBtree)
+			if (selectivity > AO_TABLE_BTREE_INDEX_SELECTIVITY_THRESHOLD && pmdrel->IsAORowOrColTable() &&
+				pmdindex->IndexType() == IMDIndex::EmdindBtree)
 			{
 				pdrgpexprIndex->Release();
 				pdrgpexprResidual->Release();
@@ -3679,7 +3684,7 @@ CXformUtils::CreateBitmapIndexProbesWithOrWithoutPredBreakdown
 
 		if (NULL != pexprBitmapLocal)
 		{
-			GPOS_ASSERT(NULL != pexprRecheckResult);
+			GPOS_ASSERT(NULL != pexprRecheckLocal);
 
 			pdrgpexprRecheckTemp->Append(pexprRecheckLocal);
 			pdrgpexprBitmapTemp->Append(pexprBitmapLocal);
