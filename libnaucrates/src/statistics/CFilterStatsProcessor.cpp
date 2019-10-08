@@ -193,7 +193,8 @@ CFilterStatsProcessor::SelectivityOfPredicate
 	{
 		CStatisticsConfig *stats_config = CStatisticsConfig::PstatsconfDefault(mp);
 
-		result = result / CScaleFactorUtils::DampedFilterScaleFactor(stats_config, num_outer_ref_preds);
+		result = std::min(result.Get() / CScaleFactorUtils::DampedFilterScaleFactor(stats_config, num_outer_ref_preds).Get(),
+						  1.0);
 
 		stats_config->Release();
 	}
