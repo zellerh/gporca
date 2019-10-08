@@ -122,6 +122,7 @@ CFilterStatsProcessor::SelectivityOfPredicate
 	IStatistics *result_stats = CFilterStatsProcessor::MakeStatsFilter(mp, dynamic_cast<CStatistics *>(base_table_stats), pred_stats, false);
 
 	CDouble result = result_stats->Rows() / base_table_stats->Rows();
+	BOOL have_local_preds = (result < 1.0);
 	pred_stats->Release();
 	used_local_col_refs->Release();
 	base_table_stats->Release();
@@ -182,7 +183,7 @@ CFilterStatsProcessor::SelectivityOfPredicate
 	}
 
 	// apply damping factor to the outer ref predicates whose selectivities we multiplied above
-	if (result < 1.0)
+	if (have_local_preds)
 	{
 		// add one for the combined non-outer refs which were dampened internally,
 		// but not in combination with the preds on outer refs
@@ -192,7 +193,7 @@ CFilterStatsProcessor::SelectivityOfPredicate
 	{
 		CStatisticsConfig *stats_config = CStatisticsConfig::PstatsconfDefault(mp);
 
-		result = result * CScaleFactorUtils::DampedFilterScaleFactor(stats_config, num_outer_ref_preds);
+		result = result / CScaleFactorUtils::DampedFilterScaleFactor(stats_config, num_outer_ref_preds);
 
 		stats_config->Release();
 	}
