@@ -50,8 +50,6 @@ def cmake_configure(src_dir, build_type, output_dir, cxx_compiler = None, cxxfla
 
     cmake_args.append("../" + src_dir)
     cmake_command = " ".join(cmake_args)
-    if os.path.exists('/opt/gcc_env.sh'):
-        cmake_command = "source /opt/gcc_env.sh && " + cmake_command
     print cmake_command
     return subprocess.call(cmake_command, cwd="build", shell=True)
 
@@ -77,7 +75,8 @@ def run_tests():
                             "-j" + str(num_cpus()),
                             "--test-load", str(4 * num_cpus()),
                             ],
-                            cwd="build")
+                            cwd="build",
+                            env=os.environ)
 
 def install():
     return subprocess.call(["make", "install"], cwd="build")
