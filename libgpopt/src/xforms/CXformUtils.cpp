@@ -2336,7 +2336,8 @@ CXformUtils::FIndexApplicable
 	CColRefArray *pdrgpcrOutput,
 	CColRefSet *pcrsReqd,
 	CColRefSet *pcrsScalar,
-	IMDIndex::EmdindexType emdindtype
+	IMDIndex::EmdindexType emdindtype,
+	IMDIndex::EmdindexType altindtype
 	)
 {
 	// GiST can match with either Btree or Bitmap indexes
@@ -2356,8 +2357,9 @@ CXformUtils::FIndexApplicable
 	{
 		// continue, Btree indexes on AO tables can be treated as Bitmap tables
 	}
-	else if (emdindtype != pmdindex->IndexType() || // otherwise make sure the index matches the given type
-		0 == pcrsScalar->Size()) // no columns to match index against
+	else if ((emdindtype != pmdindex->IndexType() &&
+			  altindtype != pmdindex->IndexType()) || // otherwise make sure the index matches the given type(s)
+			 0 == pcrsScalar->Size()) // no columns to match index against
 	{
 		return false;
 	}
@@ -3013,8 +3015,8 @@ CXformUtils::PexprScalarBitmapBoolOp
 	CColRefSet *pcrsReqd,
 	BOOL fConjunction,
 	CExpression **ppexprRecheck,
-	CExpression **ppexprResidual
-
+	CExpression **ppexprResidual,
+	BOOL isAPartialPredicate
 	)
 {
 	GPOS_ASSERT(NULL != pdrgpexpr);
@@ -3044,7 +3046,8 @@ CXformUtils::PexprScalarBitmapBoolOp
 		fConjunction,
 		pdrgpexprBitmap,
 		pdrgpexprRecheckNew,
-		pdrgpexprResidualNew
+		pdrgpexprResidualNew,
+		isAPartialPredicate
 		);
 
 	GPOS_ASSERT(pdrgpexprRecheckNew->Size() == pdrgpexprBitmap->Size());
@@ -3310,7 +3313,8 @@ CXformUtils::PexprBitmapLookupWithPredicateBreakDown
 								pcrsReqd,
 								fConjunction,
 								ppexprRecheck,
-								ppexprResidual
+								ppexprResidual,
+								true /* we are now breaking up a predicate and want to consider BTree indexes as well */
 								);
 	pdrgpexpr->Release();
 
@@ -3344,7 +3348,8 @@ CXformUtils::PexprBitmapSelectBestIndex
 	CColRefSet *pcrsReqd,
 	CColRefSet *pcrsOuterRefs,
 	CExpression **ppexprRecheck,
-	CExpression **ppexprResidual
+	CExpression **ppexprResidual,
+	BOOL alsoConsiderBTreeIndexes
 	)
 {
 	CColRefSet *pcrsScalar = pexprPred->DeriveUsedColumns();
@@ -3353,6 +3358,12 @@ CXformUtils::PexprBitmapSelectBestIndex
 	CDouble bestSelectivity = CDouble(2.0); // selectivity can be a max value of 1
 	ULONG bestNumResiduals = gpos::ulong_max;
 	ULONG bestNumIndexCols = gpos::ulong_max;
+	IMDIndex::EmdindexType altIndexType = IMDIndex::EmdindBitmap;
+
+	if (alsoConsiderBTreeIndexes)
+	{
+		altIndexType = IMDIndex::EmdindBtree;
+	}
 
 	const ULONG ulIndexes = pmdrel->IndexCount();
 	for (ULONG ul = 0; ul < ulIndexes; ul++)
@@ -3367,7 +3378,8 @@ CXformUtils::PexprBitmapSelectBestIndex
 									pdrgpcrOutput,
 									pcrsReqd,
 									pcrsScalar,
-									IMDIndex::EmdindBitmap
+									IMDIndex::EmdindBitmap,
+									altIndexType
 									))
 		{
 			// found an applicable index
@@ -3526,7 +3538,8 @@ CXformUtils::CreateBitmapIndexProbeOps
 	BOOL, // fConjunction
 	CExpressionArray *pdrgpexprBitmap,
 	CExpressionArray *pdrgpexprRecheck,
-	CExpressionArray *pdrgpexprResidual
+	CExpressionArray *pdrgpexprResidual,
+	BOOL isAPartialPredicate
 	)
 {
 	GPOS_ASSERT(NULL != pdrgpexprPreds);
@@ -3552,7 +3565,8 @@ CXformUtils::CreateBitmapIndexProbeOps
 		 pcrsReqd,
 		 &pexprBitmap,
 		 &pexprRecheck,
-		 pdrgpexprResidual
+		 pdrgpexprResidual,
+		 isAPartialPredicate
 		 );
 
 		if (NULL != pexprBitmap)
@@ -3593,7 +3607,8 @@ CXformUtils::CreateBitmapIndexProbesWithOrWithoutPredBreakdown
 	CColRefSet *pcrsReqd,
 	CExpression **pexprBitmapResult,
 	CExpression **pexprRecheckResult,
-	CExpressionArray *pdrgpexprResidualResult
+	CExpressionArray *pdrgpexprResidualResult,
+	BOOL isAPartialPredicate
 	)
 {
 	CExpression *pexprRecheckLocal, *pexprResidualLocal, *pexprBitmapLocal;
@@ -3638,7 +3653,8 @@ CXformUtils::CreateBitmapIndexProbesWithOrWithoutPredBreakdown
 							pcrsReqd,
 							pcrsOuterRefs,
 							&pexprRecheckLocal,
-							&pexprResidualLocal
+							&pexprResidualLocal,
+							isAPartialPredicate
 							);
 
 			// since we did not break the conjunct tree, the index path found may cover a part of the
@@ -3936,7 +3952,8 @@ CXformUtils::PexprBitmapTableGet
 				pcrsReqd,
 				fConjunction,
 				&pexprRecheck,
-				&pexprResidual
+				&pexprResidual,
+				false
 				);
 	CExpression *pexprResult = NULL;
 
