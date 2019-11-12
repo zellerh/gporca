@@ -51,7 +51,6 @@ CDebugCounter::~CDebugCounter()
 {
   CRefCount::SafeRelease(m_hashmap);
   m_hashmap = NULL;
-  CMemoryPoolManager::GetMemoryPoolMgr()->Destroy(m_mp);
 }
 
 void CDebugCounter::Init()
@@ -70,8 +69,11 @@ void CDebugCounter::Shutdown()
 {
 	if (NULL != m_instance)
 	{
+		CMemoryPool *mp = m_instance->m_mp;
+
 		GPOS_DELETE(m_instance);
 		m_instance = NULL;
+		CMemoryPoolManager::GetMemoryPoolMgr()->Destroy(mp);
 	}
 }
 
