@@ -3641,6 +3641,15 @@ CXformUtils::CreateBitmapIndexProbesWithOrWithoutPredBreakdown
 			// i1 covering (d = 1 AND b = 2 AND c = 3) and i2 covering (g = 5 AND h = 6)
 			// with residual as e = 4.
 
+			BOOL isAPartialPredicateOrArrayCmp = isAPartialPredicate;
+
+			if (!isAPartialPredicateOrArrayCmp)
+			{
+				// btree indexes don't support array comparisons, therefore we consider
+				// a bitmap index scan on a btree index
+				isAPartialPredicateOrArrayCmp = CPredicateUtils::FArrayCompareIdentToConstIgnoreCast(pexprPred);
+			}
+
 			// this also applies for the simple predicates of the form "ident op const" or "ident op const-array"
 			pexprBitmapLocal = PexprBitmapSelectBestIndex
 							(
@@ -3654,7 +3663,7 @@ CXformUtils::CreateBitmapIndexProbesWithOrWithoutPredBreakdown
 							pcrsOuterRefs,
 							&pexprRecheckLocal,
 							&pexprResidualLocal,
-							isAPartialPredicate
+							isAPartialPredicateOrArrayCmp
 							);
 
 			// since we did not break the conjunct tree, the index path found may cover a part of the
