@@ -94,7 +94,7 @@ CIndexScanTest:
 BTreeIndex-Against-InList BTreeIndex-Against-ScalarSubquery
 IndexScan-AOTable IndexScan-DroppedColumns IndexScan-BoolTrue IndexScan-BoolFalse
 IndexScan-Relabel IndexGet-OuterRefs LogicalIndexGetDroppedCols NewBtreeIndexScanCost
-IndexScan-ORPredsNonPart IndexScan-ORPredsAOPart;
+IndexScan-ORPredsNonPart IndexScan-ORPredsAOPart IndexScan-AndedIn;
 
 CBitmapScanTest:
 IndexedNLJBitmap BitmapIndex-ChooseHashJoin BitmapTableScan-AO-Btree-PickOnlyHighNDV

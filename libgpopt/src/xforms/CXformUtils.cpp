@@ -3397,7 +3397,8 @@ CXformUtils::PexprBitmapSelectBestIndex
 				pdrgpcrIndexCols,
 				pdrgpexprIndex,
 				pdrgpexprResidual,
-				pcrsOuterRefs
+				pcrsOuterRefs,
+				alsoConsiderBTreeIndexes
 				);
 
 			pdrgpexprScalar->Release();
@@ -3645,9 +3646,17 @@ CXformUtils::CreateBitmapIndexProbesWithOrWithoutPredBreakdown
 
 			if (!isAPartialPredicateOrArrayCmp)
 			{
-				// btree indexes don't support array comparisons, therefore we consider
-				// a bitmap index scan on a btree index
-				isAPartialPredicateOrArrayCmp = CPredicateUtils::FArrayCompareIdentToConstIgnoreCast(pexprPred);
+				// consider a bitmap index scan on a btree index if we find any array comparisons,
+				// since we currently don't support those for regular index scans
+				CExpressionArray *conjuncts = CPredicateUtils::PdrgpexprConjuncts(pmp, pexprPred);
+				ULONG size = conjuncts->Size();
+
+				for (ULONG i=0; i<size && !isAPartialPredicateOrArrayCmp; i++)
+				{
+					isAPartialPredicateOrArrayCmp = CPredicateUtils::FArrayCompareIdentToConstIgnoreCast((*conjuncts)[i]);
+				}
+
+				conjuncts->Release();
 			}
 
 			// this also applies for the simple predicates of the form "ident op const" or "ident op const-array"
