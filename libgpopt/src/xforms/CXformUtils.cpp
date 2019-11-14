@@ -3663,7 +3663,8 @@ CXformUtils::CreateBitmapIndexProbesWithOrWithoutPredBreakdown
 							pcrsOuterRefs,
 							&pexprRecheckLocal,
 							&pexprResidualLocal,
-							isAPartialPredicateOrArrayCmp
+							isAPartialPredicateOrArrayCmp // for partial preds or array comps
+														  // we want to consider btree indexes
 							);
 
 			// since we did not break the conjunct tree, the index path found may cover a part of the
@@ -3962,7 +3963,7 @@ CXformUtils::PexprBitmapTableGet
 				fConjunction,
 				&pexprRecheck,
 				&pexprResidual,
-				false
+				false /*isAPartialPredicate*/
 				);
 	CExpression *pexprResult = NULL;
 
