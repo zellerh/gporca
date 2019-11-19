@@ -3314,9 +3314,8 @@ CXformUtils::PexprBitmapLookupWithPredicateBreakDown
 								fConjunction,
 								ppexprRecheck,
 								ppexprResidual,
-								!fConjunction /* we are now breaking up something other
-												 than an AND predicate predicate and
-												 want to consider BTree indexes as well */
+								!fConjunction /* we are now breaking up something other than an AND
+												 predicate and want to consider BTree indexes as well */
 								);
 	pdrgpexpr->Release();
 
