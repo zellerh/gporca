@@ -234,6 +234,16 @@ namespace gpopt
 				BOOL include_outer_join_childs
 				);
 		
+			// ctor used in CXformExpandNAryJoinDPv2
+			CJoinOrder
+				(
+				 CMemoryPool *mp,
+				 CExpressionArray *pdrgpexprComponents,
+				 CExpressionArray *innerJoinPredConjuncts,
+				 CExpressionArray *onPreds,
+				 ULongPtrArray *childPredIndexes
+				 );
+
 			// dtor
 			virtual
 			~CJoinOrder();			

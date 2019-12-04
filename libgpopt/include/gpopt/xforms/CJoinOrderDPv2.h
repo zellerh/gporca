@@ -118,6 +118,12 @@ namespace gpopt
 			// list of components, organized by level, main data structure for dynamic programming
 			ComponentInfoArrayLevels *m_join_levels;
 
+			// ON predicates for LOJs
+			CExpressionArray *m_on_pred_conjuncts;
+
+			// Association between logical children and inner join/ON preds
+			ULongPtrArray *m_child_pred_indexes;
+
 			// array of top-k join expression
 			CExpressionArray *m_topKOrders;
 
@@ -175,7 +181,9 @@ namespace gpopt
 				(
 				CMemoryPool *mp,
 				CExpressionArray *pdrgpexprComponents,
-				CExpressionArray *pdrgpexprConjuncts
+				CExpressionArray *innerJoinConjuncts,
+				CExpressionArray *onPredConjuncts,
+				ULongPtrArray *childPredIndexes
 				);
 
 			// dtor
@@ -191,6 +199,13 @@ namespace gpopt
 			{
 				return m_topKOrders;
 			}
+
+			// check for LOJs
+			BOOL
+			IsRightChildOfLOJ
+				(SComponentInfo *component,
+				 CExpression **onPredToUse
+				);
 
 			// print function
 			virtual

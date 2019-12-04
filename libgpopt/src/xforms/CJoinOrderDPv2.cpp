@@ -23,6 +23,7 @@
 #include "gpopt/operators/ops.h"
 #include "gpopt/operators/CPredicateUtils.h"
 #include "gpopt/operators/CNormalizer.h"
+#include "gpopt/operators/CScalarNAryJoinPredList.h"
 #include "gpopt/xforms/CJoinOrderDPv2.h"
 
 #include "gpopt/exception.h"
@@ -45,10 +46,14 @@ CJoinOrderDPv2::CJoinOrderDPv2
 	(
 	CMemoryPool *mp,
 	CExpressionArray *pdrgpexprComponents,
-	CExpressionArray *pdrgpexprConjuncts
+	CExpressionArray *innerJoinConjuncts,
+	CExpressionArray *onPredConjuncts,
+	ULongPtrArray *childPredIndexes
 	)
 	:
-	CJoinOrder(mp, pdrgpexprComponents, pdrgpexprConjuncts, false /* m_include_loj_childs */)
+	CJoinOrder(mp, pdrgpexprComponents, innerJoinConjuncts, onPredConjuncts, childPredIndexes),
+	m_on_pred_conjuncts(onPredConjuncts),
+	m_child_pred_indexes(childPredIndexes)
 {
 	m_join_levels = GPOS_NEW(mp) ComponentInfoArrayLevels(mp);
 	// put a NULL entry at index 0, because there are no 0-way joins
@@ -87,6 +92,8 @@ CJoinOrderDPv2::~CJoinOrderDPv2()
 	m_topKCosts->Release();
 	m_pexprDummy->Release();
 	m_join_levels->Release();
+	m_on_pred_conjuncts->Release();
+	CRefCount::SafeRelease(m_child_pred_indexes);
 #endif // GPOS_DEBUG
 }
 
@@ -354,7 +361,18 @@ CJoinOrderDPv2::GetJoinExpr
 	SComponentInfo *right_child
 	)
 {
-	CExpression *scalar_expr = PexprPred(left_child->component, right_child->component);
+	CExpression *scalar_expr = NULL;
+	BOOL isLOJ = IsRightChildOfLOJ(right_child, &scalar_expr);
+
+	if (NULL == scalar_expr)
+	{
+		scalar_expr = PexprPred(left_child->component, right_child->component);
+	}
+	else
+	{
+		// check whether scalar_expr can be computed from left_child and right_child,
+		// otherwise this is not a valid join
+	}
 
 	if (NULL == scalar_expr)
 	{
@@ -363,11 +381,19 @@ CJoinOrderDPv2::GetJoinExpr
 
 	CExpression *left_expr = left_child->best_expr;
 	CExpression *right_expr = right_child->best_expr;
+	CExpression *join_expr = NULL;
 
 	left_expr->AddRef();
 	right_expr->AddRef();
 
-	CExpression *join_expr = CUtils::PexprLogicalJoin<CLogicalInnerJoin>(m_mp, left_expr, right_expr, scalar_expr);
+	if (isLOJ)
+	{
+		join_expr = CUtils::PexprLogicalJoin<CLogicalLeftOuterJoin>(m_mp, left_expr, right_expr, scalar_expr);
+	}
+	else
+	{
+		join_expr = CUtils::PexprLogicalJoin<CLogicalInnerJoin>(m_mp, left_expr, right_expr, scalar_expr);
+	}
 
 	return join_expr;
 }
@@ -457,8 +483,11 @@ CJoinOrderDPv2::SearchJoinOrders
 
 			CExpression *join_expr = GetJoinExpr(left_component_info, right_component_info);
 
-			join_bitset->Union(right_bitset);
-			AddJoinExprAlternativeForBitSet(join_bitset, join_expr, join_pairs_map);
+			if (NULL != join_expr)
+			{
+				join_bitset->Union(right_bitset);
+				AddJoinExprAlternativeForBitSet(join_bitset, join_expr, join_pairs_map);
+			}
 			join_expr->Release();
 			join_bitset->Release();
 		}
@@ -725,6 +754,42 @@ CJoinOrderDPv2::GetCheapestJoinExprForBitSet
 	}
 	return cheapest_join_array;
 }
+
+BOOL
+CJoinOrderDPv2::IsRightChildOfLOJ
+	(SComponentInfo *component,
+	 CExpression **onPredToUse
+	)
+{
+	*onPredToUse = NULL;
+
+	if (1 != component->component->Size() || 0 == m_on_pred_conjuncts->Size())
+	{
+		// this is not a "one-way join" and only those can be right children
+		// of LOJs, or the entire NAry join doesn't contain any LOJs
+		return false;
+	}
+
+	// get the child predicate index for the "one-way join" represented
+	// by this component
+	CBitSetIter iter(*component->component);
+
+	iter.Advance();
+
+	ULONG childPredIndex = *(*m_child_pred_indexes)[iter.Bit()];
+
+	if (GPOPT_ZERO_INNER_JOIN_PRED_INDEX != childPredIndex)
+	{
+		// this "one-way join" is the right child of an LOJ,
+		// return the ON predicate to use and also return TRUE
+		*onPredToUse = (*m_on_pred_conjuncts)[childPredIndex];
+		return true;
+	}
+
+	// this is a "one-way join" that is not the right child of an LOJ
+	return false;
+}
+
 
 //---------------------------------------------------------------------------
 //	@function:

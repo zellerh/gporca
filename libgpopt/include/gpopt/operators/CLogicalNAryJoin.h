@@ -169,6 +169,12 @@ namespace gpopt
 				return (NULL == m_lojChildPredIndexes || *((*m_lojChildPredIndexes)[child_num]) == 0);
 			}
 
+			ULongPtrArray*
+			GetLojChildPredIndexes()
+			{
+				return m_lojChildPredIndexes;
+			}
+
 			virtual
 			IOstream & OsPrint(IOstream &os) const;
 

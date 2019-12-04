@@ -341,6 +341,92 @@ CJoinOrder::CJoinOrder
 
 //---------------------------------------------------------------------------
 //	@function:
+//		CJoinOrder::CJoinOrder
+//
+//	@doc:
+//		Ctor
+//
+//---------------------------------------------------------------------------
+CJoinOrder::CJoinOrder
+(
+ CMemoryPool *mp,
+ CExpressionArray *all_components,
+ CExpressionArray *innerJoinPredConjuncts,
+ CExpressionArray *onPreds,
+ ULongPtrArray *childPredIndexes
+ )
+:
+m_mp(mp),
+m_rgpedge(NULL),
+m_ulEdges(0),
+m_rgpcomp(NULL),
+m_ulComps(0),
+m_include_loj_childs(false) // not used by CXformExpandNAryJoinDPv2
+{
+	typedef SComponent* Pcomp;
+	typedef SEdge* Pedge;
+
+	const ULONG num_of_nary_children = all_components->Size();
+
+	m_ulComps = all_components->Size();
+	m_rgpcomp = GPOS_NEW_ARRAY(mp, Pcomp, m_ulComps);
+
+	m_ulEdges = innerJoinPredConjuncts->Size() + onPreds->Size();
+	m_rgpedge = GPOS_NEW_ARRAY(mp, Pedge, m_ulEdges);
+
+	// add the inner join edges first
+	for (ULONG ul = 0; ul < innerJoinPredConjuncts->Size(); ul++)
+	{
+		CExpression *pexprEdge = (*innerJoinPredConjuncts)[ul];
+		pexprEdge->AddRef();
+		m_rgpedge[ul] = GPOS_NEW(mp) SEdge(mp, pexprEdge, false /* is_loj */);
+	}
+
+	// add the left outer join edges
+	for (ULONG ul2 = 0; ul2 < onPreds->Size(); ul2++)
+	{
+		CExpression *pexprEdge = (*onPreds)[ul2];
+		ULONG logicalChildIndex = 0;
+
+		// search for number "ul2+1" in the childPredIndexes array, the
+		// entry that contains this number will be the logical child that
+		// is associated with our ON predicate pexprEdge
+		for (ULONG ci=0; ci<childPredIndexes->Size(); ci++)
+		{
+			if (*(*childPredIndexes)[ci] == ul2+1)
+			{
+				logicalChildIndex = ci;
+				break;
+			}
+		}
+
+		GPOS_ASSERT(0 < logicalChildIndex);
+
+		pexprEdge->AddRef();
+		m_rgpedge[ul2] = GPOS_NEW(mp) SEdge(mp, pexprEdge, true /* is_loj */);
+		// this edge (ON predicate) is always associated with the right
+		// child of the LOJ, whether it refers to it in the ON pred or not
+		// Example: select * from t1 left outer join t2 on t1.a=5
+		// We still want to associate this ON predicate with t2
+		m_rgpedge[ul2]->m_pbs->ExchangeSet(logicalChildIndex);
+	}
+
+	// create the components (both inner and LOJs)
+	for (ULONG ul = 0; ul < num_of_nary_children; ul++)
+	{
+		CExpression *expr = (*all_components)[ul];
+		AddComponent(mp, expr, NON_LOJ_DEFAULT_ID, EpSentinel /*position not used*/, ul);
+	}
+
+	ComputeEdgeCover();
+
+	all_components->Release();
+	innerJoinPredConjuncts->Release();
+}
+
+
+//---------------------------------------------------------------------------
+//	@function:
 //		CJoinOrder::~CJoinOrder
 //
 //	@doc:
