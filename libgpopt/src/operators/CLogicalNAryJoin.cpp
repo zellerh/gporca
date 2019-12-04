@@ -14,6 +14,7 @@
 #include "gpopt/base/CColumnFactory.h"
 #include "gpopt/base/COptCtxt.h"
 #include "gpopt/operators/CLogicalNAryJoin.h"
+#include "gpopt/operators/CPredicateUtils.h"
 #include "naucrates/statistics/CStatisticsUtils.h"
 
 using namespace gpopt;
@@ -62,7 +63,7 @@ CLogicalNAryJoin::CLogicalNAryJoin
 CMaxCard
 CLogicalNAryJoin::DeriveMaxCard
 	(
-	CMemoryPool *, // mp
+	CMemoryPool *mp,
 	CExpressionHandle &exprhdl
 	)
 	const
@@ -81,7 +82,35 @@ CLogicalNAryJoin::DeriveMaxCard
 		}
 	}
 
-	return CLogical::Maxcard(exprhdl, exprhdl.Arity() - 1, maxCard);
+	if (exprhdl.DerivePropertyConstraint()->FContradiction())
+	{
+		return CMaxCard(0 /*ull*/);
+	}
+
+	CExpression *pexprScalar = exprhdl.PexprScalarChild(arity-1);
+
+	if (NULL != pexprScalar)
+	{
+		if (COperator::EopScalarNAryJoinPredList == pexprScalar->Pop()->Eopid())
+		{
+			CExpression *pexprScalarChild = GetTrueInnerJoinPreds(mp, exprhdl);
+
+			// in case of a false condition (when the operator is non Inner Join)
+			// maxcard should be zero
+			if (CUtils::FScalarConstFalse(pexprScalarChild))
+			{
+				pexprScalarChild->Release();
+				return CMaxCard(0 /*ull*/);
+			}
+			pexprScalarChild->Release();
+		}
+		else
+		{
+			return CLogical::Maxcard(exprhdl, exprhdl.Arity() - 1, maxCard);
+		}
+	}
+
+	return maxCard;
 }
 
 //---------------------------------------------------------------------------
@@ -111,6 +140,76 @@ CLogicalNAryJoin::PxfsCandidates
 	return xform_set;
 }
 
+CExpression*
+CLogicalNAryJoin::GetTrueInnerJoinPreds(CMemoryPool *mp, CExpressionHandle &exprhdl) const
+{
+	ULONG arity = exprhdl.Arity();
+	CExpression *pexprScalar =  exprhdl.PexprScalarChild(arity-1);
+
+	if (!HasOuterJoinChildren())
+	{
+		// all inner joins, all the predicates are true inner join preds
+		pexprScalar->AddRef();
+		return pexprScalar;
+	}
+
+	CExpressionArray *predArray = NULL;
+	CExpressionArray *trueInnerJoinPredArray =  GPOS_NEW(mp) CExpressionArray (mp);
+	CExpression *innerJoinPreds = (*pexprScalar)[0];
+	BOOL isAConjunction = CPredicateUtils::FAnd(innerJoinPreds);
+
+	GPOS_ASSERT(COperator::EopScalarNAryJoinPredList == pexprScalar->Pop()->Eopid());
+
+	// split the predicate into conjuncts or disjuncts and inspect those individually
+	if (isAConjunction)
+	{
+		predArray = CPredicateUtils::PdrgpexprConjuncts(mp,innerJoinPreds);
+	}
+	else
+	{
+		predArray = CPredicateUtils::PdrgpexprDisjuncts(mp,innerJoinPreds);
+	}
+
+	for (ULONG ul = 0; ul < predArray->Size(); ul++)
+	{
+		CExpression *pred = (*predArray)[ul];
+		CColRefSet *predCols = pred->DeriveUsedColumns();
+		BOOL addToPredArray = true;
+
+		// check whether the predicate uses any ColRefs that come from a non-inner join child
+		for (ULONG c=0; c<exprhdl.Arity()-1; c++)
+		{
+			if (0 < *(*m_lojChildPredIndexes)[c])
+			{
+				// this is a right child of a non-inner join
+				CColRefSet *nijOutputCols = exprhdl.DeriveOutputColumns();
+
+				if (predCols->FIntersects(nijOutputCols))
+				{
+					// this predicate refers to some columns from non-inner joins,
+					// which may become NULL, even when the type of the column is NOT NULL,
+					// so the predicate may not actually be FALSE constants in some cases
+					addToPredArray = false;
+					break;
+				}
+			}
+		}
+
+		if (addToPredArray)
+		{
+			pred->AddRef();
+			trueInnerJoinPredArray->Append(pred);
+		}
+	}
+
+	predArray->Release();
+	if (0 == trueInnerJoinPredArray->Size())
+	{
+		trueInnerJoinPredArray->Release();
+		return CUtils::PexprScalarConstBool(mp, true);
+	}
+	return CPredicateUtils::PexprConjDisj(mp, trueInnerJoinPredArray, isAConjunction);
+}
 //---------------------------------------------------------------------------
 //	@function:
 //		CLogicalNAryJoin::OsPrint
