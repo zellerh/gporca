@@ -55,27 +55,31 @@ namespace gpopt
 			{
 				// cover of edge
 				CBitSet *m_pbs;
-				
+
 				// associated conjunct
 				CExpression *m_pexpr;
 
-				// tracks if the associated join is a LOJ
-				BOOL m_is_loj;
-				
+				// tracks if the associated join is a LOJ:
+				// check the derived classes of CJoinOrder, but here is a high-level summary:
+				// greedy, mincard: 0 means not an LOJ, 1 means this is an LOJ edge
+				// DP: always 0
+				// DPv2: 0 means inner join, >0: the index points to the entry in the array of ON predicates
+				ULONG m_loj_num;
+
 				// a flag to mark edge as used
 				BOOL m_fUsed;
 
 				// ctor
-				SEdge(CMemoryPool *mp, CExpression *pexpr, BOOL is_loj);
-				
+				SEdge(CMemoryPool *mp, CExpression *pexpr, ULONG loj_num);
+
 				// dtor
 				~SEdge();
-				
+
 				// print routine
 				IOstream &OsPrint(IOstream &os) const;
 			};
-			
-		
+
+
 			//---------------------------------------------------------------------------
 			//	@struct:
 			//		SComponent
@@ -98,6 +102,8 @@ namespace gpopt
 				// a flag to component edge as used
 				BOOL m_fUsed;
 
+				// for greedy and mincard:
+				//
 				// number indicating that this component contains
 				// child of LOJ x, where x is a an incremental id
 				// assigned to LOJ operators found in the NAry Join.
@@ -129,10 +135,15 @@ namespace gpopt
 				// contains the left child of LOJ 1.
 				// This helps to track that inner join between t1 and t2
 				// must be the left child of LOJ with t3.
+				//
+				// for DPv2:
+				//
+				// for right children of LOJs: 1-based id of the LOJ, 0 otherwise
 				INT m_parent_loj_id;
 
 				// enum indicating that this component contains left or
 				// right child of the LOJ
+				// (used for greedy and mincard, not used for DPv2)
 				EPosition m_position;
 
 				// ctor

@@ -118,11 +118,17 @@ namespace gpopt
 			// list of components, organized by level, main data structure for dynamic programming
 			ComponentInfoArrayLevels *m_join_levels;
 
-			// ON predicates for LOJs
+			// ON predicates for NIJs (non-inner joins, e.g. LOJs)
+			// currently NIJs are LOJs only, this may change in the future
+			// if/when we add semijoins, anti-semijoins and relatives
 			CExpressionArray *m_on_pred_conjuncts;
 
-			// Association between logical children and inner join/ON preds
+			// association between logical children and inner join/ON preds
+			// (which of the logical children are right children of NIJs and what ON predicates are they using)
 			ULongPtrArray *m_child_pred_indexes;
+
+			// for each non-inner join (entry in m_on_pred_conjuncts), the required components on the left
+			CBitSetArray *m_non_inner_join_dependencies;
 
 			// array of top-k join expression
 			CExpressionArray *m_topKOrders;
@@ -136,7 +142,7 @@ namespace gpopt
 			CMemoryPool *m_mp;
 
 			// build expression linking given components
-			CExpression *PexprBuildPred(CBitSet *pbsFst, CBitSet *pbsSnd);
+			CExpression *PexprBuildInnerJoinPred(CBitSet *pbsFst, CBitSet *pbsSnd);
 
 			// extract predicate joining the two given sets
 			CExpression *PexprPred(CBitSet *pbsFst, CBitSet *pbsSnd);
@@ -174,6 +180,9 @@ namespace gpopt
 
 			void AddExprs(const CExpressionArray *candidate_join_exprs, CExpressionArray *result_join_exprs);
 
+			ULONG FindLogicalChildByNijId(ULONG nij_num);
+
+
 		public:
 
 			// ctor
@@ -200,9 +209,9 @@ namespace gpopt
 				return m_topKOrders;
 			}
 
-			// check for LOJs
+			// check for NIJs
 			BOOL
-			IsRightChildOfLOJ
+			IsRightChildOfNIJ
 				(SComponentInfo *component,
 				 CExpression **onPredToUse
 				);

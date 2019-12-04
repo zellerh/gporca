@@ -165,14 +165,13 @@ CJoinOrder::SEdge::SEdge
 	(
 	CMemoryPool *mp,
 	CExpression *pexpr,
-	BOOL is_loj
+	ULONG loj_num
 	)
 	:
 	m_pbs(NULL),
 	m_pexpr(pexpr),
-	m_is_loj(is_loj),
+	m_loj_num(loj_num),
 	m_fUsed(false)
-
 {
 	m_pbs = GPOS_NEW(mp) CBitSet(mp);
 }
@@ -209,7 +208,7 @@ CJoinOrder::SEdge::OsPrint
 	const
 {
 	return os
-		<< (m_is_loj ? "Edge (loj): ": "Edge : ")
+		<< (m_loj_num > 0 ? "Edge (loj): ": "Edge : ")
 		<< (*m_pbs) << std::endl
 		<< (*m_pexpr) << std::endl;
 }
@@ -288,7 +287,7 @@ CJoinOrder::CJoinOrder
 	{
 		CExpression *pexprEdge = (*inner_join_conjuncts)[ul];
 		pexprEdge->AddRef();
-		m_rgpedge[ul] = GPOS_NEW(mp) SEdge(mp, pexprEdge, false /* is_loj */);
+		m_rgpedge[ul] = GPOS_NEW(mp) SEdge(mp, pexprEdge, 0 /* not an LOJ */);
 	}
 
 	// process LOJs & add components & LOJ edges
@@ -315,7 +314,7 @@ CJoinOrder::CJoinOrder
 			CExpression *scalar_expr = (*expr)[2];
 			scalar_expr->AddRef();
 			ULONG edge_idx = inner_join_conjuncts->Size() + loj_id - 1;
-			m_rgpedge[edge_idx] = GPOS_NEW(mp) SEdge(mp, scalar_expr, true /* is_loj */);
+			m_rgpedge[edge_idx] = GPOS_NEW(mp) SEdge(mp, scalar_expr, 1 /* is an LOJ */);
 
 			m_rgpcomp[comp_num]->m_edge_set->ExchangeSet(edge_idx);
 			m_rgpedge[edge_idx]->m_pbs->ExchangeSet(comp_num);
@@ -379,21 +378,24 @@ m_include_loj_childs(false) // not used by CXformExpandNAryJoinDPv2
 	{
 		CExpression *pexprEdge = (*innerJoinPredConjuncts)[ul];
 		pexprEdge->AddRef();
-		m_rgpedge[ul] = GPOS_NEW(mp) SEdge(mp, pexprEdge, false /* is_loj */);
+		m_rgpedge[ul] = GPOS_NEW(mp) SEdge(mp, pexprEdge, 0 /* not an LOJ */);
 	}
 
 	// add the left outer join edges
 	for (ULONG ul2 = 0; ul2 < onPreds->Size(); ul2++)
 	{
 		CExpression *pexprEdge = (*onPreds)[ul2];
+		// a 1-based id of the LOJ in this NAry join
+		ULONG lojId = ul2+1;
+		// the logical child index (right LOJ child) that belongs to our current predicate pexprEdge
 		ULONG logicalChildIndex = 0;
 
-		// search for number "ul2+1" in the childPredIndexes array, the
+		// search for number lojId in the childPredIndexes array, the
 		// entry that contains this number will be the logical child that
 		// is associated with our ON predicate pexprEdge
 		for (ULONG ci=0; ci<childPredIndexes->Size(); ci++)
 		{
-			if (*(*childPredIndexes)[ci] == ul2+1)
+			if (*(*childPredIndexes)[ci] == lojId)
 			{
 				logicalChildIndex = ci;
 				break;
@@ -403,7 +405,7 @@ m_include_loj_childs(false) // not used by CXformExpandNAryJoinDPv2
 		GPOS_ASSERT(0 < logicalChildIndex);
 
 		pexprEdge->AddRef();
-		m_rgpedge[ul2] = GPOS_NEW(mp) SEdge(mp, pexprEdge, true /* is_loj */);
+		m_rgpedge[ul2] = GPOS_NEW(mp) SEdge(mp, pexprEdge, lojId);
 		// this edge (ON predicate) is always associated with the right
 		// child of the LOJ, whether it refers to it in the ON pred or not
 		// Example: select * from t1 left outer join t2 on t1.a=5
@@ -415,7 +417,9 @@ m_include_loj_childs(false) // not used by CXformExpandNAryJoinDPv2
 	for (ULONG ul = 0; ul < num_of_nary_children; ul++)
 	{
 		CExpression *expr = (*all_components)[ul];
-		AddComponent(mp, expr, NON_LOJ_DEFAULT_ID, EpSentinel /*position not used*/, ul);
+		INT lojId = (NULL != childPredIndexes) ? *((*childPredIndexes)[ul]) : 0;
+
+		AddComponent(mp, expr, lojId, EpSentinel /*position not used in DPv2*/, ul);
 	}
 
 	ComputeEdgeCover();
@@ -526,7 +530,7 @@ CJoinOrder::PcompCombine
 			// edge is subsumed by the cover of the combined component
 			CExpression *pexpr = pedge->m_pexpr;
 			pexpr->AddRef();
-			if (pedge->m_is_loj)
+			if (0 < pedge->m_loj_num)
 				loj_conjuncts->Append(pexpr);
 			else
 				other_conjuncts->Append(pexpr);

@@ -53,7 +53,8 @@ CJoinOrderDPv2::CJoinOrderDPv2
 	:
 	CJoinOrder(mp, pdrgpexprComponents, innerJoinConjuncts, onPredConjuncts, childPredIndexes),
 	m_on_pred_conjuncts(onPredConjuncts),
-	m_child_pred_indexes(childPredIndexes)
+	m_child_pred_indexes(childPredIndexes),
+	m_non_inner_join_dependencies(NULL)
 {
 	m_join_levels = GPOS_NEW(mp) ComponentInfoArrayLevels(mp);
 	// put a NULL entry at index 0, because there are no 0-way joins
@@ -63,6 +64,39 @@ CJoinOrderDPv2::CJoinOrderDPv2
 	m_topKCosts  = GPOS_NEW(mp) CDoubleArray(mp);
 	m_pexprDummy = GPOS_NEW(mp) CExpression(mp, GPOS_NEW(mp) CPatternLeaf(mp));
 	m_mp = mp;
+	if (0 < m_on_pred_conjuncts->Size())
+	{
+		// we have non-inner joins, add dependency info
+		ULONG numNonInnerJoins = m_on_pred_conjuncts->Size();
+
+		m_non_inner_join_dependencies = GPOS_NEW(mp) CBitSetArray(mp, numNonInnerJoins);
+		for (ULONG ul=0; ul<numNonInnerJoins; ul++)
+		{
+			m_non_inner_join_dependencies->Append(GPOS_NEW(mp) CBitSet(mp));
+		}
+
+		// compute dependencies of the NIJ right children
+		// (those components must appear on the left of the NIJ)
+		// Note: NIJ = Non-inner join, e.g. LOJ
+		for (ULONG en = 0; en < m_ulEdges; en++)
+		{
+			SEdge *pedge = m_rgpedge[en];
+
+			if (0 < pedge->m_loj_num)
+			{
+				// edge represents an outer join pred
+				ULONG logicalChildNum = FindLogicalChildByNijId(pedge->m_loj_num);
+				CBitSet * nijBitSet = (*m_non_inner_join_dependencies)[pedge->m_loj_num];
+
+				GPOS_ASSERT(0 < logicalChildNum);
+				nijBitSet->Union(pedge->m_pbs);
+				// clear the bit representing the right side of the NIJ, we only
+				// want to track the components needed on the left side
+				nijBitSet->ExchangeClear(logicalChildNum);
+			}
+		}
+
+	}
 
 #ifdef GPOS_DEBUG
 	for (ULONG ul = 0; ul < m_ulComps; ul++)
@@ -94,6 +128,7 @@ CJoinOrderDPv2::~CJoinOrderDPv2()
 	m_join_levels->Release();
 	m_on_pred_conjuncts->Release();
 	CRefCount::SafeRelease(m_child_pred_indexes);
+	CRefCount::SafeRelease(m_non_inner_join_dependencies);
 #endif // GPOS_DEBUG
 }
 
@@ -195,7 +230,7 @@ CJoinOrderDPv2::PexprPred
 	CExpression *pexprPred = NULL;
 
 	// could not find link in the map, construct it from edge set
-	pexprPred = PexprBuildPred(pbsFst, pbsSnd);
+	pexprPred = PexprBuildInnerJoinPred(pbsFst, pbsSnd);
 	if (NULL == pexprPred)
 	{
 		pexprPred = m_pexprDummy;
@@ -290,14 +325,14 @@ CJoinOrderDPv2::DCost
 
 //---------------------------------------------------------------------------
 //	@function:
-//		CJoinOrderDPv2::PexprBuildPred
+//		CJoinOrderDPv2::PexprBuildInnerJoinPred
 //
 //	@doc:
 //		Build predicate connecting the two given sets
 //
 //---------------------------------------------------------------------------
 CExpression *
-CJoinOrderDPv2::PexprBuildPred
+CJoinOrderDPv2::PexprBuildInnerJoinPred
 	(
 	CBitSet *pbsFst,
 	CBitSet *pbsSnd
@@ -312,7 +347,11 @@ CJoinOrderDPv2::PexprBuildPred
 	{
 		SEdge *pedge = m_rgpedge[ul];
 		if (
+			// edge represents an inner join pred
+			0 == pedge->m_loj_num &&
+			// all columns referenced in the edge pred are provided
 			pbs->ContainsAll(pedge->m_pbs) &&
+			// the edge represents a true join predicate between the two components
 			!pbsFst->IsDisjoint(pedge->m_pbs) &&
 			!pbsSnd->IsDisjoint(pedge->m_pbs)
 			)
@@ -362,7 +401,7 @@ CJoinOrderDPv2::GetJoinExpr
 	)
 {
 	CExpression *scalar_expr = NULL;
-	BOOL isLOJ = IsRightChildOfLOJ(right_child, &scalar_expr);
+	BOOL isNIJ = IsRightChildOfNIJ(right_child, &scalar_expr);
 
 	if (NULL == scalar_expr)
 	{
@@ -386,7 +425,7 @@ CJoinOrderDPv2::GetJoinExpr
 	left_expr->AddRef();
 	right_expr->AddRef();
 
-	if (isLOJ)
+	if (isNIJ)
 	{
 		join_expr = CUtils::PexprLogicalJoin<CLogicalLeftOuterJoin>(m_mp, left_expr, right_expr, scalar_expr);
 	}
@@ -756,7 +795,7 @@ CJoinOrderDPv2::GetCheapestJoinExprForBitSet
 }
 
 BOOL
-CJoinOrderDPv2::IsRightChildOfLOJ
+CJoinOrderDPv2::IsRightChildOfNIJ
 	(SComponentInfo *component,
 	 CExpression **onPredToUse
 	)
@@ -765,31 +804,47 @@ CJoinOrderDPv2::IsRightChildOfLOJ
 
 	if (1 != component->component->Size() || 0 == m_on_pred_conjuncts->Size())
 	{
-		// this is not a "one-way join" and only those can be right children
-		// of LOJs, or the entire NAry join doesn't contain any LOJs
+		// this is not a non-join vertex component (and only those can be right
+		// children of NIJs), or the entire NAry join doesn't contain any NIJs
 		return false;
 	}
 
-	// get the child predicate index for the "one-way join" represented
+	// get the child predicate index for the non-join vertex component represented
 	// by this component
 	CBitSetIter iter(*component->component);
 
+	// there is only one bit set for this component
 	iter.Advance();
 
 	ULONG childPredIndex = *(*m_child_pred_indexes)[iter.Bit()];
 
 	if (GPOPT_ZERO_INNER_JOIN_PRED_INDEX != childPredIndex)
 	{
-		// this "one-way join" is the right child of an LOJ,
-		// return the ON predicate to use and also return TRUE
+		// this non-join vertex component is the right child of an
+		// NIJ, return the ON predicate to use and also return TRUE
 		*onPredToUse = (*m_on_pred_conjuncts)[childPredIndex];
 		return true;
 	}
 
-	// this is a "one-way join" that is not the right child of an LOJ
+	// this is a non-join vertex component that is not the right child of an NIJ
 	return false;
 }
 
+ULONG
+CJoinOrderDPv2::FindLogicalChildByNijId(ULONG nij_num)
+{
+	GPOS_ASSERT(NULL != m_child_pred_indexes);
+
+	for (ULONG c=0; c<m_child_pred_indexes->Size(); c++)
+	{
+		if (*(*m_child_pred_indexes)[c] == nij_num)
+		{
+			return c;
+		}
+	}
+
+	return 0;
+}
 
 //---------------------------------------------------------------------------
 //	@function:
