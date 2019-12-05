@@ -855,7 +855,12 @@ CExpressionPreprocessor::PexprCollapseJoins
 			// the first child are all the inner join predicates
 			naryJoinPredicates->Append(CPredicateUtils::PexprConjunction(mp, innerJoinPredicates));
 			// the remaining children are the LOJ predicates, one by one
-			naryJoinPredicates->AppendArray(lojPredicates);
+			for (ULONG ul = 0; ul < lojPredicates->Size(); ul++)
+			{
+				CExpression *predicate = (*lojPredicates)[ul];
+				predicate->AddRef();
+				naryJoinPredicates->Append(predicate);
+			}
 
 			CExpression *nAryJoinPredicateList = GPOS_NEW(mp) CExpression
 					(
@@ -907,7 +912,6 @@ CExpressionPreprocessor::PexprCollapseJoins
 		{
 			// no LOJs involved, just add the ANDed preds as the scalar child
 			newChildNodes->Append(CPredicateUtils::PexprConjunction(mp, innerJoinPredicates));
-			lojPredicates->Release();
 			lojChildPredIndexes->Release();
 			lojChildPredIndexes = NULL;
 		}
@@ -929,6 +933,7 @@ CExpressionPreprocessor::PexprCollapseJoins
 			GPOPT_DISABLE_XFORM(CXform::ExfJoinAssociativity);
 		}
 
+		lojPredicates->Release();
 		return pexprNAryJoin;
 	}
 	// current operator is not an inner-join or supported LOJ, recursively process children

@@ -84,9 +84,9 @@ CJoinOrderDPv2::CJoinOrderDPv2
 
 			if (0 < pedge->m_loj_num)
 			{
-				// edge represents an outer join pred
+				// edge represents a non-inner join pred
 				ULONG logicalChildNum = FindLogicalChildByNijId(pedge->m_loj_num);
-				CBitSet * nijBitSet = (*m_non_inner_join_dependencies)[pedge->m_loj_num];
+				CBitSet * nijBitSet = (*m_non_inner_join_dependencies)[pedge->m_loj_num-1];
 
 				GPOS_ASSERT(0 < logicalChildNum);
 				nijBitSet->Union(pedge->m_pbs);
@@ -401,7 +401,8 @@ CJoinOrderDPv2::GetJoinExpr
 	)
 {
 	CExpression *scalar_expr = NULL;
-	BOOL isNIJ = IsRightChildOfNIJ(right_child, &scalar_expr);
+	CBitSet *required_on_left = NULL;
+	BOOL isNIJ = IsRightChildOfNIJ(right_child, &scalar_expr, &required_on_left);
 
 	if (NULL == scalar_expr)
 	{
@@ -411,6 +412,14 @@ CJoinOrderDPv2::GetJoinExpr
 	{
 		// check whether scalar_expr can be computed from left_child and right_child,
 		// otherwise this is not a valid join
+		GPOS_ASSERT(NULL != required_on_left);
+		if (!left_child->component->ContainsAll(required_on_left))
+		{
+			// the left child does not produce all the values needed in the ON
+			// predicate, so this is not a valid join
+			return NULL;
+		}
+		scalar_expr->AddRef();
 	}
 
 	if (NULL == scalar_expr)
@@ -526,8 +535,8 @@ CJoinOrderDPv2::SearchJoinOrders
 			{
 				join_bitset->Union(right_bitset);
 				AddJoinExprAlternativeForBitSet(join_bitset, join_expr, join_pairs_map);
+				join_expr->Release();
 			}
-			join_expr->Release();
 			join_bitset->Release();
 		}
 	}
@@ -797,10 +806,12 @@ CJoinOrderDPv2::GetCheapestJoinExprForBitSet
 BOOL
 CJoinOrderDPv2::IsRightChildOfNIJ
 	(SComponentInfo *component,
-	 CExpression **onPredToUse
+	 CExpression **onPredToUse,
+	 CBitSet **requiredBitsOnLeft
 	)
 {
 	*onPredToUse = NULL;
+	*requiredBitsOnLeft = NULL;
 
 	if (1 != component->component->Size() || 0 == m_on_pred_conjuncts->Size())
 	{
@@ -822,7 +833,9 @@ CJoinOrderDPv2::IsRightChildOfNIJ
 	{
 		// this non-join vertex component is the right child of an
 		// NIJ, return the ON predicate to use and also return TRUE
-		*onPredToUse = (*m_on_pred_conjuncts)[childPredIndex];
+		*onPredToUse = (*m_on_pred_conjuncts)[childPredIndex-1];
+		// also return the required minimal component on the left side of the join
+		*requiredBitsOnLeft = (*m_non_inner_join_dependencies)[childPredIndex-1];
 		return true;
 	}
 

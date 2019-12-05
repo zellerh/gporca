@@ -372,9 +372,10 @@ m_include_loj_childs(false) // not used by CXformExpandNAryJoinDPv2
 
 	m_ulEdges = innerJoinPredConjuncts->Size() + onPreds->Size();
 	m_rgpedge = GPOS_NEW_ARRAY(mp, Pedge, m_ulEdges);
+	ULONG innerJoinEdges = innerJoinPredConjuncts->Size();
 
 	// add the inner join edges first
-	for (ULONG ul = 0; ul < innerJoinPredConjuncts->Size(); ul++)
+	for (ULONG ul = 0; ul < innerJoinEdges; ul++)
 	{
 		CExpression *pexprEdge = (*innerJoinPredConjuncts)[ul];
 		pexprEdge->AddRef();
@@ -405,12 +406,12 @@ m_include_loj_childs(false) // not used by CXformExpandNAryJoinDPv2
 		GPOS_ASSERT(0 < logicalChildIndex);
 
 		pexprEdge->AddRef();
-		m_rgpedge[ul2] = GPOS_NEW(mp) SEdge(mp, pexprEdge, lojId);
+		m_rgpedge[ul2 + innerJoinEdges] = GPOS_NEW(mp) SEdge(mp, pexprEdge, lojId);
 		// this edge (ON predicate) is always associated with the right
 		// child of the LOJ, whether it refers to it in the ON pred or not
 		// Example: select * from t1 left outer join t2 on t1.a=5
 		// We still want to associate this ON predicate with t2
-		m_rgpedge[ul2]->m_pbs->ExchangeSet(logicalChildIndex);
+		m_rgpedge[ul2 + innerJoinEdges]->m_pbs->ExchangeSet(logicalChildIndex);
 	}
 
 	// create the components (both inner and LOJs)

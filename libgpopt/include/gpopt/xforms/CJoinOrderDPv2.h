@@ -213,7 +213,8 @@ namespace gpopt
 			BOOL
 			IsRightChildOfNIJ
 				(SComponentInfo *component,
-				 CExpression **onPredToUse
+				 CExpression **onPredToUse,
+				 CBitSet **requiredBitsOnLeft
 				);
 
 			// print function
