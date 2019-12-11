@@ -33,6 +33,207 @@ using namespace gpopt;
 // Communitivity will generate an additional 5 alternatives. This value should be 1/2
 // of GPOPT_DP_JOIN_ORDERING_TOPK to generate equivalent alternatives as the DP xform
 #define GPOPT_DP_JOIN_ORDERING_TOPK	5
+#define GPOPT_DP_STOP_BUSHY_TREES_AT_LEVEL 12
+#define GPOPT_DP_BUSHY_TREE_BASE 2.0
+#define GPOPT_DP_START_GREEDY_AT_LEVEL 14
+#define GPOPT_DP_GREEDY_BASE 2.0
+
+CJoinOrderDPv2::KHeap::KHeap(CMemoryPool *mp, CJoinOrderDPv2 *join_order, ULONG k)
+:
+m_join_order(join_order),
+m_topk(NULL),
+m_mp(mp),
+m_k(k),
+m_size(0),
+m_highest_cost(0)
+{
+	m_bitSetExprArrayMap = GPOS_NEW(m_mp) BitSetToExpressionArrayMap(m_mp);
+}
+
+
+CJoinOrderDPv2::KHeap::~KHeap()
+{
+	m_bitSetExprArrayMap->Release();
+	CRefCount::SafeRelease(m_topk);
+}
+
+
+void CJoinOrderDPv2::KHeap::BuildTopK()
+{
+	m_topk = GPOS_NEW(m_mp) ComponentInfoArray(m_mp);
+	BitSetToExpressionArrayMapIter iter(m_bitSetExprArrayMap);
+
+	while (iter.Advance())
+	{
+		const CBitSet *join_bitset = iter.Key();
+		const CExpressionArray *join_exprs = iter.Value();
+
+		for (ULONG id = 0; id < join_exprs->Size(); id++)
+		{
+			CExpression *join_expr = (*join_exprs)[id];
+			CDouble join_cost = m_join_order->DCost(join_expr);
+
+			CBitSet *join_bitset_entry = GPOS_NEW(m_mp) CBitSet(m_mp, *join_bitset);
+			join_expr->AddRef();
+
+			SComponentInfo *component_info = GPOS_NEW(m_mp) SComponentInfo(join_bitset_entry, join_expr, join_cost);
+
+			m_topk->Append(component_info);
+			if (join_cost > m_highest_cost)
+			{
+				m_highest_cost = join_cost;
+			}
+		}
+	}
+}
+
+
+ULONG CJoinOrderDPv2::KHeap::EvictMostExpensiveEntry()
+{
+	ULONG result = m_topk->Size();
+	CDouble secondHighest = 0;
+
+	for (ULONG ul = 0; ul < m_topk->Size(); ul++)
+	{
+		if (m_highest_cost <= (*m_topk)[ul]->cost && result == m_topk->Size())
+		{
+			result = ul;
+		}
+		else if ((*m_topk)[ul]->cost > secondHighest)
+		{
+			secondHighest = (*m_topk)[ul]->cost;
+		}
+	}
+
+	m_highest_cost = secondHighest;
+	SComponentInfo *ci = (*m_topk)[result];
+	ci->best_expr->Release();
+	ci->component->Release();
+	ci->best_expr = NULL;
+	ci->component = NULL;
+
+	return result;
+}
+
+
+CExpressionArray *CJoinOrderDPv2::KHeap::ArrayForBitset(const CBitSet *bit_set)
+{
+	CExpressionArray *exprArray =  m_bitSetExprArrayMap->Find(bit_set);
+	return exprArray;
+}
+
+
+BOOL CJoinOrderDPv2::KHeap::Insert(CBitSet *join_bitset, CExpression *join_expr)
+{
+	GPOS_ASSERT(NULL != join_bitset);
+	GPOS_ASSERT(NULL != join_expr);
+
+	m_size++;
+	if (m_size > m_k)
+	{
+		if (NULL == m_topk)
+		{
+			BuildTopK();
+		}
+
+		CDouble join_cost = m_join_order->DCost(join_expr);
+
+		if (join_cost >= m_highest_cost)
+		{
+			// the new expression is too expensive, it is not in the top K
+			return false;
+		}
+
+		// evict the most expensive entry and replace it with the new one, join_expr
+		ULONG evicted_index = EvictMostExpensiveEntry();
+
+		GPOS_ASSERT(evicted_index < m_topk->Size());
+
+		join_bitset->AddRef();
+		join_expr->AddRef();
+		(*m_topk)[evicted_index]->best_expr = join_expr;
+		(*m_topk)[evicted_index]->component = join_bitset;
+		(*m_topk)[evicted_index]->cost = join_cost;
+
+	}
+
+	// insert the new expression into the BitSetToExpressionArrayMap
+	join_expr->AddRef();
+	CExpressionArray *existing_join_exprs = m_bitSetExprArrayMap->Find(join_bitset);
+	if (NULL != existing_join_exprs)
+	{
+		existing_join_exprs->Append(join_expr);
+	}
+	else
+	{
+		CExpressionArray *exprs = GPOS_NEW(m_mp) CExpressionArray(m_mp);
+		exprs->Append(join_expr);
+		join_bitset->AddRef();
+		BOOL success = m_bitSetExprArrayMap->Insert(join_bitset, exprs);
+		if (!success)
+			GPOS_RAISE(gpopt::ExmaGPOPT, gpopt::ExmiUnsupportedPred);
+	}
+
+	return true;
+}
+
+
+CJoinOrderDPv2::KHeapIterator::KHeapIterator(KHeap *kHeap)
+:
+m_kheap(kHeap),
+m_iter(kHeap->BSExpressionArrayMap()),
+m_entry_in_expression_array(-1),
+m_entry_in_topk_array(-1)
+{
+}
+
+
+BOOL CJoinOrderDPv2::KHeapIterator::Advance()
+{
+	if (m_kheap->HasTopK())
+	{
+		m_entry_in_topk_array++;
+		return m_entry_in_topk_array < m_kheap->m_topk->Size();
+	}
+
+	m_entry_in_expression_array++ ;
+
+	if (0 == m_entry_in_expression_array)
+	{
+		return m_iter.Advance();
+	}
+
+	if (m_entry_in_expression_array >= m_iter.Value()->Size())
+	{
+		m_entry_in_expression_array = 0;
+		return m_iter.Advance();
+	}
+
+	return true;
+}
+
+
+const CBitSet *CJoinOrderDPv2::KHeapIterator::BitSet()
+{
+	if (m_kheap->HasTopK())
+	{
+		return (*(m_kheap->m_topk))[m_entry_in_topk_array]->component;
+	}
+
+	return m_iter.Key();
+}
+
+
+CExpression *CJoinOrderDPv2::KHeapIterator::Expression()
+{
+	if (m_kheap->HasTopK())
+	{
+		return (*(m_kheap->m_topk))[m_entry_in_topk_array]->best_expr;
+	}
+
+	return (*(m_iter.Value()))[m_entry_in_expression_array];
+}
+
 
 //---------------------------------------------------------------------------
 //	@function:
@@ -54,14 +255,14 @@ CJoinOrderDPv2::CJoinOrderDPv2
 	CJoinOrder(mp, pdrgpexprComponents, innerJoinConjuncts, onPredConjuncts, childPredIndexes),
 	m_on_pred_conjuncts(onPredConjuncts),
 	m_child_pred_indexes(childPredIndexes),
-	m_non_inner_join_dependencies(NULL)
+	m_non_inner_join_dependencies(NULL),
+	m_top_k_expressions(NULL),
+	m_k_heap_iterator(NULL)
 {
 	m_join_levels = GPOS_NEW(mp) ComponentInfoArrayLevels(mp);
 	// put a NULL entry at index 0, because there are no 0-way joins
 	m_join_levels->Append(GPOS_NEW(mp) ComponentInfoArray(mp));
 
-	m_topKOrders = GPOS_NEW(mp) CExpressionArray(mp);
-	m_topKCosts  = GPOS_NEW(mp) CDoubleArray(mp);
 	m_pexprDummy = GPOS_NEW(mp) CExpression(mp, GPOS_NEW(mp) CPatternLeaf(mp));
 	m_mp = mp;
 	if (0 < m_on_pred_conjuncts->Size())
@@ -122,13 +323,13 @@ CJoinOrderDPv2::~CJoinOrderDPv2()
 	// in optimized build, we flush-down memory pools without leak checking,
 	// we can save time in optimized build by skipping all de-allocations here,
 	// we still have all de-llocations enabled in debug-build to detect any possible leaks
-	m_topKOrders->Release();
-	m_topKCosts->Release();
+	CRefCount::SafeRelease(m_top_k_expressions);
 	m_pexprDummy->Release();
 	m_join_levels->Release();
 	m_on_pred_conjuncts->Release();
 	CRefCount::SafeRelease(m_child_pred_indexes);
 	CRefCount::SafeRelease(m_non_inner_join_dependencies);
+	GPOS_DELETE(m_k_heap_iterator);
 #endif // GPOS_DEBUG
 }
 
@@ -141,65 +342,6 @@ CJoinOrderDPv2::~CJoinOrderDPv2()
 //		Add given join order to top k join orders
 //
 //---------------------------------------------------------------------------
-
-void
-CJoinOrderDPv2::AddJoinOrderToTopK
-	(
-	CExpression *pexprJoin,
-	CDouble dCost
-	)
-{
-	GPOS_ASSERT(NULL != pexprJoin);
-	GPOS_ASSERT(NULL != m_topKOrders);
-
-	// length of the array will not be more than 10
-	INT ulResults = m_topKOrders->Size();
-	INT iReplacePos = -1;
-	BOOL fAddJoinOrder = false;
-	if (ulResults < GPOPT_DP_JOIN_ORDERING_TOPK)
-	{
-		// we have less than K results, always add the given expression
-		fAddJoinOrder = true;
-	}
-	else
-	{
-
-		// TODO: Can also store max cost, and if dcost > max cost, then we don't even need to iterate through the topK. This is only needed if we spend a fair amount of time here.
-		CDouble dmaxCost = 0.0;
-		// we have stored K expressions, evict worst expression
-		for (INT ul = 0; ul < ulResults; ul++)
-		{
-			CDouble *pd = (*m_topKCosts)[ul];
-			GPOS_ASSERT(NULL != pd);
-
-			if (dmaxCost < *pd && dCost < *pd)
-			{
-				// found a worse expression
-				dmaxCost = *pd;
-				fAddJoinOrder = true;
-				iReplacePos = ul;
-			}
-		}
-	}
-
-	if (fAddJoinOrder)
-	{
-		pexprJoin->AddRef();
-		CDouble *saved_cost = GPOS_NEW(m_mp) CDouble(dCost);
-		if (iReplacePos > -1)
-		{
-			m_topKOrders->Replace((ULONG) iReplacePos, pexprJoin);
-			m_topKCosts->Replace((ULONG) iReplacePos, saved_cost);
-
-		}
-		else
-		{
-			m_topKOrders->Append(pexprJoin);
-			m_topKCosts->Append(saved_cost);
-		}
-
-	}
-}
 
 
 //---------------------------------------------------------------------------
@@ -460,27 +602,13 @@ CJoinOrderDPv2::AddJoinExprAlternativeForBitSet
 	(
 	CBitSet *join_bitset,
 	CExpression *join_expr,
-	BitSetToExpressionArrayMap *map
+	KHeap *map
 	)
 {
 	GPOS_ASSERT(NULL != join_bitset);
 	GPOS_ASSERT(NULL != join_expr);
 
-	join_expr->AddRef();
-	CExpressionArray *existing_join_exprs = map->Find(join_bitset);
-	if (NULL != existing_join_exprs)
-	{
-		existing_join_exprs->Append(join_expr);
-	}
-	else
-	{
-		CExpressionArray *exprs = GPOS_NEW(m_mp) CExpressionArray(m_mp);
-		exprs->Append(join_expr);
-		join_bitset->AddRef();
-		BOOL success = map->Insert(join_bitset, exprs);
-		if (!success)
-			GPOS_RAISE(gpopt::ExmaGPOPT, gpopt::ExmiUnsupportedPred);
-	}
+	map->Insert(join_bitset, join_expr);
 }
 
 //---------------------------------------------------------------------------
@@ -491,11 +619,12 @@ CJoinOrderDPv2::AddJoinExprAlternativeForBitSet
 //		Enumerate all the possible joins between two lists of components
 //
 //---------------------------------------------------------------------------
-CJoinOrderDPv2::BitSetToExpressionArrayMap *
+CJoinOrderDPv2::KHeap *
 CJoinOrderDPv2::SearchJoinOrders
 	(
 	ComponentInfoArray *join_pair_components,
-	ComponentInfoArray *other_join_pair_components
+	ComponentInfoArray *other_join_pair_components,
+	ULONG topK
 	)
 {
 	GPOS_ASSERT(join_pair_components);
@@ -503,7 +632,7 @@ CJoinOrderDPv2::SearchJoinOrders
 
 	ULONG join_pairs_size = join_pair_components->Size();
 	ULONG other_join_pairs_size = other_join_pair_components->Size();
-	BitSetToExpressionArrayMap *join_pairs_map = GPOS_NEW(m_mp) BitSetToExpressionArrayMap(m_mp);
+	KHeap *join_pairs_map = GPOS_NEW(m_mp) KHeap(m_mp, this, topK);
 
 	for (ULONG join_pair_id = 0; join_pair_id < join_pairs_size; join_pair_id++)
 	{
@@ -578,30 +707,19 @@ CJoinOrderDPv2::AddExprs
 void
 CJoinOrderDPv2::AddJoinExprsForBitSet
 	(
-	BitSetToExpressionArrayMap *result_map,
-	BitSetToExpressionArrayMap *candidate_map
+	KHeap *result_map,
+	KHeap *candidate_map
 	)
 {
 	if (NULL == candidate_map)
 		return;
 
-	BitSetToExpressionArrayMapIter iter(candidate_map);
+	KHeapIterator iter(candidate_map);
 	while (iter.Advance())
 	{
-		const CBitSet *join_bitset = iter.Key();
-		CExpressionArray *existing_join_exprs = result_map->Find(join_bitset);
-		const CExpressionArray *candidate_join_exprs = iter.Value();
-		if (NULL == existing_join_exprs)
-		{
-			CBitSet *join_bitset_entry = GPOS_NEW(m_mp) CBitSet(m_mp, *join_bitset);
-			CExpressionArray *join_exprs = GPOS_NEW(m_mp) CExpressionArray(m_mp);
-			AddExprs(candidate_join_exprs, join_exprs);
-			result_map->Insert(join_bitset_entry, join_exprs);
-		}
-		else
-		{
-			AddExprs(candidate_join_exprs, existing_join_exprs);
-		}
+		CBitSet *newBitSet = GPOS_NEW(m_mp) CBitSet(m_mp, *iter.BitSet());
+		result_map->Insert(newBitSet, iter.Expression());
+		newBitSet->Release();
 	}
 }
 
@@ -613,47 +731,19 @@ CJoinOrderDPv2::AddJoinExprsForBitSet
 //		Create a new map that contains the union of two provided maps
 //
 //---------------------------------------------------------------------------
-CJoinOrderDPv2::BitSetToExpressionArrayMap *
+CJoinOrderDPv2::KHeap *
 CJoinOrderDPv2::MergeJoinExprsForBitSet
 	(
-	BitSetToExpressionArrayMap *map,
-	BitSetToExpressionArrayMap *other_map
+	KHeap *map,
+	KHeap *other_map,
+	ULONG topK
 	)
 {
-	BitSetToExpressionArrayMap *result_map = GPOS_NEW(m_mp) BitSetToExpressionArrayMap(m_mp);
+	KHeap *result_map = GPOS_NEW(m_mp) KHeap(m_mp, this, topK);
 	AddJoinExprsForBitSet(result_map, map);
 	AddJoinExprsForBitSet(result_map, other_map);
 	return result_map;
 }
-
-//---------------------------------------------------------------------------
-//	@function:
-//		CJoinOrderDPv2::AddJoinExprFromMapToTopK
-//
-//	@doc:
-//		Iterate over the map and try to add each entry to the TopK list
-//
-//---------------------------------------------------------------------------
-void
-CJoinOrderDPv2::AddJoinExprFromMapToTopK
-	(
-	BitSetToExpressionArrayMap *bitset_joinexpr_map
-	)
-{
-	BitSetToExpressionArrayMapIter iter(bitset_joinexpr_map);
-
-	while (iter.Advance())
-	{
-		const CExpressionArray *join_exprs = iter.Value();
-		for (ULONG id = 0; id < join_exprs->Size(); id++)
-		{
-			CExpression *join_expr = (*join_exprs)[id];
-			CDouble join_cost = DCost(join_expr);
-			AddJoinOrderToTopK(join_expr, join_cost);
-		}
-	}
-}
-
 
 //---------------------------------------------------------------------------
 //	@function:
@@ -664,13 +754,20 @@ CJoinOrderDPv2::AddJoinExprFromMapToTopK
 //		given an array of an array of bit sets (components), arranged by level
 //
 //---------------------------------------------------------------------------
-CJoinOrderDPv2::BitSetToExpressionArrayMap *
+CJoinOrderDPv2::KHeap *
 CJoinOrderDPv2::SearchBushyJoinOrders
 	(
 	ULONG current_level
 	)
 {
-	BitSetToExpressionArrayMap *final_bushy_join_exprs_map = NULL;
+	KHeap *final_bushy_join_exprs_map = NULL;
+	ULONG topK = floor(pow(GPOPT_DP_BUSHY_TREE_BASE, (GPOPT_DP_STOP_BUSHY_TREES_AT_LEVEL - (int) current_level)));
+
+	if (0 == topK)
+	{
+		// we've exceeded the number of joins for which we generate bushy trees
+		return final_bushy_join_exprs_map;
+	}
 
 	// join trees of level 3 and below are never bushy
 	if (current_level > 3)
@@ -686,10 +783,14 @@ CJoinOrderDPv2::SearchBushyJoinOrders
 				break;
 			ComponentInfoArray *join_component_infos = (*m_join_levels)[join_level];
 			ComponentInfoArray *other_join_component_infos = (*m_join_levels)[other_join_level];
-			BitSetToExpressionArrayMap *bitset_bushy_join_exprs_map = SearchJoinOrders(join_component_infos,
-																					   other_join_component_infos);
-			BitSetToExpressionArrayMap *interim_map = final_bushy_join_exprs_map;
-			final_bushy_join_exprs_map = MergeJoinExprsForBitSet(bitset_bushy_join_exprs_map, interim_map);
+			KHeap *bitset_bushy_join_exprs_map = SearchJoinOrders
+														(
+														 join_component_infos,
+														 other_join_component_infos,
+														 topK
+														);
+			KHeap *interim_map = final_bushy_join_exprs_map;
+			final_bushy_join_exprs_map = MergeJoinExprsForBitSet(bitset_bushy_join_exprs_map, interim_map, topK);
 			CRefCount::SafeRelease(interim_map);
 			bitset_bushy_join_exprs_map->Release();
 		}
@@ -708,6 +809,42 @@ CJoinOrderDPv2::SearchBushyJoinOrders
 CExpression *
 CJoinOrderDPv2::PexprExpand()
 {
+	// We go from full enumeration of all linear and bushy trees to
+	// a greedy algorithm for larger joins, by limiting the number of
+	// alternatives we generate to a fixed k (keep only the top k).
+	//
+	// This k is a function of the form k = x ** (l - n) where
+	//   k is the number of alternatives to keep
+	//   x is a floating point constant that indicates how steep the
+	//     reduction is as the number of joins grows
+	//   l is the limit at which we want to have reduced k
+	//     to 0 (for bushy trees) and to 1 (for expressions per level)
+	//   n is the join level (number of non-join vertices joined)
+	//
+	// We have two separate formulas, one for the number of bushy joins
+	// and another for the number of expressions on a join level.
+	//
+	// Note that we use a floor() function to compute the number of bushy
+	// joins, which means that we allow zero bushy joins once we reach
+	// the limit l, while we use a ceil() function for the number of expressions,
+	// so that we will always allow at least one expression per join level.
+	// One expression per join level is a greedy algorithm.
+	//
+	// Here is what this looks like as a graph:
+	//
+	//          ^
+	//          |           +            *            + number of bushy
+	//          |                                       trees considered (top k)
+	//   top k  |
+	//          |            +            *           * number of expressions
+	//          |                                       considered per join level
+	//          |              +            *           (top k)
+	//          |               +            *
+	//        2 |                +             *
+	//        1 |                  +              *********************
+	//        0 +--------------------+--------------------------------------->
+	//            1 2 3              l1           l2         # of joins in query
+	//
 	ComponentInfoArray *non_join_vertex_component_infos = GPOS_NEW(m_mp) ComponentInfoArray(m_mp);
 	// put the "non join vertices", the nodes of the join tree that
 	// are not joins themselves, at the first level
@@ -727,36 +864,55 @@ CJoinOrderDPv2::PexprExpand()
 
 	for (ULONG current_join_level = 2; current_join_level <= m_ulComps; current_join_level++)
 	{
+		ULONG topK = ceil(pow(GPOPT_DP_GREEDY_BASE, (GPOPT_DP_START_GREEDY_AT_LEVEL - (int) current_join_level)));
 		ULONG previous_level = current_join_level - 1;
 		ComponentInfoArray *prev_lev_comps = (*m_join_levels)[previous_level];
 		// build linear "current_join_level" joins, with a "previous_level"-way join on one
 		// side and a non-join vertex on the other side
-		BitSetToExpressionArrayMap *bitset_join_exprs_map = SearchJoinOrders(prev_lev_comps, non_join_vertex_component_infos);
+		KHeap *bitset_join_exprs_map = SearchJoinOrders(prev_lev_comps, non_join_vertex_component_infos, topK);
 		// build bushy trees - joins between two other joins
-		BitSetToExpressionArrayMap *bitset_bushy_join_exprs_map = SearchBushyJoinOrders(current_join_level);
+		KHeap *bitset_bushy_join_exprs_map = SearchBushyJoinOrders(current_join_level);
 
 		// A set of different components/bit sets, each with a set of equivalent expressions,
 		// for current_join_level
-		BitSetToExpressionArrayMap *all_join_exprs_map = MergeJoinExprsForBitSet(bitset_join_exprs_map, bitset_bushy_join_exprs_map);
+		KHeap *all_join_exprs_map = MergeJoinExprsForBitSet(bitset_join_exprs_map, bitset_bushy_join_exprs_map, topK);
 		if (current_join_level == m_ulComps)
 		{
-			// top-level join: Keep the top K expressions
-			AddJoinExprFromMapToTopK(all_join_exprs_map);
+			m_top_k_expressions = all_join_exprs_map;
 		}
 		else
 		{
 			// levels below the top level: Keep the best expression for each bit set
 			ComponentInfoArray *cheapest_bitset_join_expr_map = GetCheapestJoinExprForBitSet(all_join_exprs_map);
 			m_join_levels->Append(cheapest_bitset_join_expr_map);
+			all_join_exprs_map->Release();
 		}
-		all_join_exprs_map->Release();
 		CRefCount::SafeRelease(bitset_bushy_join_exprs_map);
 		bitset_join_exprs_map->Release();
 	}
 	return NULL;
 }
 
+CExpression*
+CJoinOrderDPv2::GetNextOfTopK()
+{
+	if (NULL == m_top_k_expressions)
+	{
+		return NULL;
+	}
 
+	if (NULL == m_k_heap_iterator)
+	{
+		m_k_heap_iterator = GPOS_NEW(m_mp) KHeapIterator(m_top_k_expressions);
+	}
+
+	if (!m_k_heap_iterator->Advance())
+	{
+		return NULL;
+	}
+
+	return m_k_heap_iterator->Expression();
+}
 
 //---------------------------------------------------------------------------
 //	@function:
@@ -770,16 +926,17 @@ CJoinOrderDPv2::PexprExpand()
 CJoinOrderDPv2::ComponentInfoArray *
 CJoinOrderDPv2::GetCheapestJoinExprForBitSet
 	(
-	BitSetToExpressionArrayMap *bitset_exprs_map
+	KHeap *bitset_exprs_map
 	)
 {
 	ComponentInfoArray *cheapest_join_array = GPOS_NEW(m_mp) ComponentInfoArray(m_mp);
-	BitSetToExpressionArrayMapIter iter(bitset_exprs_map);
+	KHeapIterator iter(bitset_exprs_map);
 
 	while (iter.Advance())
 	{
-		const CBitSet *join_bitset = iter.Key();
-		const CExpressionArray *join_exprs = iter.Value();
+		const CBitSet *join_bitset = iter.BitSet();
+		CExpression *expr = iter.Expression();
+		const CExpressionArray *join_exprs = bitset_exprs_map->ArrayForBitset(join_bitset);
 		CDouble min_join_cost(0.0);
 		CExpression *best_join_expr = NULL;
 		for (ULONG id = 0; id < join_exprs->Size(); id++)
@@ -792,12 +949,16 @@ CJoinOrderDPv2::GetCheapestJoinExprForBitSet
 				min_join_cost = join_cost;
 			}
 		}
-		CBitSet *join_bitset_entry = GPOS_NEW(m_mp) CBitSet(m_mp, *join_bitset);
-		best_join_expr->AddRef();
 
-		SComponentInfo *component_info = GPOS_NEW(m_mp) SComponentInfo(join_bitset_entry, best_join_expr, min_join_cost);
+		if (best_join_expr == expr)
+		{
+			CBitSet *join_bitset_entry = GPOS_NEW(m_mp) CBitSet(m_mp, *join_bitset);
+			best_join_expr->AddRef();
 
-		cheapest_join_array->Append(component_info);
+			SComponentInfo *component_info = GPOS_NEW(m_mp) SComponentInfo(join_bitset_entry, best_join_expr, min_join_cost);
+
+			cheapest_join_array->Append(component_info);
+		}
 
 	}
 	return cheapest_join_array;

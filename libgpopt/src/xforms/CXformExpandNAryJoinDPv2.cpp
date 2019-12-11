@@ -70,20 +70,6 @@ CXformExpandNAryJoinDPv2::Exfp
 	)
 	const
 {
-	COptimizerConfig *optimizer_config = COptCtxt::PoctxtFromTLS()->GetOptimizerConfig();
-	const CHint *phint = optimizer_config->GetHint();
-
-	const ULONG arity = exprhdl.Arity();
-
-	// since the last child of the join operator is a scalar child
-	// defining the join predicate, ignore it.
-	const ULONG ulRelChild = arity - 1;
-
-	if (ulRelChild > phint->UlJoinOrderDPLimit())
-	{
-		return CXform::ExfpNone;
-	}
-
 	return CXformUtils::ExfpExpandJoinOrder(exprhdl);
 }
 
@@ -156,11 +142,11 @@ CXformExpandNAryJoinDPv2::Transform
 	jodp.PexprExpand();
 
 	// Retrieve top K join orders from jodp and add as alternatives
-	const ULONG UlTopKJoinOrders = jodp.PdrgpexprTopK()->Size();
-	for (ULONG ul = 0; ul < UlTopKJoinOrders; ul++)
+	CExpression *nextJoinOrder = NULL;
+
+	while (NULL != (nextJoinOrder = jodp.GetNextOfTopK()))
 	{
-		CExpression *pexprJoinOrder = (*jodp.PdrgpexprTopK())[ul];
-		CExpression *pexprNormalized = CNormalizer::PexprNormalize(mp, pexprJoinOrder);
+		CExpression *pexprNormalized = CNormalizer::PexprNormalize(mp, nextJoinOrder);
 
 		pxfres->Add(pexprNormalized);
 	}

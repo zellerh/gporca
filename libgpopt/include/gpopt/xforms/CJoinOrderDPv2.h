@@ -115,6 +115,49 @@ namespace gpopt
 			// dynamic array of componentInfoArray, where each index represents the level
 			typedef CDynamicPtrArray<ComponentInfoArray, CleanupRelease> ComponentInfoArrayLevels;
 
+			class KHeapIterator;
+
+			class KHeap : public CRefCount
+			{
+				friend class KHeapIterator;
+			private:
+
+				CJoinOrderDPv2 *m_join_order;
+				BitSetToExpressionArrayMap *m_bitSetExprArrayMap;
+				ComponentInfoArray *m_topk;
+				CMemoryPool *m_mp;
+				ULONG m_k;
+				ULONG m_size;
+				CDouble m_highest_cost;
+
+				void BuildTopK();
+				ULONG EvictMostExpensiveEntry();
+
+			public:
+
+				KHeap(CMemoryPool *mp, CJoinOrderDPv2 *join_order, ULONG k);
+				~KHeap();
+				BOOL Insert(CBitSet *join_bitset, CExpression *join_expr);
+				CExpressionArray *ArrayForBitset(const CBitSet *bit_set);
+				BitSetToExpressionArrayMap *BSExpressionArrayMap() { return m_bitSetExprArrayMap; }
+				BOOL HasTopK() { return NULL != m_topk; }
+			};
+
+			class KHeapIterator
+			{
+			private:
+				KHeap *m_kheap;
+				BitSetToExpressionArrayMapIter m_iter;
+				LINT m_entry_in_expression_array;
+				LINT m_entry_in_topk_array;
+
+			public:
+				KHeapIterator(KHeap *kHeap);
+				BOOL Advance();
+				const CBitSet *BitSet();
+				CExpression *Expression();
+			};
+
 			// list of components, organized by level, main data structure for dynamic programming
 			ComponentInfoArrayLevels *m_join_levels;
 
@@ -130,11 +173,9 @@ namespace gpopt
 			// for each non-inner join (entry in m_on_pred_conjuncts), the required components on the left
 			CBitSetArray *m_non_inner_join_dependencies;
 
-			// array of top-k join expression
-			CExpressionArray *m_topKOrders;
-
-			// array of top-k join costs
-			CDoubleArray *m_topKCosts;
+			// top K elements at the top level
+			KHeap *m_top_k_expressions;
+			KHeapIterator *m_k_heap_iterator;
 
 			// dummy expression to used for non-joinable components
 			CExpression *m_pexprDummy;
@@ -147,9 +188,6 @@ namespace gpopt
 			// extract predicate joining the two given sets
 			CExpression *PexprPred(CBitSet *pbsFst, CBitSet *pbsSnd);
 
-			// add given join order to best results
-			void AddJoinOrderToTopK(CExpression *pexprJoin, CDouble dCost);
-
 			// compute cost of given join expression
 			CDouble DCost(CExpression *pexpr);
 
@@ -159,24 +197,22 @@ namespace gpopt
 
 			// enumerate all possible joins between the components in join_pair_bitsets on the
 			// left side and those in other_join_pair_bitsets on the right
-			BitSetToExpressionArrayMap *SearchJoinOrders(ComponentInfoArray *join_pair_bitsets, ComponentInfoArray *other_join_pair_bitsets);
+			KHeap *SearchJoinOrders(ComponentInfoArray *join_pair_bitsets, ComponentInfoArray *other_join_pair_bitsets, ULONG topK);
 
 			// reduce a list of expressions per component down to the cheapest expression per component
-			ComponentInfoArray *GetCheapestJoinExprForBitSet(BitSetToExpressionArrayMap *bit_exprarray_map);
+			ComponentInfoArray *GetCheapestJoinExprForBitSet(KHeap *bit_exprarray_map);
 
-			void AddJoinExprAlternativeForBitSet(CBitSet *join_bitset, CExpression *join_expr, BitSetToExpressionArrayMap *map);
+			void AddJoinExprAlternativeForBitSet(CBitSet *join_bitset, CExpression *join_expr, KHeap *map);
 
 			// create a CLogicalJoin and a CExpression to join two components
 			CExpression *GetJoinExpr(SComponentInfo *left_child, SComponentInfo *right_child);
 
-			void AddJoinExprFromMapToTopK(BitSetToExpressionArrayMap *bitset_joinexpr_map);
+			KHeap *MergeJoinExprsForBitSet(KHeap *map, KHeap *other_map, ULONG topK);
 
-			BitSetToExpressionArrayMap *MergeJoinExprsForBitSet(BitSetToExpressionArrayMap *map, BitSetToExpressionArrayMap *other_map);
-
-			void AddJoinExprsForBitSet(BitSetToExpressionArrayMap *result_map, BitSetToExpressionArrayMap *candidate_map);
+			void AddJoinExprsForBitSet(KHeap *result_map, KHeap *candidate_map);
 
 			// enumerate bushy joins (joins where both children are also joins) of level "current_level"
-			BitSetToExpressionArrayMap *SearchBushyJoinOrders(ULONG current_level);
+			KHeap *SearchBushyJoinOrders(ULONG current_level);
 
 			void AddExprs(const CExpressionArray *candidate_join_exprs, CExpressionArray *result_join_exprs);
 
@@ -203,11 +239,7 @@ namespace gpopt
 			virtual
 			CExpression *PexprExpand();
 
-			// best join orders
-			CExpressionArray *PdrgpexprTopK() const
-			{
-				return m_topKOrders;
-			}
+			CExpression *GetNextOfTopK();
 
 			// check for NIJs
 			BOOL
