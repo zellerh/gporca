@@ -761,7 +761,7 @@ CJoinOrderDPv2::SearchBushyJoinOrders
 	)
 {
 	KHeap *final_bushy_join_exprs_map = NULL;
-	ULONG topK = floor(pow(GPOPT_DP_BUSHY_TREE_BASE, (GPOPT_DP_STOP_BUSHY_TREES_AT_LEVEL - (int) current_level)));
+	ULONG topK = ULONG (floor(pow(GPOPT_DP_BUSHY_TREE_BASE, (GPOPT_DP_STOP_BUSHY_TREES_AT_LEVEL - (int) current_level))));
 
 	if (0 == topK)
 	{
@@ -864,7 +864,7 @@ CJoinOrderDPv2::PexprExpand()
 
 	for (ULONG current_join_level = 2; current_join_level <= m_ulComps; current_join_level++)
 	{
-		ULONG topK = ceil(pow(GPOPT_DP_GREEDY_BASE, (GPOPT_DP_START_GREEDY_AT_LEVEL - (int) current_join_level)));
+		ULONG topK = ULONG (ceil(pow(GPOPT_DP_GREEDY_BASE, (GPOPT_DP_START_GREEDY_AT_LEVEL - (int) current_join_level))));
 		ULONG previous_level = current_join_level - 1;
 		ComponentInfoArray *prev_lev_comps = (*m_join_levels)[previous_level];
 		// build linear "current_join_level" joins, with a "previous_level"-way join on one
