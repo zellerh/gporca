@@ -130,6 +130,7 @@ CXformExpandNAryJoinDPv2::Transform
 		}
 
 		childPredIndexes = naryJoin->GetLojChildPredIndexes();
+		GPOS_ASSERT(NULL != childPredIndexes);
 		childPredIndexes->AddRef();
 	}
 	else
@@ -148,6 +149,7 @@ CXformExpandNAryJoinDPv2::Transform
 	{
 		CExpression *pexprNormalized = CNormalizer::PexprNormalize(mp, nextJoinOrder);
 
+		nextJoinOrder->Release();
 		pxfres->Add(pexprNormalized);
 	}
 }

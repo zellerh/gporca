@@ -253,6 +253,7 @@ CJoinOrderDPv2::CJoinOrderDPv2
 	)
 	:
 	CJoinOrder(mp, pdrgpexprComponents, innerJoinConjuncts, onPredConjuncts, childPredIndexes),
+	m_expression_to_edge_map(NULL),
 	m_on_pred_conjuncts(onPredConjuncts),
 	m_child_pred_indexes(childPredIndexes),
 	m_non_inner_join_dependencies(NULL),
@@ -296,7 +297,7 @@ CJoinOrderDPv2::CJoinOrderDPv2
 				nijBitSet->ExchangeClear(logicalChildNum);
 			}
 		}
-
+		PopulateExpressionToEdgeMapIfNeeded();
 	}
 
 #ifdef GPOS_DEBUG
@@ -329,6 +330,7 @@ CJoinOrderDPv2::~CJoinOrderDPv2()
 	m_on_pred_conjuncts->Release();
 	CRefCount::SafeRelease(m_child_pred_indexes);
 	CRefCount::SafeRelease(m_non_inner_join_dependencies);
+	CRefCount::SafeRelease(m_expression_to_edge_map);
 	GPOS_DELETE(m_k_heap_iterator);
 #endif // GPOS_DEBUG
 }
@@ -609,6 +611,139 @@ CJoinOrderDPv2::AddJoinExprAlternativeForBitSet
 	GPOS_ASSERT(NULL != join_expr);
 
 	map->Insert(join_bitset, join_expr);
+}
+
+BOOL
+CJoinOrderDPv2::PopulateExpressionToEdgeMapIfNeeded()
+{
+	if (0 == m_child_pred_indexes->Size())
+	{
+		return false;
+	}
+
+	BOOL populate = false;
+	// make a bitset b with all the LOJ right children
+	CBitSet *loj_right_children = GPOS_NEW(m_mp) CBitSet(m_mp);
+
+	for (ULONG c=0; c<m_child_pred_indexes->Size(); c++)
+	{
+		if (0 < *((*m_child_pred_indexes)[c]))
+		{
+			loj_right_children->ExchangeSet(c);
+		}
+	}
+
+	for (ULONG en1 = 0; en1 < m_ulEdges; en1++)
+	{
+		SEdge *pedge = m_rgpedge[en1];
+
+		if (pedge->m_loj_num == 0)
+		{
+			// check whether it refers to any LOJ right child (whether its bitset overlaps with b)
+			if (!loj_right_children->IsDisjoint(pedge->m_pbs))
+			{
+				populate = true;
+				break;
+			}
+		}
+	}
+
+	if (populate)
+	{
+		m_expression_to_edge_map = GPOS_NEW(m_mp) ExpressionToEdgeMap(m_mp);
+
+		for (ULONG en2 = 0; en2 < m_ulEdges; en2++)
+		{
+			SEdge *pedge = m_rgpedge[en2];
+
+			pedge->AddRef();
+			pedge->m_pexpr->AddRef();
+			m_expression_to_edge_map->Insert(pedge->m_pexpr, pedge);
+		}
+	}
+
+	loj_right_children->Release();
+
+	return populate;
+}
+
+// add a select node with any remaining edges (predicates) that have
+// not been incorporated in the join tree
+CExpression *
+CJoinOrderDPv2::AddSelectNodeForRemainingEdges(CExpression *join_expr)
+{
+	if (NULL == m_expression_to_edge_map)
+	{
+		return join_expr;
+	}
+
+	CExpressionArray *exprArray = GPOS_NEW(m_mp) CExpressionArray(m_mp);
+	RecursivelyMarkEdgesAsUsed(join_expr);
+
+	// find any unused edges and add them to a select
+	for (ULONG en = 0; en < m_ulEdges; en++)
+	{
+		SEdge *pedge = m_rgpedge[en];
+
+		if (pedge->m_fUsed)
+		{
+			// mark the edge as unused for the next alternative, where
+			// we will have to repeat this check
+			pedge->m_fUsed = false;
+		}
+		else
+		{
+			// found an unused edge, this one will need to go into
+			// a select node on top of the join
+			pedge->m_pexpr->AddRef();
+			exprArray->Append(pedge->m_pexpr);
+		}
+	}
+
+	if (0 < exprArray->Size())
+	{
+		CExpression *conj = CPredicateUtils::PexprConjunction(m_mp, exprArray);
+
+		join_expr->AddRef();
+
+		return GPOS_NEW(m_mp) CExpression(m_mp, GPOS_NEW(m_mp) CLogicalSelect(m_mp), join_expr, conj);
+	}
+
+	exprArray->Release();
+
+	return join_expr;
+}
+
+
+void CJoinOrderDPv2::RecursivelyMarkEdgesAsUsed(CExpression *expr)
+{
+	if (expr->Pop()->FLogical())
+	{
+		for (ULONG ul=0; ul< expr->Arity(); ul++)
+		{
+			RecursivelyMarkEdgesAsUsed((*expr)[ul]);
+		}
+	}
+	else
+	{
+		GPOS_ASSERT(expr->Pop()->FScalar());
+		const SEdge *edge = m_expression_to_edge_map->Find(expr);
+		if (NULL != edge)
+		{
+			// we found the edge belonging to this expression, terminate the recursion
+			const_cast<SEdge *>(edge)->m_fUsed = true;
+			return;
+		}
+
+		// we should not reach the leaves of the tree without finding an edge
+		GPOS_ASSERT(0 < expr->Arity());
+
+		// this is not an edge, it is probably an AND of multiple edges
+		for (ULONG ul = 0; ul < expr->Arity(); ul++)
+		{
+			RecursivelyMarkEdgesAsUsed((*expr)[ul]);
+		}
+	}
 }
 
 //---------------------------------------------------------------------------
@@ -911,7 +1046,10 @@ CJoinOrderDPv2::GetNextOfTopK()
 		return NULL;
 	}
 
-	return m_k_heap_iterator->Expression();
+	CExpression *joinExpr = m_k_heap_iterator->Expression();
+	CExpression *joinOrSelect = AddSelectNodeForRemainingEdges(joinExpr);
+
+	return joinOrSelect;
 }
 
 //---------------------------------------------------------------------------

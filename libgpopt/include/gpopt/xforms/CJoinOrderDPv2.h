@@ -109,6 +109,9 @@ namespace gpopt
 			typedef CHashMapIter<CBitSet, CExpressionArray, UlHashBitSet, FEqualBitSet,
 			CleanupRelease<CBitSet>, CleanupRelease<CExpressionArray> > BitSetToExpressionArrayMapIter;
 
+			typedef CHashMap<CExpression, SEdge, CExpression::HashValue, CUtils::Equals,
+			CleanupRelease<CExpression>, CleanupRelease<SEdge> > ExpressionToEdgeMap;
+
 			// dynamic array of SComponentInfos
 			typedef CDynamicPtrArray<SComponentInfo, CleanupRelease<SComponentInfo> > ComponentInfoArray;
 
@@ -161,6 +164,8 @@ namespace gpopt
 			// list of components, organized by level, main data structure for dynamic programming
 			ComponentInfoArrayLevels *m_join_levels;
 
+			ExpressionToEdgeMap *m_expression_to_edge_map;
+
 			// ON predicates for NIJs (non-inner joins, e.g. LOJs)
 			// currently NIJs are LOJs only, this may change in the future
 			// if/when we add semijoins, anti-semijoins and relatives
@@ -194,6 +199,16 @@ namespace gpopt
 			// derive stats on given expression
 			virtual
 			void DeriveStats(CExpression *pexpr);
+
+			// if we need to keep track of used edges, make a map that
+			// speeds up this usage check
+			BOOL PopulateExpressionToEdgeMapIfNeeded();
+
+			// add a select node with any remaining edges (predicates) that have
+			// not been incorporated in the join tree
+			CExpression *AddSelectNodeForRemainingEdges(CExpression *join_expr);
+
+			void RecursivelyMarkEdgesAsUsed(CExpression *expr);
 
 			// enumerate all possible joins between the components in join_pair_bitsets on the
 			// left side and those in other_join_pair_bitsets on the right
