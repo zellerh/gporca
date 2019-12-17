@@ -175,6 +175,9 @@ namespace gpopt
 				return m_lojChildPredIndexes;
 			}
 
+			CExpression*
+			GetTrueInnerJoinPreds (CMemoryPool *mp, CExpressionHandle &exprhdl) const;
+
 			virtual
 			IOstream & OsPrint(IOstream &os) const;
 

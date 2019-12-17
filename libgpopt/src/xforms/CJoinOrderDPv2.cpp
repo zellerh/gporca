@@ -616,8 +616,16 @@ CJoinOrderDPv2::AddJoinExprAlternativeForBitSet
 BOOL
 CJoinOrderDPv2::PopulateExpressionToEdgeMapIfNeeded()
 {
+	// In some cases we may not place all of the predicates in the NAry join in
+	// the resulting tree of binary joins. If that situation is a possibility,
+	// we'll create a map from expressions to edges, so that we can find any
+	// unused edges to be placed in a select node on top of the join.
+	//
+	// Example:
+	// select * from foo left join bar on foo.a=bar.a where coalesce(bar.b, 0) < 10;
 	if (0 == m_child_pred_indexes->Size())
 	{
+		// all inner joins, all predicates will be placed
 		return false;
 	}
 
@@ -639,8 +647,10 @@ CJoinOrderDPv2::PopulateExpressionToEdgeMapIfNeeded()
 
 		if (pedge->m_loj_num == 0)
 		{
-			// check whether it refers to any LOJ right child (whether its bitset overlaps with b)
-			if (!loj_right_children->IsDisjoint(pedge->m_pbs))
+			// check whether this inner join (WHERE) predicate refers to any LOJ right child
+			// (whether its bitset overlaps with b)
+			// or whether we see any local predicates (this should be uncommon)
+			if (!loj_right_children->IsDisjoint(pedge->m_pbs) || 1 == pedge->m_pbs->Size())
 			{
 				populate = true;
 				break;
@@ -674,6 +684,7 @@ CJoinOrderDPv2::AddSelectNodeForRemainingEdges(CExpression *join_expr)
 {
 	if (NULL == m_expression_to_edge_map)
 	{
+		join_expr->AddRef();
 		return join_expr;
 	}
 
@@ -717,6 +728,8 @@ CJoinOrderDPv2::AddSelectNodeForRemainingEdges(CExpression *join_expr)
 
 void CJoinOrderDPv2::RecursivelyMarkEdgesAsUsed(CExpression *expr)
 {
+	GPOS_CHECK_STACK_SIZE;
+
 	if (expr->Pop()->FLogical())
 	{
 		for (ULONG ul=0; ul< expr->Arity(); ul++)

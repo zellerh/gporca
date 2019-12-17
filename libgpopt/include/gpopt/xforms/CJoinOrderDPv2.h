@@ -208,6 +208,7 @@ namespace gpopt
 			// not been incorporated in the join tree
 			CExpression *AddSelectNodeForRemainingEdges(CExpression *join_expr);
 
+			// mark all the edges used in a join tree
 			void RecursivelyMarkEdgesAsUsed(CExpression *expr);
 
 			// enumerate all possible joins between the components in join_pair_bitsets on the

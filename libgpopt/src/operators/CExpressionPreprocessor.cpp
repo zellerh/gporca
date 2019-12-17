@@ -969,15 +969,60 @@ CExpressionPreprocessor::CollectJoinChildrenRecursively
 	if (CPredicateUtils::FInnerJoin(pexpr))
 	{
 		const ULONG arity = pexpr->Arity();
-		for (ULONG ul = 0; ul < arity - 1; ul++)
-		{
-			CExpression *child = (*pexpr)[ul];
-			CollectJoinChildrenRecursively(mp, child, logicalLeafNodes, lojChildPredIndexes, innerJoinPredicates, lojPredicates);
-		}
-
 		CExpression *pexprScalar = (*pexpr) [arity - 1];
 
-		innerJoinPredicates->Append(PexprCollapseJoins(mp, pexprScalar));
+		if (COperator::EopScalarNAryJoinPredList != pexprScalar->Pop()->Eopid())
+		{
+			for (ULONG ul = 0; ul < arity - 1; ul++)
+			{
+				CExpression *child = (*pexpr)[ul];
+				CollectJoinChildrenRecursively(mp, child, logicalLeafNodes, lojChildPredIndexes, innerJoinPredicates, lojPredicates);
+			}
+
+			innerJoinPredicates->Append(PexprCollapseJoins(mp, pexprScalar));
+		}
+		else
+		{
+			// we have collapsed this join before and it already has some non-inner join info,
+			// merge the existing and new lists
+			CLogicalNAryJoin *naryJoin = CLogicalNAryJoin::PopConvert(pexpr->Pop());
+			ULongPtrArray *naryJoinPredIndexes = naryJoin->GetLojChildPredIndexes();
+
+			// add all the inner join predicates
+			innerJoinPredicates->Append(PexprCollapseJoins(mp,(*pexprScalar)[0]));
+
+			// loop over the logical children
+			for (ULONG ul=0; ul<arity-1; ul++)
+			{
+				if (GPOPT_ZERO_INNER_JOIN_PRED_INDEX == *(*naryJoinPredIndexes)[ul])
+				{
+					// inner join child, collapse recursively
+					CollectJoinChildrenRecursively
+						(
+						 mp,
+						 (*pexpr)[ul],
+						 logicalLeafNodes,
+						 lojChildPredIndexes,
+						 innerJoinPredicates,
+						 lojPredicates
+						);
+				}
+				else
+				{
+					// this is the right child of a non-inner join
+					ULONG oldPredIndex = *(*naryJoinPredIndexes)[ul];
+					CExpression *lojPred = PexprCollapseJoins(mp,(*pexprScalar)[oldPredIndex]);
+
+					// don't collapse this child into our current join node
+					logicalLeafNodes->Append(PexprCollapseJoins(mp, (*pexpr)[ul]));
+					lojPredicates->Append(lojPred);
+
+					ULONG newPredIndex = lojPredicates->Size();
+
+					lojChildPredIndexes->Append(GPOS_NEW(mp) ULONG(newPredIndex));
+				}
+			}
+		}
 	}
 	else if (GPOS_FTRACE(EopttraceEnableLOJInNAryJoin) &&
 			 CPredicateUtils::FLeftOuterJoin(pexpr))
@@ -1270,6 +1315,15 @@ CExpressionPreprocessor::PexprOuterJoinToInnerJoin
 	{
 		// the predicates of an inner join on top of outer join can be used to turn the child outer join into another inner join
 		CExpression *pexprScalar = (*pexpr)[arity - 1];
+
+		if (COperator::EopScalarNAryJoinPredList == pexprScalar->Pop()->Eopid())
+		{
+			// since we have ScalarNAryJoinPredList, it means we have already
+			// converted all possible LOJs to Inner Joins and collapsed them
+			pexpr->AddRef();
+			return pexpr;
+		}
+
 		CExpressionArray *pdrgpexprChildren = GPOS_NEW(mp) CExpressionArray(mp);
 		for (ULONG ul = 0; ul < arity; ul++)
 		{
