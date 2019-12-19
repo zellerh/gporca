@@ -192,23 +192,29 @@ BOOL CJoinOrderDPv2::KHeapIterator::Advance()
 {
 	if (m_kheap->HasTopK())
 	{
+		// walk through the top k entries, no need to look at the bitset to expression array map
 		m_entry_in_topk_array++;
 		return m_entry_in_topk_array < m_kheap->m_topk->Size();
 	}
 
+	// otherwise, create an iterator of the KHeap, using the BitSetToExpressionArrayMapIter
 	m_entry_in_expression_array++ ;
 
 	if (0 == m_entry_in_expression_array)
 	{
+		// first time we reach here, do an initial advance to the next bitset
 		return m_iter.Advance();
 	}
 
 	if (m_entry_in_expression_array >= m_iter.Value()->Size())
 	{
+		// the current bitset of m_iter is exhausted, continue with the first
+		// entry in the CExpressionArray of the next bitset (if it exists)
 		m_entry_in_expression_array = 0;
 		return m_iter.Advance();
 	}
 
+	// we advanced to the next entry in the current expression array
 	return true;
 }
 
@@ -1090,6 +1096,7 @@ CJoinOrderDPv2::GetCheapestJoinExprForBitSet
 		const CExpressionArray *join_exprs = bitset_exprs_map->ArrayForBitset(join_bitset);
 		CDouble min_join_cost(0.0);
 		CExpression *best_join_expr = NULL;
+		// TODO: Find a more efficient way to compute the cheapest expression
 		for (ULONG id = 0; id < join_exprs->Size(); id++)
 		{
 			CExpression *join_expr = (*join_exprs)[id];

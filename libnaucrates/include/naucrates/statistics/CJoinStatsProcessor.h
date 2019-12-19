@@ -90,7 +90,7 @@ namespace gpnaucrates
 				 CMemoryPool *mp,
 				 IStatisticsArray *statistics_array,
 				 CExpression *expr,
-				 IStatistics::EStatsJoinType join_type
+				 COperator *pop
 				 );
 
 			// derive statistics for join operation given array of statistics object
@@ -110,8 +110,7 @@ namespace gpnaucrates
 				 CExpressionHandle &exprhdl, // handle attached to the logical expression we want to derive stats for
 				 CExpression *expr, // scalar condition used for stats derivation
 				 IStatistics *stats, // statistics object of attached expression
-				 IStatisticsArray *all_outer_stats, // array of stats objects where outer references are defined
-				 IStatistics::EStatsJoinType join_type
+				 IStatisticsArray *all_outer_stats // array of stats objects where outer references are defined
 				 );
 	};
 }

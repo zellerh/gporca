@@ -150,6 +150,7 @@ CLogicalNAryJoin::GetTrueInnerJoinPreds(CMemoryPool *mp, CExpressionHandle &expr
 
 	if (!HasOuterJoinChildren())
 	{
+		// all inner joins, all the predicates are true inner join preds
 		pexprScalar->AddRef();
 		return pexprScalar;
 	}
@@ -161,6 +162,7 @@ CLogicalNAryJoin::GetTrueInnerJoinPreds(CMemoryPool *mp, CExpressionHandle &expr
 
 	GPOS_ASSERT(COperator::EopScalarNAryJoinPredList == pexprScalar->Pop()->Eopid());
 
+	// split the predicate into conjuncts or disjuncts and inspect those individually
 	if (isAConjunction)
 	{
 		predArray = CPredicateUtils::PdrgpexprConjuncts(mp,innerJoinPreds);
@@ -176,7 +178,8 @@ CLogicalNAryJoin::GetTrueInnerJoinPreds(CMemoryPool *mp, CExpressionHandle &expr
 		CColRefSet *predCols = pred->DeriveUsedColumns();
 		BOOL addToPredArray = true;
 
-		for (ULONG c=0; c<exprhdl.Arity(); c++)
+		// check whether the predicate uses any ColRefs that come from a non-inner join child
+		for (ULONG c=0; c<exprhdl.Arity()-1; c++)
 		{
 			if (0 < *(*m_lojChildPredIndexes)[c])
 			{

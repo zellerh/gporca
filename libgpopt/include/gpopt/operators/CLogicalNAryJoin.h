@@ -175,6 +175,8 @@ namespace gpopt
 				return m_lojChildPredIndexes;
 			}
 
+			// get the true inner join predicates, excluding predicates that use ColRefs
+			// coming from non-inner joins
 			CExpression*
 			GetTrueInnerJoinPreds (CMemoryPool *mp, CExpressionHandle &exprhdl) const;
 
