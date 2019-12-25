@@ -37,40 +37,77 @@ namespace gpopt
 
 		private:
 
+			// forward declaration, circular reference
+			struct SGroupInfo;
+
+			// description of an expression in the DP environment,
+			// left and right child of join expressions point to
+			// other groups, similar to a CGroupExpression
+			struct SExpressionInfo : public CRefCount
+			{
+				// best expression (so far) for this group
+				CExpression *m_best_expr;
+
+				// left/right child group info (group for left/right child of m_best_expr)
+				const SGroupInfo *m_left_child_group;
+				const SGroupInfo *m_right_child_group;
+
+				// in the future, we may add properties relevant to the cost here,
+				// like distribution key, partition selectors
+
+				// cost of the best expression (so far)
+				CDouble m_cost;
+
+				SExpressionInfo(
+								CExpression *expr,
+								const SGroupInfo *left_child_group_info,
+								const SGroupInfo *right_child_group_info
+							   ) : m_best_expr(expr),
+								   m_left_child_group(left_child_group_info),
+								   m_right_child_group(right_child_group_info),
+								   m_cost(0.0)
+				{
+				}
+
+				~SExpressionInfo()
+				{
+					m_best_expr->Release();
+				}
+
+			};
+
 			//---------------------------------------------------------------------------
 			//	@struct:
-			//		SComponentPair
+			//		SGroupInfo
 			//
 			//	@doc:
-			//		Struct containing a component, its best expression, and cost
+			//		Struct containing a bitset, representing a group, its best expression, and cost
 			//
 			//---------------------------------------------------------------------------
-			struct SComponentInfo : public CRefCount
+			struct SGroupInfo : public CRefCount
 				{
-					CBitSet *component;
-					CExpression *best_expr;
-					CDouble cost;
+					CBitSet *m_atoms;
+					CExpression *m_expr_for_stats;
+					SExpressionInfo *m_expr_info;
+					// future: have a list or map of SExpressionInfos
+					// each with a different property
 
-					SComponentInfo() : component(NULL),
-									   best_expr(NULL),
-									   cost(0.0)
+					SGroupInfo(CBitSet *atoms,
+							   SExpressionInfo *first_expr_info
+							  ) : m_atoms(atoms),
+								  m_expr_for_stats(NULL),
+								  m_expr_info(first_expr_info)
 					{
 					}
 
-					SComponentInfo(CBitSet *component,
-								   CExpression *best_expr,
-								   CDouble cost
-								   ) : component(component),
-									   best_expr(best_expr),
-									   cost(cost)
+					~SGroupInfo()
 					{
+						m_atoms->Release();
+						CRefCount::SafeRelease(m_expr_for_stats);
+						m_expr_info->Release();
 					}
 
-					~SComponentInfo()
-					{
-						CRefCount::SafeRelease(component);
-						CRefCount::SafeRelease(best_expr);
-					}
+					BOOL IsAnAtom() { return 1 == m_atoms->Size(); }
 
 				};
 
@@ -100,24 +137,22 @@ namespace gpopt
 				return pbsFst->Equals(pbsSnd);
 			}
 
-
-			// hash map from bit set to expression array
-			typedef CHashMap<CBitSet, CExpressionArray, UlHashBitSet, FEqualBitSet,
-			CleanupRelease<CBitSet>, CleanupRelease<CExpressionArray> > BitSetToExpressionArrayMap;
-
-			// hash map iter from bit set to expression array
-			typedef CHashMapIter<CBitSet, CExpressionArray, UlHashBitSet, FEqualBitSet,
-			CleanupRelease<CBitSet>, CleanupRelease<CExpressionArray> > BitSetToExpressionArrayMapIter;
-
 			typedef CHashMap<CExpression, SEdge, CExpression::HashValue, CUtils::Equals,
 			CleanupRelease<CExpression>, CleanupRelease<SEdge> > ExpressionToEdgeMap;
 
-			// dynamic array of SComponentInfos
-			typedef CDynamicPtrArray<SComponentInfo, CleanupRelease<SComponentInfo> > ComponentInfoArray;
+			// dynamic array of SGroupInfos
+			typedef CHashMap<CBitSet, SGroupInfo, UlHashBitSet, FEqualBitSet, CleanupRelease<CBitSet>, CleanupRelease<SGroupInfo> > BitSetToGroupInfoMap;
 
-			// dynamic array of componentInfoArray, where each index represents the level
-			typedef CDynamicPtrArray<ComponentInfoArray, CleanupRelease> ComponentInfoArrayLevels;
+			// iterator over group infos in a level
+			typedef CHashMapIter<CBitSet, SGroupInfo, UlHashBitSet, FEqualBitSet,
+			CleanupRelease<CBitSet>, CleanupRelease<SGroupInfo> > BitSetToGroupInfoMapIter;
 
+			// dynamic array of SGroupInfo, where each index represents an alternative group of a given level k
+			typedef CDynamicPtrArray<SGroupInfo, CleanupRelease<SGroupInfo> > GroupInfoArray;
+
+			// dynamic array of GroupInfoArrays, where each index represents the level
+			typedef CDynamicPtrArray<GroupInfoArray, CleanupRelease<GroupInfoArray> > DPv2Levels;
+/*
 			class KHeapIterator;
 
 			class KHeap : public CRefCount
@@ -160,11 +195,19 @@ namespace gpopt
 				const CBitSet *BitSet();
 				CExpression *Expression();
 			};
+*/
+			// an array of an array of groups, organized by level at the first array dimension,
+			// main data structure for dynamic programming
+			DPv2Levels *m_join_levels;
 
-			// list of components, organized by level, main data structure for dynamic programming
-			ComponentInfoArrayLevels *m_join_levels;
+			// limits for the number of bitsets (groups) per level
+			ULONG *m_top_k_group_limits;
 
+			// map to find the associated edge in the join graph from a join predicate
 			ExpressionToEdgeMap *m_expression_to_edge_map;
+
+			// map to check whether a DPv2 group already exists
+			BitSetToGroupInfoMap *m_bitset_to_group_info_map;
 
 			// ON predicates for NIJs (non-inner joins, e.g. LOJs)
 			// currently NIJs are LOJs only, this may change in the future
@@ -175,30 +218,24 @@ namespace gpopt
 			// (which of the logical children are right children of NIJs and what ON predicates are they using)
 			ULongPtrArray *m_child_pred_indexes;
 
-			// for each non-inner join (entry in m_on_pred_conjuncts), the required components on the left
+			// for each non-inner join (entry in m_on_pred_conjuncts), the required atoms on the left
 			CBitSetArray *m_non_inner_join_dependencies;
 
 			// top K elements at the top level
-			KHeap *m_top_k_expressions;
-			KHeapIterator *m_k_heap_iterator;
-
-			// dummy expression to used for non-joinable components
-			CExpression *m_pexprDummy;
+//			KHeap *m_top_k_expressions;
+//			KHeapIterator *m_k_heap_iterator;
+			ULONG m_top_k_index;
 
 			CMemoryPool *m_mp;
 
-			// build expression linking given components
+			// build expression linking given atoms
 			CExpression *PexprBuildInnerJoinPred(CBitSet *pbsFst, CBitSet *pbsSnd);
 
 			// extract predicate joining the two given sets
 			CExpression *PexprPred(CBitSet *pbsFst, CBitSet *pbsSnd);
 
-			// compute cost of given join expression
-			CDouble DCost(CExpression *pexpr);
-
-			// derive stats on given expression
-			virtual
-			void DeriveStats(CExpression *pexpr);
+			// compute cost of a join expression in a group
+			CDouble DCost(SGroupInfo *group, const SGroupInfo *leftChildGroup, const SGroupInfo *rightChildGroup);
 
 			// if we need to keep track of used edges, make a map that
 			// speeds up this usage check
@@ -211,28 +248,27 @@ namespace gpopt
 			// mark all the edges used in a join tree
 			void RecursivelyMarkEdgesAsUsed(CExpression *expr);
 
-			// enumerate all possible joins between the components in join_pair_bitsets on the
-			// left side and those in other_join_pair_bitsets on the right
-			KHeap *SearchJoinOrders(ComponentInfoArray *join_pair_bitsets, ComponentInfoArray *other_join_pair_bitsets, ULONG topK);
+			// enumerate all possible joins between left_level-way joins on the left side
+			// and right_level-way joins on the right side, resulting in left_level + right_level-way joins
+			void SearchJoinOrders(ULONG left_level, ULONG right_level);
 
 			// reduce a list of expressions per component down to the cheapest expression per component
-			ComponentInfoArray *GetCheapestJoinExprForBitSet(KHeap *bit_exprarray_map);
+			//ComponentInfoArray *GetCheapestJoinExprForBitSet(KHeap *bit_exprarray_map);
 
-			void AddJoinExprAlternativeForBitSet(CBitSet *join_bitset, CExpression *join_expr, KHeap *map);
-
-			// create a CLogicalJoin and a CExpression to join two components
-			CExpression *GetJoinExpr(SComponentInfo *left_child, SComponentInfo *right_child);
-
-			KHeap *MergeJoinExprsForBitSet(KHeap *map, KHeap *other_map, ULONG topK);
-
-			void AddJoinExprsForBitSet(KHeap *result_map, KHeap *candidate_map);
+			// create a CLogicalJoin and a CExpression to join two groups
+			CExpression *GetJoinExpr(SGroupInfo *left_child, SGroupInfo *right_child);
 
 			// enumerate bushy joins (joins where both children are also joins) of level "current_level"
-			KHeap *SearchBushyJoinOrders(ULONG current_level);
+			void SearchBushyJoinOrders(ULONG current_level);
 
 			void AddExprs(const CExpressionArray *candidate_join_exprs, CExpressionArray *result_join_exprs);
+			void AddGroupInfo(SGroupInfo *groupInfo);
+			// TODO: void ReplaceGroupInfo(SGroupInfo *newGroupInfo, SGroupInfo *oldGroupInfo);
 
 			ULONG FindLogicalChildByNijId(ULONG nij_num);
+			static
+			ULONG NChooseK(ULONG n, ULONG k);
+			BOOL LevelIsFull(ULONG level);
 
 
 		public:
@@ -241,7 +277,7 @@ namespace gpopt
 			CJoinOrderDPv2
 				(
 				CMemoryPool *mp,
-				CExpressionArray *pdrgpexprComponents,
+				CExpressionArray *pdrgpexprAtoms,
 				CExpressionArray *innerJoinConjuncts,
 				CExpressionArray *onPredConjuncts,
 				ULongPtrArray *childPredIndexes
@@ -253,14 +289,14 @@ namespace gpopt
 
 			// main handler
 			virtual
-			CExpression *PexprExpand();
+			void PexprExpand();
 
 			CExpression *GetNextOfTopK();
 
 			// check for NIJs
 			BOOL
 			IsRightChildOfNIJ
-				(SComponentInfo *component,
+				(SGroupInfo *groupInfo,
 				 CExpression **onPredToUse,
 				 CBitSet **requiredBitsOnLeft
 				);

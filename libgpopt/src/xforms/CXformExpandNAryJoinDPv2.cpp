@@ -102,7 +102,7 @@ CXformExpandNAryJoinDPv2::Transform
 	const ULONG arity = pexpr->Arity();
 	GPOS_ASSERT(arity >= 3);
 
-	// Make an expression array with all the one-way-join children
+	// Make an expression array with all the atoms (the logical children)
 	CExpressionArray *pdrgpexpr = GPOS_NEW(mp) CExpressionArray(mp);
 	for (ULONG ul = 0; ul < arity - 1; ul++)
 	{
@@ -111,8 +111,10 @@ CXformExpandNAryJoinDPv2::Transform
 		pdrgpexpr->Append(pexprChild);
 	}
 
-	// Make an expression array with all the join conditions, one entry for
-	// every conjunct (ANDed condition)
+	// Make an expression array with all the join predicates, one entry for
+	// every conjunct (ANDed condition),
+	// plus an array of all the non-inner join predicates, together with
+	// a lookup table for each child whether it is a non-inner join
 	CLogicalNAryJoin *naryJoin = CLogicalNAryJoin::PopConvert(pexpr->Pop());
 	CExpression *pexprScalar = (*pexpr)[arity - 1];
 	CExpressionArray *innerJoinPreds = NULL;

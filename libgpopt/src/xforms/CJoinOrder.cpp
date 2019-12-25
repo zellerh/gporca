@@ -645,15 +645,12 @@ CJoinOrder::DeriveStats
 {
 	GPOS_ASSERT(NULL != pexpr);
 
-	if (NULL != pexpr->Pstats())
+	if (NULL == pexpr->Pstats())
 	{
-		// stats have been already derived
-		return;
+		CExpressionHandle exprhdl(m_mp);
+		exprhdl.Attach(pexpr);
+		exprhdl.DeriveStats(m_mp, m_mp, NULL /*prprel*/, NULL /*pdrgpstatCtxt*/);
 	}
-
-	CExpressionHandle exprhdl(m_mp);
-	exprhdl.Attach(pexpr);
-	exprhdl.DeriveStats(m_mp, m_mp, NULL /*prprel*/, NULL /*pdrgpstatCtxt*/);
 }
 
 
