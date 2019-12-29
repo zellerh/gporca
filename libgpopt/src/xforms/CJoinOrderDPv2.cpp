@@ -357,50 +357,13 @@ CJoinOrderDPv2::~CJoinOrderDPv2()
 
 //---------------------------------------------------------------------------
 //	@function:
-//		CJoinOrderDPv2::PexprPred
-//
-//	@doc:
-//		Extract predicate joining the two given sets or NULL for cross joins
-//		or overlapping or empty sets
-//
-//---------------------------------------------------------------------------
-CExpression *
-CJoinOrderDPv2::PexprPred
-	(
-	CBitSet *pbsFst,
-	CBitSet *pbsSnd
-	)
-{
-	GPOS_ASSERT(NULL != pbsFst);
-	GPOS_ASSERT(NULL != pbsSnd);
-
-	if (!pbsFst->IsDisjoint(pbsSnd) || 0 == pbsFst->Size() || 0 == pbsSnd->Size())
-	{
-		// components must be non-empty and disjoint
-		return NULL;
-	}
-
-	CExpression *pexprPred = NULL;
-
-	// could not find link in the map, construct it from edge set
-	pexprPred = PexprBuildInnerJoinPred(pbsFst, pbsSnd);
-
-	return pexprPred;
-}
-
-
-//---------------------------------------------------------------------------
-//	@function:
 //		CJoinOrderDPv2::DCost
 //
 //	@doc:
 //		Primitive costing of join expressions;
 //		Cost of a join expression is the "internal data flow" of the join
 //		tree, the sum of all the rows flowing from the leaf nodes up to
-//		the root. This does not include the number of result rows of joins,
-//		for a simple reason: To compare two equivalent joins, we would have
-//		to derive the stats twice, which would be expensive and run the risk
-//		that we get different rowcounts.
+//		the root.
 //		NOTE: We could consider the width of the rows as well, if we had
 //		a reliable way of determining the actual width.
 //
@@ -440,6 +403,7 @@ CJoinOrderDPv2::PexprBuildInnerJoinPred
 	CBitSet *pbsSnd
 	)
 {
+	GPOS_ASSERT(pbsFst->IsDisjoint(pbsSnd));
 	// collect edges connecting the given sets
 	CBitSet *pbsEdges = GPOS_NEW(m_mp) CBitSet(m_mp);
 	CBitSet *pbs = GPOS_NEW(m_mp) CBitSet(m_mp, *pbsFst);
@@ -508,8 +472,9 @@ CJoinOrderDPv2::GetJoinExpr
 
 	if (!isNIJ)
 	{
+		// inner join, compute the predicate from the join graph
 		GPOS_ASSERT(NULL == scalar_expr);
-		scalar_expr = PexprPred(left_child->m_atoms, right_child->m_atoms);
+		scalar_expr = PexprBuildInnerJoinPred(left_child->m_atoms, right_child->m_atoms);
 	}
 	else
 	{
@@ -888,7 +853,7 @@ CJoinOrderDPv2::SearchBushyJoinOrders
 	 ULONG current_level
 	)
 {
-	// try all joins of bitsets of level x and y, where
+	// try bushy joins of bitsets of level x and y, where
 	// x + y = current_level and x > 1 and y > 1
 	// note that join trees of level 3 and below are never bushy,
 	// so this loop only executes at current_level >= 4
@@ -897,6 +862,9 @@ CJoinOrderDPv2::SearchBushyJoinOrders
 		if (LevelIsFull(current_level))
 		{
 			// we've exceeded the number of joins for which we generate bushy trees
+			// TODO: Transition off of bushy joins more gracefully, note that bushy
+			// trees usually do't add any more groups, they just generate more
+			// expressions for existing groups
 			return;
 		}
 
@@ -960,11 +928,9 @@ CJoinOrderDPv2::PexprExpand()
 	// build n-ary joins from the bottom up, starting with 2-way, 3-way up to m_ulComps-way
 	for (ULONG current_join_level = 2; current_join_level <= m_ulComps; current_join_level++)
 	{
-		ULONG previous_level = current_join_level - 1;
-
-		// build linear "current_join_level" joins, with a "previous_level"-way join on one
+		// build linear joins, with a "current_join_level"-1-way join on one
 		// side and an atom on the other side
-		SearchJoinOrders(previous_level, 1);
+		SearchJoinOrders(current_join_level-1, 1);
 
 		// build bushy trees - joins between two other joins
 		SearchBushyJoinOrders(current_join_level);

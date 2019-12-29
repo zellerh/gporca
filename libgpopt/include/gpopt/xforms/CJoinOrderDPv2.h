@@ -228,11 +228,8 @@ namespace gpopt
 
 			CMemoryPool *m_mp;
 
-			// build expression linking given atoms
+			// build expression linking given groups
 			CExpression *PexprBuildInnerJoinPred(CBitSet *pbsFst, CBitSet *pbsSnd);
-
-			// extract predicate joining the two given sets
-			CExpression *PexprPred(CBitSet *pbsFst, CBitSet *pbsSnd);
 
 			// compute cost of a join expression in a group
 			CDouble DCost(SGroupInfo *group, const SGroupInfo *leftChildGroup, const SGroupInfo *rightChildGroup);
