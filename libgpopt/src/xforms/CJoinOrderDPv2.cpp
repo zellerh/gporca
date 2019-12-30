@@ -31,13 +31,6 @@
 
 using namespace gpopt;
 
-// Communitivity will generate an additional 5 alternatives. This value should be 1/2
-// of GPOPT_DP_JOIN_ORDERING_TOPK to generate equivalent alternatives as the DP xform
-#define GPOPT_DP_JOIN_ORDERING_TOPK	5
-#define GPOPT_DP_STOP_BUSHY_TREES_AT_LEVEL 12
-#define GPOPT_DP_BUSHY_TREE_BASE 2.0
-#define GPOPT_DP_START_GREEDY_AT_LEVEL 14
-#define GPOPT_DP_GREEDY_BASE 2.0
 /*
 CJoinOrderDPv2::KHeap::KHeap(CMemoryPool *mp, CJoinOrderDPv2 *join_order, ULONG k)
 :
@@ -1119,39 +1112,81 @@ CJoinOrderDPv2::OsPrint
 {
 	ULONG num_levels = m_join_levels->Size();
 	ULONG num_bitsets = 0;
+	CPrintPrefix pref(NULL, "      ");
 
-	for (ULONG lev=0; lev<num_levels; lev++)
+	for (ULONG lev=1; lev<num_levels; lev++)
 	{
 		GroupInfoArray *bitsets_this_level = (*m_join_levels)[lev];
 		ULONG num_bitsets_this_level = bitsets_this_level->Size();
 
-		os << "CJoinOrderDPv2 - Level: " << lev << std::endl;
+		os << "CJoinOrderDPv2 - Level: " << lev << " (" << bitsets_this_level->Size() << " group(s))" << std::endl;
 
 		for (ULONG c=0; c<num_bitsets_this_level; c++)
 		{
-			SGroupInfo *ci = (*bitsets_this_level)[c];
+			SGroupInfo *gi = (*bitsets_this_level)[c];
 			num_bitsets++;
-			os << "   Bitset: ";
-			ci->m_atoms->OsPrint(os);
+			os << "   Group: ";
+			gi->m_atoms->OsPrint(os);
 			os << std::endl;
-			os << "   Expression: ";
-			if (NULL == ci->m_expr_info)
+			if (!gi->IsAnAtom())
 			{
-				os << "NULL" << std::endl;
+				os << "   Child groups: ";
+				gi->m_expr_info->m_left_child_group->m_atoms->OsPrint(os);
+				if (COperator::EopLogicalLeftOuterJoin == gi->m_expr_info->m_best_expr->Pop()->Eopid())
+				{
+					os << " left";
+				}
+				os << " join ";
+				gi->m_expr_info->m_right_child_group->m_atoms->OsPrint(os);
+				os << std::endl;
+			}
+			if (NULL != gi->m_expr_for_stats)
+			{
+				os << "   Rows: " << gi->m_expr_for_stats->Pstats()->Rows() << std::endl;
+			}
+			os << "   Cost: ";
+			gi->m_expr_info->m_cost.OsPrint(os);
+			os << std::endl;
+			if (NULL == gi->m_expr_info)
+			{
+				os << "Expression: None";
 			}
 			else
 			{
-				ci->m_expr_info->m_best_expr->OsPrint(os);
+				if (lev == 1)
+				{
+					os << "   Atom: " << std::endl;
+					gi->m_expr_info->m_best_expr->OsPrint(os, &pref);
+				}
+				else if (lev < num_levels-1)
+				{
+					os << "   Join predicate: " << std::endl;
+					(*gi->m_expr_info->m_best_expr)[2]->OsPrint(os, &pref);
+				}
+				else
+				{
+					os << "   Top-level expression: " << std::endl;
+					gi->m_expr_info->m_best_expr->OsPrint(os, &pref);
+				}
 			}
-			os << "   Cost: ";
-			ci->m_expr_info->m_cost.OsPrint(os);
 			os << std::endl;
 		}
 	}
 
-	os << "CJoinOrderDPv2 - total number of bitsets: " << num_bitsets << std::endl;
+	os << "CJoinOrderDPv2 - total number of groups: " << num_bitsets << std::endl;
 
 	return os;
 }
+
+#ifdef GPOS_DEBUG
+void
+CJoinOrderDPv2::DbgPrint()
+{
+	CAutoTrace at(m_mp);
+
+	OsPrint(at.Os());
+}
+#endif
+
 
 // EOF

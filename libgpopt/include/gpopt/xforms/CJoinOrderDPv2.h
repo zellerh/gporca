@@ -302,6 +302,11 @@ namespace gpopt
 			virtual
 			IOstream &OsPrint(IOstream &) const;
 
+#ifdef GPOS_DEBUG
+			void
+			DbgPrint();
+#endif
+
 	}; // class CJoinOrderDPv2
 
 }
