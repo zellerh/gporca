@@ -152,8 +152,8 @@ namespace gpopt
 
 			// dynamic array of GroupInfoArrays, where each index represents the level
 			typedef CDynamicPtrArray<GroupInfoArray, CleanupRelease<GroupInfoArray> > DPv2Levels;
-/*
-			class KHeapIterator;
+
+			typedef CDynamicPtrArray<SExpressionInfo, CleanupRelease<SExpressionInfo> > SExpressionInfoArray;
 
 			class KHeap : public CRefCount
 			{
@@ -161,41 +161,22 @@ namespace gpopt
 			private:
 
 				CJoinOrderDPv2 *m_join_order;
-				BitSetToExpressionArrayMap *m_bitSetExprArrayMap;
-				ComponentInfoArray *m_topk;
+				SExpressionInfoArray *m_topk;
 				CMemoryPool *m_mp;
 				ULONG m_k;
-				ULONG m_size;
 				CDouble m_highest_cost;
 
-				void BuildTopK();
 				ULONG EvictMostExpensiveEntry();
 
 			public:
 
 				KHeap(CMemoryPool *mp, CJoinOrderDPv2 *join_order, ULONG k);
 				~KHeap();
-				BOOL Insert(CBitSet *join_bitset, CExpression *join_expr);
-				CExpressionArray *ArrayForBitset(const CBitSet *bit_set);
-				BitSetToExpressionArrayMap *BSExpressionArrayMap() { return m_bitSetExprArrayMap; }
-				BOOL HasTopK() { return NULL != m_topk; }
+				BOOL Insert(SExpressionInfo *join_expr_info);
+				ULONG Size() { return m_topk->Size(); }
+				CExpression *GetExpression(ULONG ix) { return (*m_topk)[ix]->m_best_expr; }
 			};
 
-			class KHeapIterator
-			{
-			private:
-				KHeap *m_kheap;
-				BitSetToExpressionArrayMapIter m_iter;
-				LINT m_entry_in_expression_array;
-				LINT m_entry_in_topk_array;
-
-			public:
-				KHeapIterator(KHeap *kHeap);
-				BOOL Advance();
-				const CBitSet *BitSet();
-				CExpression *Expression();
-			};
-*/
 			// an array of an array of groups, organized by level at the first array dimension,
 			// main data structure for dynamic programming
 			DPv2Levels *m_join_levels;
@@ -222,9 +203,8 @@ namespace gpopt
 			CBitSetArray *m_non_inner_join_dependencies;
 
 			// top K elements at the top level
-//			KHeap *m_top_k_expressions;
-//			KHeapIterator *m_k_heap_iterator;
-			ULONG m_top_k_index;
+			KHeap *m_top_k_expressions;
+			ULONG m_k_heap_iterator;
 
 			CMemoryPool *m_mp;
 

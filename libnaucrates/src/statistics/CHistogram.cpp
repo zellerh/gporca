@@ -737,11 +737,11 @@ CHistogram::MakeJoinHistogramNormalize
 	// the scaling factor of equality join is the MAX of the number of distinct
 	// values in each of the inputs
 
-	*scale_factor = std::max
-						(
-						std::max(MinDistinct.Get(), GetNumDistinct().Get()),
-						std::max(MinDistinct.Get(), other_histogram->GetNumDistinct().Get())
-						);
+//	*scale_factor = std::max
+//						(
+//						std::max(MinDistinct.Get(), GetNumDistinct().Get()),
+//						std::max(MinDistinct.Get(), other_histogram->GetNumDistinct().Get())
+//						);
 
 	CDouble cartesian_product_num_rows = rows * rows_other;
 	if (result_histogram->IsEmpty())
