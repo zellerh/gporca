@@ -156,11 +156,11 @@ CHistogram::OsPrint
 	}
 	os << "]" << std::endl;
 
-	os << "Null fraction: " << m_null_freq << std::endl;
-
-	os << "Remaining NDV: " << m_distinct_remaining << std::endl;
-
-	os << "Remaining frequency: " << m_freq_remaining << std::endl;
+	os << "Null fraction      : " << m_null_freq          << std::endl;
+	os << "Remaining NDV      : " << m_distinct_remaining << std::endl;
+	os << "Total NDV          : " << GetNumDistinct()     << std::endl;
+	os << "Remaining frequency: " << m_freq_remaining     << std::endl;
+	os << "Total frequency    : " << GetFrequency()       << std::endl;
 
 	if (m_skew_was_measured)
 	{
