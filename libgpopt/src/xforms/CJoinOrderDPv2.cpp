@@ -455,8 +455,9 @@ CJoinOrderDPv2::PexprBuildInnerJoinPred
 CExpression *
 CJoinOrderDPv2::GetJoinExpr
 	(
-	SGroupInfo *left_child,
-	SGroupInfo *right_child
+	 SGroupInfo *left_child,
+	 SGroupInfo *right_child,
+	 BOOL use_stats_expr
 	)
 {
 	CExpression *scalar_expr = NULL;
@@ -503,6 +504,12 @@ CJoinOrderDPv2::GetJoinExpr
 	CExpression *left_expr = left_child->m_expr_info->m_best_expr;
 	CExpression *right_expr = right_child->m_expr_info->m_best_expr;
 	CExpression *join_expr = NULL;
+
+	if (use_stats_expr)
+	{
+		left_expr = left_child->m_expr_for_stats;
+		right_expr = right_child->m_expr_for_stats;
+	}
 
 	left_expr->AddRef();
 	right_expr->AddRef();
@@ -740,7 +747,7 @@ CJoinOrderDPv2::SearchJoinOrders
 				continue;
 			}
 
-			CExpression *join_expr = GetJoinExpr(left_group_info, right_group_info);
+			CExpression *join_expr = GetJoinExpr(left_group_info, right_group_info, false /*use the best expr*/);
 
 			if (NULL != join_expr)
 			{
@@ -802,10 +809,22 @@ CJoinOrderDPv2::AddGroupInfo(SGroupInfo *groupInfo)
 	if (m_top_k_group_limits[join_level] == 0 ||
 		m_top_k_group_limits[join_level] >= join_level_array->Size())
 	{
-		// derive stats and cost
-		groupInfo->m_expr_for_stats = groupInfo->m_expr_info->m_best_expr;
-		groupInfo->m_expr_for_stats->AddRef();
-		DeriveStats(groupInfo->m_expr_for_stats);
+		if (!groupInfo->IsAnAtom())
+		{
+			// derive stats and cost
+			groupInfo->m_expr_for_stats = GetJoinExpr
+											(
+											 groupInfo->m_expr_info->m_left_child_group,
+											 groupInfo->m_expr_info->m_right_child_group,
+											 true
+											);
+			DeriveStats(groupInfo->m_expr_for_stats);
+		}
+		else
+		{
+			groupInfo->m_expr_for_stats = groupInfo->m_expr_info->m_best_expr;
+			groupInfo->m_expr_for_stats->AddRef();
+		}
 		groupInfo->m_expr_info->m_cost = DCost
 					(
 					 groupInfo,
@@ -1147,6 +1166,12 @@ CJoinOrderDPv2::OsPrint
 			os << "   Cost: ";
 			gi->m_expr_info->m_cost.OsPrint(os);
 			os << std::endl;
+			if (NULL != gi->m_expr_for_stats)
+			{
+				os << "   Expr for stats:" << std::endl;
+				gi->m_expr_for_stats->OsPrint(os, &pref);
+				os << std::endl;
+			}
 			if (NULL == gi->m_expr_info)
 			{
 				os << "Expression: None";

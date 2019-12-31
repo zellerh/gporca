@@ -49,8 +49,8 @@ namespace gpopt
 				CExpression *m_best_expr;
 
 				// left/right child group info (group for left/right child of m_best_expr)
-				const SGroupInfo *m_left_child_group;
-				const SGroupInfo *m_right_child_group;
+				SGroupInfo *m_left_child_group;
+				SGroupInfo *m_right_child_group;
 
 				// in the future, we may add properties relevant to the cost here,
 				// like distribution key, partition selectors
@@ -60,8 +60,8 @@ namespace gpopt
 
 				SExpressionInfo(
 								CExpression *expr,
-								const SGroupInfo *left_child_group_info,
-								const SGroupInfo *right_child_group_info
+								SGroupInfo *left_child_group_info,
+								SGroupInfo *right_child_group_info
 							   ) : m_best_expr(expr),
 								   m_left_child_group(left_child_group_info),
 								   m_right_child_group(right_child_group_info),
@@ -253,7 +253,7 @@ namespace gpopt
 			//ComponentInfoArray *GetCheapestJoinExprForBitSet(KHeap *bit_exprarray_map);
 
 			// create a CLogicalJoin and a CExpression to join two groups
-			CExpression *GetJoinExpr(SGroupInfo *left_child, SGroupInfo *right_child);
+			CExpression *GetJoinExpr(SGroupInfo *left_child, SGroupInfo *right_child, BOOL use_stats_expr);
 
 			// enumerate bushy joins (joins where both children are also joins) of level "current_level"
 			void SearchBushyJoinOrders(ULONG current_level);
