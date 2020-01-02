@@ -731,8 +731,13 @@ CHistogram::MakeJoinHistogramNormalize
 	}
 	
 	CHistogram *result_histogram = MakeJoinHistogram(stats_cmp_type, other_histogram);
+
+	// The returned frequencies are based on the cartesian product, now normalize the histogram.
+	// The returned scale factor will give us the ratio of the cartesian product's cardinality
+	// and the actual join cardinality.
 	*scale_factor = result_histogram->NormalizeHistogram();
 
+	// TODO: Delete this, we already applied this formula on each bucket
 	// based on Ramakrishnan and Gehrke, "Database Management Systems, Third Ed", page 484
 	// the scaling factor of equality join is the MAX of the number of distinct
 	// values in each of the inputs

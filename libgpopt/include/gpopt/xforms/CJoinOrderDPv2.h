@@ -37,6 +37,165 @@ namespace gpopt
 
 		private:
 
+			// a heap keeping the k lowest-cost objects in an array of class T
+			// A is a CDynamicPtrArray
+			// E is the entry type of the array and it has a method CDouble DCost()
+			// See https://en.wikipedia.org/wiki/Binary_heap for details
+		    template<class A, class E>
+			class KHeap : public CRefCount
+			{
+				friend class KHeapIterator;
+			private:
+
+				CJoinOrderDPv2 *m_join_order;
+				A *m_topk;
+				CMemoryPool *m_mp;
+				ULONG m_k;
+				BOOL m_is_heapified;
+				ULONG m_num_returned;
+
+				// the parent index is (ix-1)/2, except for 0
+				ULONG parent(ULONG ix) { return (0 < ix ? (ix-1)/2 : m_topk->Size()); }
+
+				// children are at indexes 2*ix + 1 and 2*ix + 2
+				ULONG left_child(ULONG ix)  { return 2*ix + 1; }
+				ULONG right_child(ULONG ix) { return 2*ix + 2; }
+
+				// does the parent/child exist?
+				BOOL exists(ULONG ix) { return ix < m_topk->Size(); }
+				// cost of an entry (this class implements a Min-Heap)
+				CDouble cost(ULONG ix) { return (*m_topk)[ix]->DCost(); }
+
+				// push node ix in the tree down into its child tree as much as needed
+				void HeapifyDown(ULONG ix)
+				{
+					ULONG left_child_ix = left_child(ix);
+					ULONG right_child_ix = right_child(ix);
+					ULONG min_element_ix = ix;
+
+					if (exists(left_child_ix) && cost(left_child_ix) < cost(ix))
+						// left child is better than parent, it becomes the new candidate
+						min_element_ix = left_child_ix;
+
+					if (exists(right_child_ix) && cost(right_child_ix) < cost(min_element_ix))
+						// right child is better than min(parent, left child)
+						min_element_ix = right_child_ix;
+
+					if (min_element_ix != ix)
+					{
+						// make the lowest of { parent, left child, right child } the new root
+						m_topk->Swap(ix, min_element_ix);
+						HeapifyDown(min_element_ix);
+					}
+				}
+
+				// pull node ix in the tree up as much as needed
+				void HeapifyUp(ULONG ix)
+				{
+					ULONG parent_ix = parent(ix);
+
+					if (!exists(parent_ix))
+						return;
+
+					if (cost(ix) < cost(parent_ix))
+					{
+						m_topk->Swap(ix, parent_ix);
+						HeapifyUp(parent_ix);
+					}
+				}
+
+				// convert the array into a heap, heapify-down all interior nodes of the tree, bottom-up
+				void Heapify()
+				{
+					// the parent of the last node is the last node in the tree that is a parent
+					ULONG start_ix = parent(m_topk->Size()-1);
+
+					// now work our way up to the root, calling HeapifyDown
+					for (ULONG ix=start_ix; exists(ix); ix--)
+						HeapifyDown(ix);
+
+					m_is_heapified = true;
+				}
+
+			public:
+
+				KHeap(CMemoryPool *mp, CJoinOrderDPv2 *join_order, ULONG k)
+				:
+				m_join_order(join_order),
+				m_mp(mp),
+				m_k(k),
+				m_is_heapified(false),
+				m_num_returned(0)
+				{
+					m_topk = GPOS_NEW(m_mp) A(m_mp);
+				}
+
+				~KHeap()
+				{
+					m_topk->Release();
+				}
+
+				void Insert(E *elem)
+				{
+					GPOS_ASSERT(NULL != elem);
+					// since the cost may change as we find more expressions in the group,
+					// we just append to the array now and heapify at the end
+					GPOS_ASSERT(!m_is_heapified);
+					m_topk->Append(elem);
+
+					// this is dead code at the moment, but other users might want to
+					// heapify and then insert additional items
+					if (m_is_heapified)
+					{
+						HeapifyUp(m_topk->Size()-1);
+					}
+				}
+
+				E *RemoveBestElement()
+				{
+					if (0 == m_topk->Size() || m_k <= m_num_returned)
+					{
+						return NULL;
+					}
+
+					m_num_returned++;
+
+					if (!m_is_heapified)
+						Heapify();
+
+					// we want to remove and return the root of the tree, which is the best element
+
+					// first, swap the root with the last element in the array
+					m_topk->Swap(0, m_topk->Size()-1);
+
+					// now remove the new last element, which is the real root
+					E * result = m_topk->RemoveLast();
+
+					// then push the new first element down to the correct place
+					HeapifyDown(0);
+
+					return result;
+				}
+
+				ULONG Size()
+				{
+					return m_topk->Size();
+				}
+
+				BOOL IsLimitExceeded()
+				{
+					return m_topk->Size() + m_num_returned > m_k;
+				}
+
+				void Clear()
+				{
+					m_topk->Clear();
+					m_is_heapified = false;
+					m_num_returned = 0;
+				}
+
+			};
+
 			// forward declaration, circular reference
 			struct SGroupInfo;
 
@@ -45,24 +204,25 @@ namespace gpopt
 			// other groups, similar to a CGroupExpression
 			struct SExpressionInfo : public CRefCount
 			{
-				// best expression (so far) for this group
-				CExpression *m_best_expr;
+				// the expression
+				CExpression *m_expr;
 
-				// left/right child group info (group for left/right child of m_best_expr)
+				// left/right child group info (group for left/right child of m_best_expr),
+				// we do not keep a refcount for these
 				SGroupInfo *m_left_child_group;
 				SGroupInfo *m_right_child_group;
 
 				// in the future, we may add properties relevant to the cost here,
 				// like distribution key, partition selectors
 
-				// cost of the best expression (so far)
+				// cost of the expression
 				CDouble m_cost;
 
 				SExpressionInfo(
 								CExpression *expr,
 								SGroupInfo *left_child_group_info,
 								SGroupInfo *right_child_group_info
-							   ) : m_best_expr(expr),
+							   ) : m_expr(expr),
 								   m_left_child_group(left_child_group_info),
 								   m_right_child_group(right_child_group_info),
 								   m_cost(0.0)
@@ -71,8 +231,10 @@ namespace gpopt
 
 				~SExpressionInfo()
 				{
-					m_best_expr->Release();
+					m_expr->Release();
 				}
+
+				CDouble DCost() { return m_cost; }
 
 			};
 
@@ -86,9 +248,12 @@ namespace gpopt
 			//---------------------------------------------------------------------------
 			struct SGroupInfo : public CRefCount
 				{
+					// the set of atoms, this uniquely identifies the group
 					CBitSet *m_atoms;
+					// expression used to derive stats (not necessarily the one with lowest cost)
 					CExpression *m_expr_for_stats;
-					SExpressionInfo *m_expr_info;
+					// info of the best (lowest cost) expression (so far, if at the current level)
+					SExpressionInfo *m_best_expr_info;
 					// future: have a list or map of SExpressionInfos
 					// each with a different property
 
@@ -96,7 +261,7 @@ namespace gpopt
 							   SExpressionInfo *first_expr_info
 							  ) : m_atoms(atoms),
 								  m_expr_for_stats(NULL),
-								  m_expr_info(first_expr_info)
+								  m_best_expr_info(first_expr_info)
 					{
 					}
 
@@ -104,11 +269,37 @@ namespace gpopt
 					{
 						m_atoms->Release();
 						CRefCount::SafeRelease(m_expr_for_stats);
-						m_expr_info->Release();
+						m_best_expr_info->Release();
 					}
 
 					BOOL IsAnAtom() { return 1 == m_atoms->Size(); }
+					CDouble DCost() { return m_best_expr_info->m_cost; }
 
+				};
+
+			// dynamic array of SGroupInfo, where each index represents an alternative group of a given level k
+			typedef CDynamicPtrArray<SGroupInfo, CleanupRelease<SGroupInfo> > SGroupInfoArray;
+
+			// info for a join level, the set of all groups representing <m_level>-way joins
+			struct SLevelInfo : public CRefCount
+				{
+					ULONG m_level;
+					SGroupInfoArray *m_groups;
+					KHeap<SGroupInfoArray, SGroupInfo> *m_top_k_groups;
+
+					SLevelInfo(ULONG level, SGroupInfoArray *groups) :
+					m_level(level),
+					m_groups(groups),
+					m_top_k_groups(NULL)
+					{}
+
+					~SLevelInfo()
+					{
+						m_groups->Release();
+						CRefCount::SafeRelease(m_top_k_groups);
+					}
+
+					BOOL IsLimited() { return NULL != m_top_k_groups; }
 				};
 
 			// hashing function
@@ -147,42 +338,14 @@ namespace gpopt
 			typedef CHashMapIter<CBitSet, SGroupInfo, UlHashBitSet, FEqualBitSet,
 			CleanupRelease<CBitSet>, CleanupRelease<SGroupInfo> > BitSetToGroupInfoMapIter;
 
-			// dynamic array of SGroupInfo, where each index represents an alternative group of a given level k
-			typedef CDynamicPtrArray<SGroupInfo, CleanupRelease<SGroupInfo> > GroupInfoArray;
-
-			// dynamic array of GroupInfoArrays, where each index represents the level
-			typedef CDynamicPtrArray<GroupInfoArray, CleanupRelease<GroupInfoArray> > DPv2Levels;
+			// dynamic array of SLevelInfos, where each index represents the level
+			typedef CDynamicPtrArray<SLevelInfo, CleanupRelease<SLevelInfo> > DPv2Levels;
 
 			typedef CDynamicPtrArray<SExpressionInfo, CleanupRelease<SExpressionInfo> > SExpressionInfoArray;
-
-			class KHeap : public CRefCount
-			{
-				friend class KHeapIterator;
-			private:
-
-				CJoinOrderDPv2 *m_join_order;
-				SExpressionInfoArray *m_topk;
-				CMemoryPool *m_mp;
-				ULONG m_k;
-				CDouble m_highest_cost;
-
-				ULONG EvictMostExpensiveEntry();
-
-			public:
-
-				KHeap(CMemoryPool *mp, CJoinOrderDPv2 *join_order, ULONG k);
-				~KHeap();
-				BOOL Insert(SExpressionInfo *join_expr_info);
-				ULONG Size() { return m_topk->Size(); }
-				CExpression *GetExpression(ULONG ix) { return (*m_topk)[ix]->m_best_expr; }
-			};
 
 			// an array of an array of groups, organized by level at the first array dimension,
 			// main data structure for dynamic programming
 			DPv2Levels *m_join_levels;
-
-			// limits for the number of bitsets (groups) per level
-			ULONG *m_top_k_group_limits;
 
 			// map to find the associated edge in the join graph from a join predicate
 			ExpressionToEdgeMap *m_expression_to_edge_map;
@@ -202,11 +365,12 @@ namespace gpopt
 			// for each non-inner join (entry in m_on_pred_conjuncts), the required atoms on the left
 			CBitSetArray *m_non_inner_join_dependencies;
 
-			// top K elements at the top level
-			KHeap *m_top_k_expressions;
-			ULONG m_k_heap_iterator;
+			// top K expressions at the top level
+			KHeap<SExpressionInfoArray, SExpressionInfo> *m_top_k_expressions;
 
 			CMemoryPool *m_mp;
+
+			SLevelInfo *Level(ULONG l) { return (*m_join_levels)[l]; }
 
 			// build expression linking given groups
 			CExpression *PexprBuildInnerJoinPred(CBitSet *pbsFst, CBitSet *pbsSnd);
@@ -239,8 +403,11 @@ namespace gpopt
 			void SearchBushyJoinOrders(ULONG current_level);
 
 			void AddExprs(const CExpressionArray *candidate_join_exprs, CExpressionArray *result_join_exprs);
-			void AddGroupInfo(SGroupInfo *groupInfo);
-			// TODO: void ReplaceGroupInfo(SGroupInfo *newGroupInfo, SGroupInfo *oldGroupInfo);
+			void AddGroupInfo(SLevelInfo *levelInfo, SGroupInfo *groupInfo);
+			void FinalizeLevel(ULONG level);
+
+			SGroupInfoArray *GetGroupsForLevel(ULONG level) const
+			{ return (*m_join_levels)[level]->m_groups; }
 
 			ULONG FindLogicalChildByNijId(ULONG nij_num);
 			static
