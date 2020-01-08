@@ -29,6 +29,9 @@
 
 #include "gpopt/exception.h"
 
+#include "naucrates/statistics/CJoinStatsProcessor.h"
+
+
 using namespace gpopt;
 
 #define GPOPT_DPV2_JOIN_ORDERING_TOPK 10
@@ -231,6 +234,22 @@ CJoinOrderDPv2::PexprBuildInnerJoinPred
 
 	pbsEdges->Release();
 	return pexprPred;
+}
+
+void CJoinOrderDPv2::DeriveStats(CExpression *pexpr)
+{
+	try {
+		// We want to let the histogram code compute the join selectivity and the number of NDVs based
+		// on actual histogram buckets, taking into account the overlap of the data ranges. It helps
+		// with getting more consistent and accurate cardinality estimates for DP.
+		// Eventually, this should probably become the default method.
+		CJoinStatsProcessor::SetComputeScaleFactorFromHistogramBuckets(true);
+		CJoinOrder::DeriveStats(pexpr);
+		CJoinStatsProcessor::SetComputeScaleFactorFromHistogramBuckets(false);
+	} catch (...) {
+		CJoinStatsProcessor::SetComputeScaleFactorFromHistogramBuckets(false);
+		throw;
+	}
 }
 
 //---------------------------------------------------------------------------
@@ -921,6 +940,7 @@ CJoinOrderDPv2::OsPrint
 	)
 	const
 {
+	// increase GPOS_LOG_MESSAGE_BUFFER_SIZE in file ILogger.h if the output of this method gets truncated
 	ULONG num_levels = m_join_levels->Size();
 	ULONG num_bitsets = 0;
 	CPrintPrefix pref(NULL, "      ");

@@ -21,6 +21,8 @@
 
 using namespace gpopt;
 
+BOOL CJoinStatsProcessor::m_compute_scale_factor_from_histogram_buckets = false;
+
 // helper for joining histograms
 void
 CJoinStatsProcessor::JoinHistograms

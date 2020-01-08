@@ -24,6 +24,8 @@ namespace gpnaucrates
 	// Parent class for computing statistics for all joins
 	class CJoinStatsProcessor
 	{
+		static BOOL m_compute_scale_factor_from_histogram_buckets;
+
 		protected:
 
 			// return join cardinality based on scaling factor and join type
@@ -112,6 +114,13 @@ namespace gpnaucrates
 				 IStatistics *stats, // statistics object of attached expression
 				 IStatisticsArray *all_outer_stats // array of stats objects where outer references are defined
 				 );
+
+			static
+			void SetComputeScaleFactorFromHistogramBuckets(BOOL val)
+			{ m_compute_scale_factor_from_histogram_buckets = val; }
+
+			static
+			BOOL ComputeScaleFactorFromHistogramBuckets() { return m_compute_scale_factor_from_histogram_buckets; }
 	};
 }
 

@@ -396,6 +396,9 @@ namespace gpopt
 			// reduce a list of expressions per component down to the cheapest expression per component
 			//ComponentInfoArray *GetCheapestJoinExprForBitSet(KHeap *bit_exprarray_map);
 
+			virtual
+			void DeriveStats(CExpression *pexpr);
+
 			// create a CLogicalJoin and a CExpression to join two groups
 			CExpression *GetJoinExpr(SGroupInfo *left_child, SGroupInfo *right_child, BOOL use_stats_expr);
 

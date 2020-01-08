@@ -740,11 +740,14 @@ CHistogram::MakeJoinHistogramNormalize
 	// TODO: legacy code, apply the Ramakrishnan and Gehrke method again on the entire table,
 	// ignoring the computation we did on each histogram bucket in
 	// CBucket::MakeBucketIntersect()
-//	*scale_factor = std::max
-//						(
-//						std::max(MinDistinct.Get(), GetNumDistinct().Get()),
-//						std::max(MinDistinct.Get(), other_histogram->GetNumDistinct().Get())
-//						);
+	if (!CJoinStatsProcessor::ComputeScaleFactorFromHistogramBuckets())
+	{
+		*scale_factor = std::max
+							(
+							std::max(MinDistinct.Get(), GetNumDistinct().Get()),
+							std::max(MinDistinct.Get(), other_histogram->GetNumDistinct().Get())
+							);
+	}
 
 	CDouble cartesian_product_num_rows = rows * rows_other;
 	if (result_histogram->IsEmpty())
