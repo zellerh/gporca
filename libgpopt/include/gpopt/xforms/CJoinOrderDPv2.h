@@ -37,7 +37,7 @@ namespace gpopt
 
 		private:
 
-			// a heap keeping the k lowest-cost objects in an array of class T
+			// a heap keeping the k lowest-cost objects in an array of class A
 			// A is a CDynamicPtrArray
 			// E is the entry type of the array and it has a method CDouble DCost()
 			// See https://en.wikipedia.org/wiki/Binary_heap for details

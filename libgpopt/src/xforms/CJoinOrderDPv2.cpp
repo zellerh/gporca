@@ -958,12 +958,12 @@ CJoinOrderDPv2::OsPrint
 			os << "   Cost: ";
 			gi->m_best_expr_info->m_cost.OsPrint(os);
 			os << std::endl;
-			if (NULL != gi->m_expr_for_stats)
-			{
-				os << "   Expr for stats:" << std::endl;
-				gi->m_expr_for_stats->OsPrint(os, &pref);
-				os << std::endl;
-			}
+			// if (NULL != gi->m_expr_for_stats)
+			// {
+			//     os << "   Expr for stats:" << std::endl;
+			//     gi->m_expr_for_stats->OsPrint(os, &pref);
+			//     os << std::endl;
+			// }
 			if (NULL == gi->m_best_expr_info)
 			{
 				os << "Expression: None";

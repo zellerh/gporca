@@ -737,11 +737,9 @@ CHistogram::MakeJoinHistogramNormalize
 	// and the actual join cardinality.
 	*scale_factor = result_histogram->NormalizeHistogram();
 
-	// TODO: Delete this, we already applied this formula on each bucket
-	// based on Ramakrishnan and Gehrke, "Database Management Systems, Third Ed", page 484
-	// the scaling factor of equality join is the MAX of the number of distinct
-	// values in each of the inputs
-
+	// TODO: legacy code, apply the Ramakrishnan and Gehrke method again on the entire table,
+	// ignoring the computation we did on each histogram bucket in
+	// CBucket::MakeBucketIntersect()
 //	*scale_factor = std::max
 //						(
 //						std::max(MinDistinct.Get(), GetNumDistinct().Get()),
