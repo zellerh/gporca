@@ -35,6 +35,7 @@
 using namespace gpopt;
 
 #define GPOPT_DPV2_JOIN_ORDERING_TOPK 10
+#define GPOPT_DPV2_CROSS_JOIN_PENALTY 100
 
 
 //---------------------------------------------------------------------------
@@ -168,6 +169,11 @@ CJoinOrderDPv2::DCost
 		GPOS_ASSERT(NULL != rightChildGroup);
 		dCost = dCost + leftChildGroup->m_best_expr_info->m_cost;
 		dCost = dCost + rightChildGroup->m_best_expr_info->m_cost;
+	}
+
+	if (CUtils::FCrossJoin(group->m_best_expr_info->m_expr))
+	{
+		dCost = dCost * GPOPT_DPV2_CROSS_JOIN_PENALTY;
 	}
 
 	return dCost;
