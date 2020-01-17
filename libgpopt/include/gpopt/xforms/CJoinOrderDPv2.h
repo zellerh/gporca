@@ -208,6 +208,24 @@ namespace gpopt
 			// forward declaration, circular reference
 			struct SGroupInfo;
 
+			// join order properties, these can be added if an expression satisfies multiple such properties
+			// consider these as constants, not as a true enum
+			enum JoinOrderPropType
+			{
+				EJoinOrderNone     = 0,
+				EJoinOrderMincard  = 1,
+				EJoinOrderStats    = 2
+			};
+
+			struct SExpressionProperties
+			{
+				ULONG m_join_order;
+
+				SExpressionProperties(ULONG join_order_properties) :
+						m_join_order(join_order_properties)
+				{}
+			};
+
 			// description of an expression in the DP environment,
 			// left and right child of join expressions point to
 			// other groups, similar to a CGroupExpression
@@ -221,6 +239,8 @@ namespace gpopt
 				SGroupInfo *m_left_child_group;
 				SGroupInfo *m_right_child_group;
 
+				SExpressionProperties m_properties;
+
 				// in the future, we may add properties relevant to the cost here,
 				// like distribution key, partition selectors
 
@@ -230,10 +250,12 @@ namespace gpopt
 				SExpressionInfo(
 								CExpression *expr,
 								SGroupInfo *left_child_group_info,
-								SGroupInfo *right_child_group_info
+								SGroupInfo *right_child_group_info,
+								SExpressionProperties &properties
 							   ) : m_expr(expr),
 								   m_left_child_group(left_child_group_info),
 								   m_right_child_group(right_child_group_info),
+								   m_properties(properties),
 								   m_cost(0.0)
 				{
 				}
@@ -247,6 +269,8 @@ namespace gpopt
 
 			};
 
+			typedef CDynamicPtrArray<SExpressionInfo, CleanupRelease<SExpressionInfo> > SExpressionInfoArray;
+
 			//---------------------------------------------------------------------------
 			//	@struct:
 			//		SGroupInfo
@@ -259,31 +283,26 @@ namespace gpopt
 				{
 					// the set of atoms, this uniquely identifies the group
 					CBitSet *m_atoms;
-					// expression used to derive stats (not necessarily the one with lowest cost)
-					CExpression *m_expr_for_stats;
-					// info of the best (lowest cost) expression (so far, if at the current level)
-					SExpressionInfo *m_best_expr_info;
-					// future: have a list or map of SExpressionInfos
-					// each with a different property
+					// infos of the best (lowest cost) expressions (so far, if at the current level)
+					// for each interesting property
+					SExpressionInfoArray *m_best_expr_info_array;
+					CDouble m_cardinality;
 
-					SGroupInfo(CBitSet *atoms,
-							   SExpressionInfo *first_expr_info
+					SGroupInfo(CMemoryPool *mp,
+							   CBitSet *atoms
 							  ) : m_atoms(atoms),
-								  m_expr_for_stats(NULL),
-								  m_best_expr_info(first_expr_info)
+								  m_cardinality(0.0)
 					{
+						m_best_expr_info_array = GPOS_NEW(mp) SExpressionInfoArray(mp);
 					}
 
 					~SGroupInfo()
 					{
 						m_atoms->Release();
-						CRefCount::SafeRelease(m_expr_for_stats);
-						m_best_expr_info->Release();
+						m_best_expr_info_array->Release();
 					}
 
 					BOOL IsAnAtom() { return 1 == m_atoms->Size(); }
-					CDouble DCost() { return m_best_expr_info->m_cost; }
-
 				};
 
 			// dynamic array of SGroupInfo, where each index represents an alternative group of a given level k
@@ -350,8 +369,6 @@ namespace gpopt
 			// dynamic array of SLevelInfos, where each index represents the level
 			typedef CDynamicPtrArray<SLevelInfo, CleanupRelease<SLevelInfo> > DPv2Levels;
 
-			typedef CDynamicPtrArray<SExpressionInfo, CleanupRelease<SExpressionInfo> > SExpressionInfoArray;
-
 			// an array of an array of groups, organized by level at the first array dimension,
 			// main data structure for dynamic programming
 			DPv2Levels *m_join_levels;
@@ -385,7 +402,11 @@ namespace gpopt
 			CExpression *PexprBuildInnerJoinPred(CBitSet *pbsFst, CBitSet *pbsSnd);
 
 			// compute cost of a join expression in a group
-			CDouble DCost(SGroupInfo *group, const SGroupInfo *leftChildGroup, const SGroupInfo *rightChildGroup);
+			CDouble ComputeCost(SExpressionInfo *expr_info,
+								SExpressionInfo *left_child_expr_info,
+								SExpressionInfo *right_child_expr_info,
+								SGroupInfo *group_info
+							   );
 
 			// if we need to keep track of used edges, make a map that
 			// speeds up this usage check
@@ -402,20 +423,33 @@ namespace gpopt
 			// and right_level-way joins on the right side, resulting in left_level + right_level-way joins
 			void SearchJoinOrders(ULONG left_level, ULONG right_level);
 
-			// reduce a list of expressions per component down to the cheapest expression per component
-			//ComponentInfoArray *GetCheapestJoinExprForBitSet(KHeap *bit_exprarray_map);
-
 			virtual
 			void DeriveStats(CExpression *pexpr);
 
 			// create a CLogicalJoin and a CExpression to join two groups
-			CExpression *GetJoinExpr(SGroupInfo *left_child, SGroupInfo *right_child, BOOL use_stats_expr);
+			SExpressionInfo *GetJoinExpr(
+										 SGroupInfo *left_child,
+										 SGroupInfo *right_child,
+										 SExpressionProperties &requiredProperties
+										);
+
+			// does "prop" provide all the properties of "other_prop" plus maybe more?
+			BOOL IsASupersetOfProperties(SExpressionProperties &prop, SExpressionProperties &other_prop);
+
+			// is one of the properties a subset of the other or are they disjoint?
+			BOOL ArePropertiesDisjoint(SExpressionProperties &prop, SExpressionProperties &other_prop);
+
+			// get best expression in a group for a given set of properties
+			SExpressionInfo *GetBestExprForProperties(SGroupInfo *group_info, SExpressionProperties &props);
+
+			// add a new expression to a group, unless there already is an existing expression that dominates it
+			void AddExprToGroupIfNecessary(SGroupInfo *group_info, SExpressionInfo *new_expr_info);
 
 			// enumerate bushy joins (joins where both children are also joins) of level "current_level"
 			void SearchBushyJoinOrders(ULONG current_level);
 
 			void AddExprs(const CExpressionArray *candidate_join_exprs, CExpressionArray *result_join_exprs);
-			void AddGroupInfo(SLevelInfo *levelInfo, SGroupInfo *groupInfo);
+			SGroupInfo *AddGroupInfo(SLevelInfo *levelInfo, CBitSet *atoms, SExpressionInfo *expr_for_stats);
 			void FinalizeLevel(ULONG level);
 
 			SGroupInfoArray *GetGroupsForLevel(ULONG level) const
