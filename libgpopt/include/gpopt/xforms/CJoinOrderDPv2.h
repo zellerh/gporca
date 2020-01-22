@@ -224,6 +224,8 @@ namespace gpopt
 				SExpressionProperties(ULONG join_order_properties) :
 						m_join_order(join_order_properties)
 				{}
+
+				BOOL IsExprForStats() { return 0 != (m_join_order & EJoinOrderStats); }
 			};
 
 			// description of an expression in the DP environment,
@@ -266,6 +268,8 @@ namespace gpopt
 				}
 
 				CDouble DCost() { return m_cost; }
+				// for CDynamicPtrArray::IndexOf
+				BOOL operator == (const SExpressionInfo &other) const { return m_expr == other.m_expr; }
 
 			};
 
@@ -287,11 +291,13 @@ namespace gpopt
 					// for each interesting property
 					SExpressionInfoArray *m_best_expr_info_array;
 					CDouble m_cardinality;
+					CDouble m_lowest_expr_cost;
 
 					SGroupInfo(CMemoryPool *mp,
 							   CBitSet *atoms
 							  ) : m_atoms(atoms),
-								  m_cardinality(0.0)
+								  m_cardinality(-1.0),
+								  m_lowest_expr_cost(-1.0)
 					{
 						m_best_expr_info_array = GPOS_NEW(mp) SExpressionInfoArray(mp);
 					}
@@ -303,6 +309,8 @@ namespace gpopt
 					}
 
 					BOOL IsAnAtom() { return 1 == m_atoms->Size(); }
+					CDouble DCost() { return m_lowest_expr_cost; }
+
 				};
 
 			// dynamic array of SGroupInfo, where each index represents an alternative group of a given level k
@@ -402,11 +410,7 @@ namespace gpopt
 			CExpression *PexprBuildInnerJoinPred(CBitSet *pbsFst, CBitSet *pbsSnd);
 
 			// compute cost of a join expression in a group
-			CDouble ComputeCost(SExpressionInfo *expr_info,
-								SExpressionInfo *left_child_expr_info,
-								SExpressionInfo *right_child_expr_info,
-								SGroupInfo *group_info
-							   );
+			void ComputeCost(SExpressionInfo *expr_info, SGroupInfo *group_info);
 
 			// if we need to keep track of used edges, make a map that
 			// speeds up this usage check
@@ -441,6 +445,9 @@ namespace gpopt
 
 			// get best expression in a group for a given set of properties
 			SExpressionInfo *GetBestExprForProperties(SGroupInfo *group_info, SExpressionProperties &props);
+
+			// given a CExpression, return an SExpressionInfo associated with the requested child
+			SExpressionInfo *GetChildExprInfoForExpr(SExpressionInfo *expr_info, ULONG child_index);
 
 			// add a new expression to a group, unless there already is an existing expression that dominates it
 			void AddExprToGroupIfNecessary(SGroupInfo *group_info, SExpressionInfo *new_expr_info);
@@ -494,6 +501,8 @@ namespace gpopt
 			// print function
 			virtual
 			IOstream &OsPrint(IOstream &) const;
+
+			IOstream &OsPrintProperty(IOstream &, SExpressionProperties &) const;
 
 #ifdef GPOS_DEBUG
 			void
