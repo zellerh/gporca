@@ -210,11 +210,13 @@ namespace gpopt
 
 			// join order properties, these can be added if an expression satisfies multiple such properties
 			// consider these as constants, not as a true enum
+			// note that the numbers (other than the first) must be powers of 2!!!
 			enum JoinOrderPropType
 			{
 				EJoinOrderNone     = 0,
-				EJoinOrderMincard  = 1,
-				EJoinOrderStats    = 2
+				EJoinOrderQuery    = 1,
+				EJoinOrderMincard  = 2,
+				EJoinOrderStats    = 4
 			};
 
 			struct SExpressionProperties
@@ -225,7 +227,8 @@ namespace gpopt
 						m_join_order(join_order_properties)
 				{}
 
-				BOOL IsExprForStats() { return 0 != (m_join_order & EJoinOrderStats); }
+				BOOL Satisfies(ULONG pt) { return pt == (m_join_order & pt); }
+				void Add(ULONG p) { m_join_order |= p; }
 			};
 
 			// description of an expression in the DP environment,
@@ -410,7 +413,7 @@ namespace gpopt
 			CExpression *PexprBuildInnerJoinPred(CBitSet *pbsFst, CBitSet *pbsSnd);
 
 			// compute cost of a join expression in a group
-			void ComputeCost(SExpressionInfo *expr_info, SGroupInfo *group_info);
+			void ComputeCost(SExpressionInfo *expr_info, CDouble join_cardinality);
 
 			// if we need to keep track of used edges, make a map that
 			// speeds up this usage check
@@ -426,15 +429,27 @@ namespace gpopt
 			// enumerate all possible joins between left_level-way joins on the left side
 			// and right_level-way joins on the right side, resulting in left_level + right_level-way joins
 			void SearchJoinOrders(ULONG left_level, ULONG right_level);
+			void GreedySearchJoinOrders(ULONG left_level, JoinOrderPropType algo);
 
 			virtual
 			void DeriveStats(CExpression *pexpr);
 
-			// create a CLogicalJoin and a CExpression to join two groups
-			SExpressionInfo *GetJoinExpr(
+			// create a CLogicalJoin and a CExpression to join two groups, for a required property
+			SExpressionInfo *GetJoinExprForProperties
+										(
 										 SGroupInfo *left_child,
 										 SGroupInfo *right_child,
-										 SExpressionProperties &requiredProperties
+										 SExpressionProperties &required_properties
+										);
+
+			// get a join expression from two child groups with specified child expressions
+			SExpressionInfo *GetJoinExpr
+										(
+										 SGroupInfo *left_group_info,
+										 SExpressionInfo *left_expr_info,
+										 SGroupInfo *right_group_info,
+										 SExpressionInfo *right_expr_info,
+										 SExpressionProperties &result_properties
 										);
 
 			// does "prop" provide all the properties of "other_prop" plus maybe more?
@@ -449,15 +464,15 @@ namespace gpopt
 			// given a CExpression, return an SExpressionInfo associated with the requested child
 			SExpressionInfo *GetChildExprInfoForExpr(SExpressionInfo *expr_info, ULONG child_index);
 
-			// add a new expression to a group, unless there already is an existing expression that dominates it
-			void AddExprToGroupIfNecessary(SGroupInfo *group_info, SExpressionInfo *new_expr_info);
-
 			// enumerate bushy joins (joins where both children are also joins) of level "current_level"
 			void SearchBushyJoinOrders(ULONG current_level);
 
-			void AddExprs(const CExpressionArray *candidate_join_exprs, CExpressionArray *result_join_exprs);
-			SGroupInfo *AddGroupInfo(SLevelInfo *levelInfo, CBitSet *atoms, SExpressionInfo *expr_for_stats);
-			void FinalizeLevel(ULONG level);
+			// look up an existing group or create a new one, with an expression to be used for stats
+			SGroupInfo *LookupOrCreateGroupInfo(SLevelInfo *levelInfo, CBitSet *atoms, SExpressionInfo *stats_expr_info);
+			// add a new expression to a group, unless there already is an existing expression that dominates it
+			void AddExprToGroupIfNecessary(SGroupInfo *group_info, SExpressionInfo *new_expr_info);
+
+			void FinalizeDPLevel(ULONG level);
 
 			SGroupInfoArray *GetGroupsForLevel(ULONG level) const
 			{ return (*m_join_levels)[level]->m_groups; }
@@ -467,6 +482,9 @@ namespace gpopt
 			ULONG NChooseK(ULONG n, ULONG k);
 			BOOL LevelIsFull(ULONG level);
 
+			void EnumerateDP();
+			void EnumerateQuery();
+			void EnumerateMinCard();
 
 		public:
 

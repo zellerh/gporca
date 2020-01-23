@@ -143,7 +143,7 @@ CJoinOrderDPv2::~CJoinOrderDPv2()
 
 //---------------------------------------------------------------------------
 //	@function:
-//		CJoinOrderDPv2::DCost
+//		CJoinOrderDPv2::ComputeCost
 //
 //	@doc:
 //		Primitive costing of join expressions;
@@ -158,23 +158,15 @@ void
 CJoinOrderDPv2::ComputeCost
 	(
 	 SExpressionInfo *expr_info,
-	 SGroupInfo *group_info
+	 CDouble join_cardinality
 	)
 {
-	SExpressionInfo *expr_info_for_stats = expr_info;
-
-	if (!expr_info_for_stats->m_properties.IsExprForStats())
-	{
-		SExpressionProperties stats_props(EJoinOrderStats);
-
-		expr_info_for_stats = GetBestExprForProperties(group_info, stats_props);
-	}
-
 	// cardinality of the expression itself is one part of the cost
-	CDouble dCost(expr_info_for_stats->m_expr->Pstats()->Rows());
+	CDouble dCost(join_cardinality);
 
-	if (!group_info->IsAnAtom())
+	if (NULL != expr_info->m_left_child_group)
 	{
+		GPOS_ASSERT(NULL != expr_info->m_right_child_group);
 		// add cardinalities of the children to the cost
 		SExpressionInfo *left_child_expr_info = GetChildExprInfoForExpr(expr_info, 0);
 		SExpressionInfo *right_child_expr_info = GetChildExprInfoForExpr(expr_info, 1);
@@ -272,44 +264,70 @@ void CJoinOrderDPv2::DeriveStats(CExpression *pexpr)
 	}
 }
 
+
+//---------------------------------------------------------------------------
+//	@function:
+//		CJoinOrderDPv2::GetJoinExprForProperties
+//
+//	@doc:
+//		Build a CExpression joining the two given sets, choosing child
+//		expressions with given properties
+//
+//---------------------------------------------------------------------------
+CJoinOrderDPv2::SExpressionInfo *
+CJoinOrderDPv2::GetJoinExprForProperties
+	(
+	 SGroupInfo *left_child,
+	 SGroupInfo *right_child,
+	 SExpressionProperties &required_properties
+	)
+{
+	SExpressionInfo *left_expr_info = GetBestExprForProperties(left_child, required_properties);
+	SExpressionInfo *right_expr_info = GetBestExprForProperties(right_child, required_properties);
+
+	if (NULL == left_expr_info || NULL == right_expr_info)
+	{
+		return NULL;
+	}
+
+	return GetJoinExpr(left_child, left_expr_info, right_child, right_expr_info, required_properties);
+}
+
+
 //---------------------------------------------------------------------------
 //	@function:
 //		CJoinOrderDPv2::GetJoinExpr
 //
 //	@doc:
-//		Build a CExpression joining the two given sets
+//		Build a CExpression joining the two given sets from given expressions
 //
 //---------------------------------------------------------------------------
 CJoinOrderDPv2::SExpressionInfo *
 CJoinOrderDPv2::GetJoinExpr
-	(
-	 SGroupInfo *left_child,
-	 SGroupInfo *right_child,
-	 SExpressionProperties &requiredProperties
-	)
+(
+ SGroupInfo *left_group_info,
+ SExpressionInfo *left_expr_info,
+ SGroupInfo *right_group_info,
+ SExpressionInfo *right_expr_info,
+ SExpressionProperties &result_properties
+)
 {
-	if (EJoinOrderMincard == requiredProperties.m_join_order && !right_child->IsAnAtom())
-	{
-		// Mincard requires that the right child is an atom
-		return NULL;
-	}
-
 	CExpression *scalar_expr = NULL;
 	CBitSet *required_on_left = NULL;
-	BOOL isNIJ = IsRightChildOfNIJ(right_child, &scalar_expr, &required_on_left);
+	BOOL isNIJ = IsRightChildOfNIJ(right_group_info, &scalar_expr, &required_on_left);
 
 	if (!isNIJ)
 	{
 		// inner join, compute the predicate from the join graph
 		GPOS_ASSERT(NULL == scalar_expr);
-		scalar_expr = PexprBuildInnerJoinPred(left_child->m_atoms, right_child->m_atoms);
+		scalar_expr = PexprBuildInnerJoinPred(left_group_info->m_atoms, right_group_info->m_atoms);
 	}
 	else
 	{
 		// check whether scalar_expr can be computed from left_child and right_child,
 		// otherwise this is not a valid join
 		GPOS_ASSERT(NULL != scalar_expr && NULL != required_on_left);
-		if (!left_child->m_atoms->ContainsAll(required_on_left))
+		if (!left_group_info->m_atoms->ContainsAll(required_on_left))
 		{
 			// the left child does not produce all the values needed in the ON
 			// predicate, so this is not a valid join
@@ -322,7 +340,7 @@ CJoinOrderDPv2::GetJoinExpr
 	{
 		// this is a cross product
 
-		if (right_child->IsAnAtom())
+		if (right_group_info->IsAnAtom())
 		{
 			// generate a TRUE boolean expression as the join predicate of the cross product
 			scalar_expr = CPredicateUtils::PexprConjunction(m_mp, NULL /*pdrgpexpr*/);
@@ -335,8 +353,6 @@ CJoinOrderDPv2::GetJoinExpr
 		}
 	}
 
-	SExpressionInfo *left_expr_info = GetBestExprForProperties(left_child, requiredProperties);
-	SExpressionInfo *right_expr_info = GetBestExprForProperties(right_child, requiredProperties);
 	CExpression *join_expr = NULL;
 
 	CExpression *left_expr = left_expr_info->m_expr;
@@ -353,7 +369,7 @@ CJoinOrderDPv2::GetJoinExpr
 		join_expr = CUtils::PexprLogicalJoin<CLogicalInnerJoin>(m_mp, left_expr, right_expr, scalar_expr);
 	}
 
-	return GPOS_NEW(m_mp) SExpressionInfo(join_expr, left_child, right_child, requiredProperties);
+	return GPOS_NEW(m_mp) SExpressionInfo(join_expr, left_group_info, right_group_info, result_properties);
 }
 
 
@@ -437,8 +453,16 @@ void
 CJoinOrderDPv2::AddExprToGroupIfNecessary(SGroupInfo *group_info, SExpressionInfo *new_expr_info)
 {
 	// compute the cost for the new expression
-	ComputeCost(new_expr_info, group_info);
+	ComputeCost(new_expr_info, group_info->m_cardinality);
 	CDouble new_cost = new_expr_info->m_cost;
+
+	if (group_info->m_atoms->Size() == m_ulComps)
+	{
+		// At the top level, we have only one group. To be able to return multiple results
+		// for the xform, we keep the top k expressions (all from the same group) in a KHeap
+		new_expr_info->AddRef();
+		m_top_k_expressions->Insert(new_expr_info);
+	}
 
 	if (0 == group_info->m_best_expr_info_array->Size() || new_cost < group_info->m_lowest_expr_cost)
 	{
@@ -468,7 +492,6 @@ CJoinOrderDPv2::AddExprToGroupIfNecessary(SGroupInfo *group_info, SExpressionInf
 				ULONG existing_expr_index = group_info->m_best_expr_info_array->IndexOf(existing_expr);
 
 				GPOS_ASSERT(gpos::ulong_max != existing_expr_index);
-				new_expr_info->AddRef();
 				group_info->m_best_expr_info_array->Replace(existing_expr_index, new_expr_info);
 			}
 			else
@@ -654,7 +677,6 @@ CJoinOrderDPv2::SearchJoinOrders
 
 	ULONG left_size = left_group_info_array->Size();
 	ULONG right_size = right_group_info_array->Size();
-	BOOL is_top_level = (left_level + right_level == m_ulComps);
 
 	for (ULONG left_ix=0; left_ix<left_size; left_ix++)
 	{
@@ -682,15 +704,10 @@ CJoinOrderDPv2::SearchJoinOrders
 				continue;
 			}
 
-			SExpressionProperties mincard_properties(EJoinOrderMincard);
-			SExpressionProperties dpv2_properties(EJoinOrderNone);
-			SExpressionInfo *join_mincard_expr_info = GetJoinExpr(left_group_info, right_group_info, mincard_properties);
-			SExpressionInfo *join_dp_expr_info = GetJoinExpr(left_group_info, right_group_info, dpv2_properties);
+			SExpressionProperties reqd_properties(EJoinOrderNone);
+			SExpressionInfo *join_expr_info = GetJoinExprForProperties(left_group_info, right_group_info, reqd_properties);
 
-			// if we find a Mincard expression, then we also must have an overall cheapest expression
-			GPOS_ASSERT_IMP(NULL != join_mincard_expr_info, NULL != join_dp_expr_info);
-
-			if (NULL != join_dp_expr_info)
+			if (NULL != join_expr_info)
 			{
 				// we have a valid join
 				CBitSet *join_bitset = GPOS_NEW(m_mp) CBitSet(m_mp, *left_bitset);
@@ -699,98 +716,245 @@ CJoinOrderDPv2::SearchJoinOrders
 
 				join_bitset->Union(right_bitset);
 
-				SGroupInfo *group_info = m_bitset_to_group_info_map->Find(join_bitset);
+				SGroupInfo *group_info = LookupOrCreateGroupInfo(current_level_info, join_bitset, join_expr_info);
 
-				if (NULL == group_info)
-				{
-					// this is a new group, insert it
-					SExpressionInfo *stats_expr_info =
-								(NULL != join_mincard_expr_info) ? join_mincard_expr_info : join_dp_expr_info;
+				AddExprToGroupIfNecessary(group_info, join_expr_info);
 
-					group_info = AddGroupInfo(current_level_info, join_bitset, stats_expr_info);
-				}
-				else
-				{
-					join_bitset->Release();
-				}
-
-				if (NULL != join_mincard_expr_info)
-				{
-					AddExprToGroupIfNecessary(group_info, join_mincard_expr_info);
-				}
-				AddExprToGroupIfNecessary(group_info, join_dp_expr_info);
-
+				/*
 				if (is_top_level)
 				{
 					// At the top level, we have only one group. To be able to return multiple results
 					// for the xform, we keep the top k expressions (all from the same group) in a KHeap
-					join_dp_expr_info->AddRef();
-					m_top_k_expressions->Insert(join_dp_expr_info);
-					if (NULL != join_mincard_expr_info)
-					{
-						join_mincard_expr_info->AddRef();
-						m_top_k_expressions->Insert(join_mincard_expr_info);
-					}
+					join_expr_info->AddRef();
+					m_top_k_expressions->Insert(join_expr_info);
 				}
+
+				if (NULL == group_info)
+				{
+					// this is a new group, create it
+					group_info = AddGroupInfo(current_level_info, join_bitset, join_expr_info);
+				}
+				else
+				{
+					// add the expression to an existing group, if it is useful
+					AddExprToGroupIfNecessary(group_info, join_expr_info);
+					join_bitset->Release();
+				}
+				 */
 			}
 		}
 	}
 }
 
 
-CJoinOrderDPv2::SGroupInfo *
-CJoinOrderDPv2::AddGroupInfo(SLevelInfo *levelInfo, CBitSet *atoms, SExpressionInfo *expr_for_stats)
+//---------------------------------------------------------------------------
+//	@function:
+//		CJoinOrderDPv2::GreedySearchJoinOrders
+//
+//	@doc:
+//		Enumerate all the possible joins between a list of groups and the
+//		list of atoms, only add the best new expression. Note that this
+//		method is used for query and mincard join orders
+//
+//---------------------------------------------------------------------------
+void
+CJoinOrderDPv2::GreedySearchJoinOrders
+(
+ ULONG left_level,
+ JoinOrderPropType algo
+)
 {
-	SGroupInfo *groupInfo = GPOS_NEW(m_mp) SGroupInfo(m_mp, atoms);
-	SExpressionInfo *new_expr_info_for_stats = expr_for_stats;
+	ULONG right_level = 1;
+	GPOS_ASSERT(left_level > 0 &&
+				left_level + right_level <= m_ulComps);
 
-	if (NULL == expr_for_stats->m_expr->Pstats())
+	SGroupInfoArray *left_group_info_array = GetGroupsForLevel(left_level);
+	SGroupInfoArray *right_group_info_array = GetGroupsForLevel(right_level);
+	SLevelInfo *current_level_info = Level(left_level+right_level);
+	SExpressionProperties left_reqd_properties(algo);
+	SExpressionProperties right_reqd_properties(EJoinOrderNone);
+	SExpressionProperties result_properties(algo);
+
+	ULONG left_size = left_group_info_array->Size();
+	ULONG right_size = right_group_info_array->Size();
+
+	// pre-existing greedy solution on level left_level
+	SGroupInfo *left_group_info = NULL;
+	CBitSet *left_bitset = NULL;
+	SExpressionInfo *left_expr_info = NULL;
+
+	ULONG left_ix = 0;
+	ULONG right_ix = 0;
+
+	// the solution on level left_level+1 that we want to build
+	SGroupInfo *best_group_info_in_level = NULL;
+	SExpressionInfo *best_expr_info_in_level = NULL;
+	CDouble best_cost_in_level(-1.0);
+
+	// find the solution for the left side
+	while (left_ix < left_size)
 	{
-		SExpressionProperties stats_props(EJoinOrderStats);
+		left_group_info = (*left_group_info_array)[left_ix];
+		left_expr_info = GetBestExprForProperties(left_group_info, left_reqd_properties);
 
-		// need to derive stats, make sure we use an expression whose children already have stats
-		new_expr_info_for_stats = GetJoinExpr
-										(
-										 expr_for_stats->m_left_child_group,
-										 expr_for_stats->m_right_child_group,
-										 stats_props
-										);
-
-		DeriveStats(new_expr_info_for_stats->m_expr);
+		if (NULL != left_expr_info)
+		{
+			left_bitset = left_group_info->m_atoms;
+			// we found the one solution from the lower level that we will build upon
+			break;
+		}
+		left_ix++;
 	}
 
-	groupInfo->m_cardinality = new_expr_info_for_stats->m_expr->Pstats()->Rows();
-
-	// append a first expression with the stats property
-	AddExprToGroupIfNecessary(groupInfo, new_expr_info_for_stats);
-
-	if (NULL == levelInfo->m_top_k_groups)
+	if (left_ix >= left_size)
 	{
-		// no limits, just add the group to the array
-		// note that the groups won't be sorted by cost in this case
-		levelInfo->m_groups->Append(groupInfo);
+		// we didn't find a greedy solution for the left side
+		GPOS_ASSERT(0);
+		return;
+	}
+
+	if (EJoinOrderQuery == algo)
+	{
+		// for query, we want to pick the atoms in sequence, indexes 0 ... n-1
+		right_ix = left_level;
+	}
+
+	// now loop over all the atoms on the right and pick the one we want to use for this level
+	for (; right_ix<right_size; right_ix++)
+	{
+		SGroupInfo *right_group_info = (*right_group_info_array)[right_ix];
+		CBitSet *right_bitset = right_group_info->m_atoms;
+
+		if (!left_bitset->IsDisjoint(right_bitset))
+		{
+			// not a valid join, left and right tables must not overlap
+			continue;
+		}
+
+		SExpressionInfo *right_expr_info = GetBestExprForProperties(right_group_info, right_reqd_properties);
+		SExpressionInfo *join_expr_info = GetJoinExpr(left_group_info, left_expr_info, right_group_info, right_expr_info, result_properties);
+
+		if (NULL != join_expr_info)
+		{
+			// we have a valid join
+			CBitSet *join_bitset = GPOS_NEW(m_mp) CBitSet(m_mp, *left_bitset);
+
+			join_bitset->Union(right_bitset);
+
+			// look up existing group and stats or create a new group and derive stats
+			SGroupInfo *join_group_info = LookupOrCreateGroupInfo(current_level_info, join_bitset, join_expr_info);
+
+			ComputeCost(join_expr_info, join_group_info->m_cardinality);
+			CDouble join_cost = join_expr_info->m_cost;
+
+			if (NULL == best_expr_info_in_level || join_cost < best_cost_in_level)
+			{
+				best_group_info_in_level = join_group_info;
+				best_expr_info_in_level  = join_expr_info;
+				best_cost_in_level       = join_cost;
+			}
+
+			if (EJoinOrderQuery == algo)
+			{
+				// we are done, we try only a single right index for join order query
+				break;
+			}
+		}
+	}
+
+	if (NULL != best_expr_info_in_level)
+	{
+		// add the best expression from the loop with the specified properties
+		// also add it to top k if we are at the top
+		best_expr_info_in_level->m_properties.Add(algo);
+		AddExprToGroupIfNecessary(best_group_info_in_level, best_expr_info_in_level);
 	}
 	else
 	{
-		// insert into the KHeap for now, the best groups will be transferred to
-		// levelInfo->m_groups when we call FinalizeLevel()
-		levelInfo->m_top_k_groups->Insert(groupInfo);
+		// we should always find a greedy solution
+		GPOS_ASSERT(0);
 	}
+}
 
-	if (1 < levelInfo->m_level)
+
+//---------------------------------------------------------------------------
+//	@function:
+//		CJoinOrderDPv2::LookupOrCreateGroupInfo
+//
+//	@doc:
+//		Look up a group from a given set of atoms. If found, return it.
+//		If not found, create a new group in the specified level.
+//		Note that this method consumes a RefCount on <atoms> but it does
+//		not consume refcounts from <levelInfo> or <stats_expr_info>.
+//
+//---------------------------------------------------------------------------
+CJoinOrderDPv2::SGroupInfo *
+CJoinOrderDPv2::LookupOrCreateGroupInfo(SLevelInfo *levelInfo, CBitSet *atoms, SExpressionInfo *stats_expr_info)
+{
+	SGroupInfo *group_info = m_bitset_to_group_info_map->Find(atoms);
+	SExpressionInfo *real_expr_info_for_stats = stats_expr_info;
+
+	if (NULL == group_info)
 	{
-		// also insert into the bitset to group map
-		groupInfo->m_atoms->AddRef();
-		groupInfo->AddRef();
-		m_bitset_to_group_info_map->Insert(groupInfo->m_atoms, groupInfo);
+		// this is a group we haven't seen yet, create a new group info and derive stats, if needed
+		group_info = GPOS_NEW(m_mp) SGroupInfo(m_mp, atoms);
+		if (!stats_expr_info->m_properties.Satisfies(EJoinOrderStats))
+		{
+			SExpressionProperties stats_props(EJoinOrderStats);
+
+			// need to derive stats, make sure we use an expression whose children already have stats
+			real_expr_info_for_stats = GetJoinExprForProperties
+											(
+											 stats_expr_info->m_left_child_group,
+											 stats_expr_info->m_right_child_group,
+											 stats_props
+											);
+
+			DeriveStats(real_expr_info_for_stats->m_expr);
+		}
+		else
+		{
+			GPOS_ASSERT(NULL != real_expr_info_for_stats->m_expr->Pstats());
+			// we are using stats_expr_info in the new group, but the caller didn't
+			// allocate a ref count for us, so add one here
+			stats_expr_info->AddRef();
+		}
+
+		group_info->m_cardinality = real_expr_info_for_stats->m_expr->Pstats()->Rows();
+		AddExprToGroupIfNecessary(group_info, real_expr_info_for_stats);
+
+		if (NULL == levelInfo->m_top_k_groups)
+		{
+			// no limits, just add the group to the array
+			// note that the groups won't be sorted by cost in this case
+			levelInfo->m_groups->Append(group_info);
+		}
+		else
+		{
+			// insert into the KHeap for now, the best groups will be transferred to
+			// levelInfo->m_groups when we call FinalizeDPLevel()
+			levelInfo->m_top_k_groups->Insert(group_info);
+		}
+
+		if (1 < levelInfo->m_level)
+		{
+			// also insert into the bitset to group map
+			group_info->m_atoms->AddRef();
+			group_info->AddRef();
+			m_bitset_to_group_info_map->Insert(group_info->m_atoms, group_info);
+		}
+	}
+	else
+	{
+		atoms->Release();
 	}
 
-	return groupInfo;
+	return group_info;
 }
 
 
 void
-CJoinOrderDPv2::FinalizeLevel(ULONG level)
+CJoinOrderDPv2::FinalizeDPLevel(ULONG level)
 {
 	GPOS_ASSERT(level >= 2);
 	SLevelInfo *level_info = Level(level);
@@ -806,7 +970,8 @@ CJoinOrderDPv2::FinalizeLevel(ULONG level)
 		}
 
 		// release the remaining groups at this time, they won't be needed anymore
-		level_info->m_top_k_groups->Clear();
+		level_info->m_top_k_groups->Release();
+		level_info->m_top_k_groups = NULL;
 	}
 }
 
@@ -868,8 +1033,8 @@ CJoinOrderDPv2::PexprExpand()
 	// are not joins themselves, at the first level
 	SLevelInfo *atom_level = Level(1);
 
-	// the atoms are usable by the Mincard algorithm and they also already have stats
-	SExpressionProperties atom_props(EJoinOrderMincard + EJoinOrderStats);
+	// the atoms all have stats derived
+	SExpressionProperties atom_props(EJoinOrderStats);
 
 	// populate level 1 with the atoms (the logical children of the NAry join)
 	for (ULONG atom_id = 0; atom_id < m_ulComps; atom_id++)
@@ -877,11 +1042,30 @@ CJoinOrderDPv2::PexprExpand()
 		CBitSet *atom_bitset = GPOS_NEW(m_mp) CBitSet(m_mp);
 		atom_bitset->ExchangeSet(atom_id);
 		CExpression *pexpr_atom = m_rgpcomp[atom_id]->m_pexpr;
-		SExpressionInfo *atom_expr_info = GPOS_NEW(m_mp) SExpressionInfo(pexpr_atom, NULL, NULL, atom_props);
 		pexpr_atom->AddRef();
-		(void) AddGroupInfo(atom_level, atom_bitset, atom_expr_info);
+		SExpressionInfo *atom_expr_info = GPOS_NEW(m_mp) SExpressionInfo(pexpr_atom, NULL, NULL, atom_props);
+
+		if (0 == atom_id)
+		{
+			// this is the level 1 solution for the query join order
+			atom_expr_info->m_properties.Add(EJoinOrderQuery);
+		}
+
+		LookupOrCreateGroupInfo(atom_level, atom_bitset, atom_expr_info);
+		// note that for atoms with stats, the above call will also insert atom_expr_info as first (and only)
+		// expression into the group
 	}
 
+	// TODO: Based on optimizer_join_order, call a subset of these
+	EnumerateDP();
+	EnumerateQuery();
+	EnumerateMinCard();
+}
+
+
+void
+CJoinOrderDPv2::EnumerateDP()
+{
 	COptimizerConfig *optimizer_config = COptCtxt::PoctxtFromTLS()->GetOptimizerConfig();
 	const CHint *phint = optimizer_config->GetHint();
 	ULONG join_order_exhaustive_limit = phint->UlJoinOrderDPLimit();
@@ -928,8 +1112,31 @@ CJoinOrderDPv2::PexprExpand()
 		SearchBushyJoinOrders(current_join_level);
 
 		// finalize level, enforce limit for groups
-		FinalizeLevel(current_join_level);
+		FinalizeDPLevel(current_join_level);
 	}
+}
+
+
+void
+CJoinOrderDPv2::EnumerateQuery()
+{
+	for (ULONG current_join_level = 2; current_join_level <= m_ulComps; current_join_level++)
+	{
+		GreedySearchJoinOrders(current_join_level-1, EJoinOrderQuery);
+	}
+}
+
+
+void
+CJoinOrderDPv2::EnumerateMinCard()
+{
+	// TODO: Find the starter pair
+	/*
+	for (ULONG current_join_level = 2; current_join_level <= m_ulComps; current_join_level++)
+	{
+		GreedySearchJoinOrders(current_join_level-1, EJoinOrderMincard);
+	}
+	 */
 }
 
 
@@ -1139,25 +1346,33 @@ CJoinOrderDPv2::OsPrint
 IOstream &
 CJoinOrderDPv2::OsPrintProperty(IOstream &os, SExpressionProperties &props) const
 {
-	BOOL is_first = true;
 	os << "{ ";
-	if (props.m_join_order ^ EJoinOrderNone)
+	if (0 == props.m_join_order)
 	{
-		os << "General best solution";
-		is_first = false;
+		os << "DP";
 	}
-	if (props.m_join_order ^ EJoinOrderMincard)
+	else
 	{
-		if (!is_first)
-			os << ", ";
-		os << "Mincard solution";
-		is_first = false;
-	}
-	if (props.m_join_order ^ EJoinOrderStats)
-	{
-		if (!is_first)
-			os << ", ";
-		os << "Expr for stats";
+		BOOL is_first = true;
+
+		if (props.Satisfies(EJoinOrderQuery))
+		{
+			os << "Query";
+			is_first = false;
+		}
+		if (props.Satisfies(EJoinOrderMincard))
+		{
+			if (!is_first)
+				os << ", ";
+			os << "Mincard";
+			is_first = false;
+		}
+		if (props.Satisfies(EJoinOrderStats))
+		{
+			if (!is_first)
+				os << ", ";
+			os << "Stats";
+		}
 	}
 	os << " }";
 
