@@ -205,22 +205,92 @@ namespace gpopt
 
 			};
 
-			// forward declaration, circular reference
-			struct SGroupInfo;
+			// Data structures for DPv2 join enumeration:
+			//
+			// Each level l is the set of l-way joins we are considering.
+			// Level 1 describes the "atoms" the leaves of the original NAry join we are transforming.
+			//
+			// Each level consists of a set (an array) of "groups". A group represents what may eventually
+			// become a group in the MEMO structure. It is a set of atoms to be joined (in any order).
+			// the SGroupInfo struct contains the bitset representing the atoms, the cardinality from the
+			// derived statistics and an array of SExpressionInfo structs.
+			//
+			// Each SExpressionInfo struct describes an expression in a group. Besides a CExpression,
+			// it also has the SGroupInfo and SExpressionInfo of the children. Each SExpressionInfo
+			// also has a property. The SExpressionInfo entries in a group all have different properties.
+			// We only keep expressions that are not dominated by another expression, meaning that there
+			// is no other expression that can produce a superset of the properties for a less or equal
+			// cost.
+			//
+			//
+			//           SLevelInfo
+			//           +---------------------+
+			// Level n:  | SGroupInfo array ---+----> SGroupInfo
+			//           | optional top k      |      +------------------+
+			//           +---------------------+      | Atoms (bitset)   |
+			//                                        | cardinality      |
+			//                                        | SExpressionInfo  |
+			//                                        |      array       |
+			//                                        +--------+---------+
+			//                                                 v
+			//                                          SExpressionInfo
+			//                                          +------------------------+
+			//                                          | CExpression            |
+			//                                          | child SExpressionInfos |
+			//                                          | properties             |
+			//                                          +------------------------+
+			//                                          +------------------------+
+			//                                          | CExpression            |
+			//                                          | child SExpressionInfos |
+			//                                          | properties             |
+			//                                          +------------------------+
+			//                                           ...
+			//                                          +------------------------+
+			//                                          | CExpression            |
+			//                                          | child SExpressionInfos |
+			//                                          | properties             |
+			//                                          +------------------------+
+			//           ...
+			//
+			//           SLevelInfo
+			//           +---------------------+
+			// Level 1:  | SGroupInfo array ---+----> SGroupInfo                        SGroupInfo
+			//           | optional top k      |      +------------------+              +------------------+
+			//           +---------------------+      | Atoms (bitset)   |              | Atoms (bitset)   |
+			//                                        | cardinality      +--------------+ cardinality      |
+			//                                        | ExpressionInfo   |              | ExpressionInfo   |
+			//                                        |      array       |              |      array       |
+			//                                        +--------+---------+              +--------+---------+
+			//                                                 v                                 v
+			//                                          SExpressionInfo                   SExpressionInfo
+			//                                          +------------------------+        +------------------------+
+			//                                          | CExpression            |        | CExpression            |
+			//                                          | child SExpressionInfos |        | child SExpressionInfos |
+			//                                          | properties             |        | properties             |
+			//                                          +------------------------+        +------------------------+
+			//
 
-			// join order properties, these can be added if an expression satisfies multiple such properties
+			// forward declarations, circular reference
+			struct SGroupInfo;
+			struct SExpressionInfo;
+
+			// join enumeration algorithm properties, these can be added if an expression satisfies more than one
 			// consider these as constants, not as a true enum
 			// note that the numbers (other than the first) must be powers of 2!!!
 			enum JoinOrderPropType
 			{
-				EJoinOrderNone     = 0,
-				EJoinOrderQuery    = 1,
-				EJoinOrderMincard  = 2,
-				EJoinOrderStats    = 4
+				EJoinOrderAny      = 0,  // the overall best solution (used for exhaustive2)
+				EJoinOrderQuery    = 1,  // this expression uses the "query" join order
+				EJoinOrderMincard  = 2,  // this expression has the "mincard" property
+				EJoinOrderStats    = 4   // this expression is used to calculate the statistics
+										 // (row count) for the group
 			};
 
+			// properties of an expression in the DP structure (also used as required properties)
 			struct SExpressionProperties
 			{
+				// the join order enumeration algorithm for which this is a solution
+				// (exhaustive enumeration, can use any of these: EJoinOrderAny)
 				ULONG m_join_order;
 
 				SExpressionProperties(ULONG join_order_properties) :
@@ -228,40 +298,64 @@ namespace gpopt
 				{}
 
 				BOOL Satisfies(ULONG pt) { return pt == (m_join_order & pt); }
-				void Add(ULONG p) { m_join_order |= p; }
+				void Add(const SExpressionProperties &p) { m_join_order |= p.m_join_order; }
 			};
 
-			// description of an expression in the DP environment,
+			// a simple wrapper of an SGroupInfo * plus an index into its array of SExpressionInfos
+			// this identifies a group and one expression belonging to that group
+			struct SGroupAndExpression
+			{
+				SGroupInfo *m_group_info;
+				ULONG m_expr_index;
+
+				SGroupAndExpression() : m_group_info(NULL), m_expr_index(gpos::ulong_max) {}
+				SGroupAndExpression(SGroupInfo *g, ULONG ix) : m_group_info(g), m_expr_index(ix) {}
+				SGroupAndExpression(const SGroupAndExpression &other) : m_group_info(other.m_group_info),
+																		  m_expr_index(other.m_expr_index) {}
+				SExpressionInfo *GetExprInfo() const { return (*m_group_info->m_best_expr_info_array)[m_expr_index]; }
+				BOOL IsValid() { return NULL != m_group_info && gpos::ulong_max != m_expr_index; }
+			};
+
+			// description of an expression in the DP environment
 			// left and right child of join expressions point to
-			// other groups, similar to a CGroupExpression
+			// child groups + expressions
 			struct SExpressionInfo : public CRefCount
 			{
 				// the expression
 				CExpression *m_expr;
 
-				// left/right child group info (group for left/right child of m_best_expr),
+				// left/right child group/expr info (group for left/right child of m_expr),
 				// we do not keep a refcount for these
-				SGroupInfo *m_left_child_group;
-				SGroupInfo *m_right_child_group;
-
+				SGroupAndExpression m_left_child_expr;
+				SGroupAndExpression m_right_child_expr;
+				// derived properties of this expression
 				SExpressionProperties m_properties;
 
-				// in the future, we may add properties relevant to the cost here,
-				// like distribution key, partition selectors
+				// in the future, we may add more properties relevant to the cost here,
+				// like distribution spec, partition selectors
 
 				// cost of the expression
 				CDouble m_cost;
 
 				SExpressionInfo(
 								CExpression *expr,
-								SGroupInfo *left_child_group_info,
-								SGroupInfo *right_child_group_info,
+								const SGroupAndExpression &left_child_expr_info,
+								const SGroupAndExpression &right_child_expr_info,
 								SExpressionProperties &properties
 							   ) : m_expr(expr),
-								   m_left_child_group(left_child_group_info),
-								   m_right_child_group(right_child_group_info),
+								   m_left_child_expr(left_child_expr_info),
+								   m_right_child_expr(right_child_expr_info),
 								   m_properties(properties),
 								   m_cost(0.0)
+				{
+				}
+
+				SExpressionInfo(
+								CExpression *expr,
+								SExpressionProperties &properties
+								) : m_expr(expr),
+									m_properties(properties),
+									m_cost(0.0)
 				{
 				}
 
@@ -271,9 +365,6 @@ namespace gpopt
 				}
 
 				CDouble DCost() { return m_cost; }
-				// for CDynamicPtrArray::IndexOf
-				BOOL operator == (const SExpressionInfo &other) const { return m_expr == other.m_expr; }
-
 			};
 
 			typedef CDynamicPtrArray<SExpressionInfo, CleanupRelease<SExpressionInfo> > SExpressionInfoArray;
@@ -445,10 +536,8 @@ namespace gpopt
 			// get a join expression from two child groups with specified child expressions
 			SExpressionInfo *GetJoinExpr
 										(
-										 SGroupInfo *left_group_info,
-										 SExpressionInfo *left_expr_info,
-										 SGroupInfo *right_group_info,
-										 SExpressionInfo *right_expr_info,
+										 const SGroupAndExpression &left_child_expr,
+										 const SGroupAndExpression &right_child_expr,
 										 SExpressionProperties &result_properties
 										);
 
@@ -459,10 +548,10 @@ namespace gpopt
 			BOOL ArePropertiesDisjoint(SExpressionProperties &prop, SExpressionProperties &other_prop);
 
 			// get best expression in a group for a given set of properties
-			SExpressionInfo *GetBestExprForProperties(SGroupInfo *group_info, SExpressionProperties &props);
+			SGroupAndExpression GetBestExprForProperties(SGroupInfo *group_info, SExpressionProperties &props);
 
-			// given a CExpression, return an SExpressionInfo associated with the requested child
-			SExpressionInfo *GetChildExprInfoForExpr(SExpressionInfo *expr_info, ULONG child_index);
+			// add a new property to an existing predicate
+			void AddNewPropertyToExpr(SGroupAndExpression expr, SExpressionProperties props);
 
 			// enumerate bushy joins (joins where both children are also joins) of level "current_level"
 			void SearchBushyJoinOrders(ULONG current_level);

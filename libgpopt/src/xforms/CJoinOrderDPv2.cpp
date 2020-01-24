@@ -164,16 +164,12 @@ CJoinOrderDPv2::ComputeCost
 	// cardinality of the expression itself is one part of the cost
 	CDouble dCost(join_cardinality);
 
-	if (NULL != expr_info->m_left_child_group)
+	if (expr_info->m_left_child_expr.IsValid())
 	{
-		GPOS_ASSERT(NULL != expr_info->m_right_child_group);
+		GPOS_ASSERT(expr_info->m_right_child_expr.IsValid());
 		// add cardinalities of the children to the cost
-		SExpressionInfo *left_child_expr_info = GetChildExprInfoForExpr(expr_info, 0);
-		SExpressionInfo *right_child_expr_info = GetChildExprInfoForExpr(expr_info, 1);
-
-		GPOS_ASSERT(NULL != left_child_expr_info && NULL != right_child_expr_info);
-		dCost = dCost + left_child_expr_info->m_cost;
-		dCost = dCost + right_child_expr_info->m_cost;
+		dCost = dCost + expr_info->m_left_child_expr.GetExprInfo()->m_cost;
+		dCost = dCost + expr_info->m_right_child_expr.GetExprInfo()->m_cost;
 
 		if (CUtils::FCrossJoin(expr_info->m_expr))
 		{
@@ -282,15 +278,15 @@ CJoinOrderDPv2::GetJoinExprForProperties
 	 SExpressionProperties &required_properties
 	)
 {
-	SExpressionInfo *left_expr_info = GetBestExprForProperties(left_child, required_properties);
-	SExpressionInfo *right_expr_info = GetBestExprForProperties(right_child, required_properties);
+	SGroupAndExpression left_expr = GetBestExprForProperties(left_child, required_properties);
+	SGroupAndExpression right_expr = GetBestExprForProperties(right_child, required_properties);
 
-	if (NULL == left_expr_info || NULL == right_expr_info)
+	if (!left_expr.IsValid() || !right_expr.IsValid())
 	{
 		return NULL;
 	}
 
-	return GetJoinExpr(left_child, left_expr_info, right_child, right_expr_info, required_properties);
+	return GetJoinExpr(left_expr, right_expr, required_properties);
 }
 
 
@@ -305,13 +301,16 @@ CJoinOrderDPv2::GetJoinExprForProperties
 CJoinOrderDPv2::SExpressionInfo *
 CJoinOrderDPv2::GetJoinExpr
 (
- SGroupInfo *left_group_info,
- SExpressionInfo *left_expr_info,
- SGroupInfo *right_group_info,
- SExpressionInfo *right_expr_info,
+ const SGroupAndExpression &left_child_expr,
+ const SGroupAndExpression &right_child_expr,
  SExpressionProperties &result_properties
 )
 {
+	SGroupInfo *left_group_info      = left_child_expr.m_group_info;
+	SExpressionInfo *left_expr_info  = left_child_expr.GetExprInfo();
+	SGroupInfo *right_group_info     = right_child_expr.m_group_info;
+	SExpressionInfo *right_expr_info = right_child_expr.GetExprInfo();
+
 	CExpression *scalar_expr = NULL;
 	CBitSet *required_on_left = NULL;
 	BOOL isNIJ = IsRightChildOfNIJ(right_group_info, &scalar_expr, &required_on_left);
@@ -369,7 +368,7 @@ CJoinOrderDPv2::GetJoinExpr
 		join_expr = CUtils::PexprLogicalJoin<CLogicalInnerJoin>(m_mp, left_expr, right_expr, scalar_expr);
 	}
 
-	return GPOS_NEW(m_mp) SExpressionInfo(join_expr, left_group_info, right_group_info, result_properties);
+	return GPOS_NEW(m_mp) SExpressionInfo(join_expr, left_child_expr, right_child_expr, result_properties);
 }
 
 
@@ -385,9 +384,9 @@ BOOL CJoinOrderDPv2::ArePropertiesDisjoint(SExpressionProperties &prop, SExpress
 }
 
 
-CJoinOrderDPv2::SExpressionInfo *CJoinOrderDPv2::GetBestExprForProperties(SGroupInfo *group_info, SExpressionProperties &props)
+CJoinOrderDPv2::SGroupAndExpression CJoinOrderDPv2::GetBestExprForProperties(SGroupInfo *group_info, SExpressionProperties &props)
 {
-	SExpressionInfo *best_candidate = NULL;
+	ULONG best_ix = gpos::ulong_max;
 	CDouble best_cost(0.0);
 
 	for (ULONG ul=0; ul < group_info->m_best_expr_info_array->Size(); ul++)
@@ -396,56 +395,24 @@ CJoinOrderDPv2::SExpressionInfo *CJoinOrderDPv2::GetBestExprForProperties(SGroup
 
 		if (IsASupersetOfProperties(expr_info->m_properties, props))
 		{
-			if (NULL == best_candidate || expr_info->m_cost < best_cost)
+			if (gpos::ulong_max == best_ix || expr_info->m_cost < best_cost)
 			{
 				// we found a candidate with the best cost so far that satisfies the properties
-				best_candidate = expr_info;
+				best_ix = ul;
 				best_cost = expr_info->m_cost;
 			}
 		}
 	}
 
-	return best_candidate;
+	return SGroupAndExpression(group_info, best_ix);
 }
 
 
-CJoinOrderDPv2::SExpressionInfo *
-CJoinOrderDPv2::GetChildExprInfoForExpr(SExpressionInfo *expr_info, ULONG child_index)
+void CJoinOrderDPv2::AddNewPropertyToExpr(SGroupAndExpression expr, SExpressionProperties props)
 {
-	CExpression *child_expr;
-	SGroupInfo *child_group_info;
+	SExpressionInfo *expr_info = expr.GetExprInfo();
 
-	if (0 == child_index)
-	{
-		child_expr = (*expr_info->m_expr)[0];
-		child_group_info = expr_info->m_left_child_group;
-	}
-	else
-	{
-		child_expr = (*expr_info->m_expr)[1];
-		GPOS_ASSERT(1 == child_index);
-		child_group_info = expr_info->m_right_child_group;
-	}
-
-	for (ULONG ul=0; ul < child_group_info->m_best_expr_info_array->Size(); ul++)
-	{
-		SExpressionInfo *candidate = (*child_group_info->m_best_expr_info_array)[ul];
-
-		if (candidate->m_expr == child_expr)
-		{
-			// Child <child_index> of the given expression is the chosen expression for
-			// this expression info. Note that there might be multiple SExpressionInfos
-			// that contain this expression, each with different properties. Please note
-			// that we just return the first one we find, without regards to the properties
-			// of the parent expression!! We use this method to find the cost of the child
-			// expression and that cost should be the same for all of matching entries.
-			return candidate;
-		}
-	}
-
-	// should never reach here
-	GPOS_ASSERT(0);
-	return NULL;
+	expr_info->m_properties.Add(props);
 }
 
 
@@ -471,28 +438,27 @@ CJoinOrderDPv2::AddExprToGroupIfNecessary(SGroupInfo *group_info, SExpressionInf
 	}
 
 	// is there another expression already that dominates this one?
-	SExpressionInfo *existing_expr = GetBestExprForProperties(group_info, new_expr_info->m_properties);
+	SGroupAndExpression existing_expr = GetBestExprForProperties(group_info, new_expr_info->m_properties);
 
-	if (NULL == existing_expr)
+	if (!existing_expr.IsValid())
 	{
 		// this expression provides new properties, insert it
 		group_info->m_best_expr_info_array->Append(new_expr_info);
 	}
 	else
 	{
+		SExpressionInfo *existing_expr_info = existing_expr.GetExprInfo();
+
 		// we found an existing expression that satisfies the properties, now check whether
 		// we should keep the existing one, the new one, or both
-		if (new_cost < existing_expr->m_cost)
+		if (new_cost < existing_expr_info->m_cost)
 		{
 			// our new expression is cheaper, now check whether it provides all the properties of the existing one
-			if (IsASupersetOfProperties(new_expr_info->m_properties, existing_expr->m_properties))
+			if (IsASupersetOfProperties(new_expr_info->m_properties, existing_expr_info->m_properties))
 			{
 				// yes, the new expression dominates the existing one (provides same or better properties for lower cost)
 				// replace the existing one with the new one
-				ULONG existing_expr_index = group_info->m_best_expr_info_array->IndexOf(existing_expr);
-
-				GPOS_ASSERT(gpos::ulong_max != existing_expr_index);
-				group_info->m_best_expr_info_array->Replace(existing_expr_index, new_expr_info);
+				group_info->m_best_expr_info_array->Replace(existing_expr.m_expr_index, new_expr_info);
 			}
 			else
 			{
@@ -704,7 +670,7 @@ CJoinOrderDPv2::SearchJoinOrders
 				continue;
 			}
 
-			SExpressionProperties reqd_properties(EJoinOrderNone);
+			SExpressionProperties reqd_properties(EJoinOrderAny);
 			SExpressionInfo *join_expr_info = GetJoinExprForProperties(left_group_info, right_group_info, reqd_properties);
 
 			if (NULL != join_expr_info)
@@ -719,28 +685,6 @@ CJoinOrderDPv2::SearchJoinOrders
 				SGroupInfo *group_info = LookupOrCreateGroupInfo(current_level_info, join_bitset, join_expr_info);
 
 				AddExprToGroupIfNecessary(group_info, join_expr_info);
-
-				/*
-				if (is_top_level)
-				{
-					// At the top level, we have only one group. To be able to return multiple results
-					// for the xform, we keep the top k expressions (all from the same group) in a KHeap
-					join_expr_info->AddRef();
-					m_top_k_expressions->Insert(join_expr_info);
-				}
-
-				if (NULL == group_info)
-				{
-					// this is a new group, create it
-					group_info = AddGroupInfo(current_level_info, join_bitset, join_expr_info);
-				}
-				else
-				{
-					// add the expression to an existing group, if it is useful
-					AddExprToGroupIfNecessary(group_info, join_expr_info);
-					join_bitset->Release();
-				}
-				 */
 			}
 		}
 	}
@@ -772,16 +716,15 @@ CJoinOrderDPv2::GreedySearchJoinOrders
 	SGroupInfoArray *right_group_info_array = GetGroupsForLevel(right_level);
 	SLevelInfo *current_level_info = Level(left_level+right_level);
 	SExpressionProperties left_reqd_properties(algo);
-	SExpressionProperties right_reqd_properties(EJoinOrderNone);
+	SExpressionProperties right_reqd_properties(EJoinOrderAny);
 	SExpressionProperties result_properties(algo);
 
 	ULONG left_size = left_group_info_array->Size();
 	ULONG right_size = right_group_info_array->Size();
 
 	// pre-existing greedy solution on level left_level
-	SGroupInfo *left_group_info = NULL;
 	CBitSet *left_bitset = NULL;
-	SExpressionInfo *left_expr_info = NULL;
+	SGroupAndExpression left_child_expr_info;
 
 	ULONG left_ix = 0;
 	ULONG right_ix = 0;
@@ -794,12 +737,11 @@ CJoinOrderDPv2::GreedySearchJoinOrders
 	// find the solution for the left side
 	while (left_ix < left_size)
 	{
-		left_group_info = (*left_group_info_array)[left_ix];
-		left_expr_info = GetBestExprForProperties(left_group_info, left_reqd_properties);
+		left_child_expr_info = GetBestExprForProperties((*left_group_info_array)[left_ix], left_reqd_properties);
 
-		if (NULL != left_expr_info)
+		if (left_child_expr_info.IsValid())
 		{
-			left_bitset = left_group_info->m_atoms;
+			left_bitset = left_child_expr_info.m_group_info->m_atoms;
 			// we found the one solution from the lower level that we will build upon
 			break;
 		}
@@ -831,8 +773,14 @@ CJoinOrderDPv2::GreedySearchJoinOrders
 			continue;
 		}
 
-		SExpressionInfo *right_expr_info = GetBestExprForProperties(right_group_info, right_reqd_properties);
-		SExpressionInfo *join_expr_info = GetJoinExpr(left_group_info, left_expr_info, right_group_info, right_expr_info, result_properties);
+		SGroupAndExpression right_child_expr_info = GetBestExprForProperties(right_group_info, right_reqd_properties);
+
+		if (!right_child_expr_info.IsValid())
+		{
+			continue;
+		}
+
+		SExpressionInfo *join_expr_info = GetJoinExpr(left_child_expr_info, right_child_expr_info, result_properties);
 
 		if (NULL != join_expr_info)
 		{
@@ -905,8 +853,8 @@ CJoinOrderDPv2::LookupOrCreateGroupInfo(SLevelInfo *levelInfo, CBitSet *atoms, S
 			// need to derive stats, make sure we use an expression whose children already have stats
 			real_expr_info_for_stats = GetJoinExprForProperties
 											(
-											 stats_expr_info->m_left_child_group,
-											 stats_expr_info->m_right_child_group,
+											 stats_expr_info->m_left_child_expr.m_group_info,
+											 stats_expr_info->m_right_child_expr.m_group_info,
 											 stats_props
 											);
 
@@ -1043,7 +991,7 @@ CJoinOrderDPv2::PexprExpand()
 		atom_bitset->ExchangeSet(atom_id);
 		CExpression *pexpr_atom = m_rgpcomp[atom_id]->m_pexpr;
 		pexpr_atom->AddRef();
-		SExpressionInfo *atom_expr_info = GPOS_NEW(m_mp) SExpressionInfo(pexpr_atom, NULL, NULL, atom_props);
+		SExpressionInfo *atom_expr_info = GPOS_NEW(m_mp) SExpressionInfo(pexpr_atom, atom_props);
 
 		if (0 == atom_id)
 		{
@@ -1130,13 +1078,35 @@ CJoinOrderDPv2::EnumerateQuery()
 void
 CJoinOrderDPv2::EnumerateMinCard()
 {
-	// TODO: Find the starter pair
-	/*
-	for (ULONG current_join_level = 2; current_join_level <= m_ulComps; current_join_level++)
+	// call SearchJoinOrders(1,1); if not already done elsewhere
+
+	// find the starting pair
+	SLevelInfo *level_2 = Level(2);
+	CDouble min_card(0.0);
+	SGroupInfo *min_card_group = NULL;
+	SExpressionProperties any_props(EJoinOrderAny);
+
+	// loop over all the 2-way joins and find the one with the lowest cardinality
+	for (ULONG ul=0; ul<level_2->m_groups->Size(); ul++)
+	{
+		SGroupInfo *group_2 = (*level_2->m_groups)[ul];
+
+		if (NULL == min_card_group || group_2->m_cardinality < min_card)
+		{
+			min_card = group_2->m_cardinality;
+			min_card_group = group_2;
+		}
+	}
+
+	// mark the lowest cardinality 2-way join as the MinCard solution
+	SGroupAndExpression min_card_2_way_join = GetBestExprForProperties(min_card_group, any_props);
+
+	AddNewPropertyToExpr(min_card_2_way_join, SExpressionProperties(EJoinOrderMincard));
+
+	for (ULONG current_join_level = 3; current_join_level <= m_ulComps; current_join_level++)
 	{
 		GreedySearchJoinOrders(current_join_level-1, EJoinOrderMincard);
 	}
-	 */
 }
 
 
@@ -1278,16 +1248,16 @@ CJoinOrderDPv2::OsPrint
 			SGroupInfo *gi = (*bitsets_this_level)[c];
 			ULONG num_exprs = gi->m_best_expr_info_array->Size();
 			SExpressionProperties stats_properties(EJoinOrderStats);
-			SExpressionInfo *expr_for_stats = const_cast<CJoinOrderDPv2 *>(this)->GetBestExprForProperties(gi, stats_properties);
+			SGroupAndExpression expr_for_stats = const_cast<CJoinOrderDPv2 *>(this)->GetBestExprForProperties(gi, stats_properties);
 
 			num_bitsets++;
 			os << "   Group: ";
 			gi->m_atoms->OsPrint(os);
 			os << std::endl;
 
-			if (NULL != expr_for_stats)
+			if (expr_for_stats.IsValid())
 			{
-				os << "   Rows: " << expr_for_stats->m_expr->Pstats()->Rows() << std::endl;
+				os << "   Rows: " << expr_for_stats.GetExprInfo()->m_expr->Pstats()->Rows() << std::endl;
 				// uncomment this for more detailed debugging
 				// os << "   Expr for stats:" << std::endl;
 				// expr_for_stats->OsPrint(os, &pref);
@@ -1304,13 +1274,13 @@ CJoinOrderDPv2::OsPrint
 				if (!gi->IsAnAtom())
 				{
 					os << "   Child groups: ";
-					expr_info->m_left_child_group->m_atoms->OsPrint(os);
+					expr_info->m_left_child_expr.m_group_info->m_atoms->OsPrint(os);
 					if (COperator::EopLogicalLeftOuterJoin == expr_info->m_expr->Pop()->Eopid())
 					{
 						os << " left";
 					}
 					os << " join ";
-					expr_info->m_right_child_group->m_atoms->OsPrint(os);
+					expr_info->m_right_child_expr.m_group_info->m_atoms->OsPrint(os);
 					os << std::endl;
 				}
 				os << "   Cost: ";
