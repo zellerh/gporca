@@ -169,6 +169,16 @@ namespace gpopt
 
 					m_num_returned++;
 
+					return RemoveNextElement();
+				}
+
+				E *RemoveNextElement()
+				{
+					if (0 == m_topk->Size())
+					{
+						return NULL;
+					}
+
 					if (!m_is_heapified)
 						Heapify();
 
@@ -299,6 +309,7 @@ namespace gpopt
 
 				BOOL Satisfies(ULONG pt) { return pt == (m_join_order & pt); }
 				void Add(const SExpressionProperties &p) { m_join_order |= p.m_join_order; }
+				BOOL IsGreedy() { return 0 != (m_join_order & (EJoinOrderQuery + EJoinOrderMincard)); }
 			};
 
 			// a simple wrapper of an SGroupInfo * plus an index into its array of SExpressionInfos
@@ -364,7 +375,7 @@ namespace gpopt
 					m_expr->Release();
 				}
 
-				CDouble DCost() { return m_cost; }
+				CDouble DCost() { return m_properties.IsGreedy() ? -1.0 : m_cost; }
 			};
 
 			typedef CDynamicPtrArray<SExpressionInfo, CleanupRelease<SExpressionInfo> > SExpressionInfoArray;

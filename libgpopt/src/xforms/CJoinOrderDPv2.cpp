@@ -35,7 +35,7 @@
 using namespace gpopt;
 
 #define GPOPT_DPV2_JOIN_ORDERING_TOPK 10
-#define GPOPT_DPV2_CROSS_JOIN_PENALTY 100
+#define GPOPT_DPV2_CROSS_JOIN_PENALTY 5
 
 
 //---------------------------------------------------------------------------
@@ -798,8 +798,13 @@ CJoinOrderDPv2::GreedySearchJoinOrders
 			if (NULL == best_expr_info_in_level || join_cost < best_cost_in_level)
 			{
 				best_group_info_in_level = join_group_info;
+				CRefCount::SafeRelease(best_expr_info_in_level);
 				best_expr_info_in_level  = join_expr_info;
 				best_cost_in_level       = join_cost;
+			}
+			else
+			{
+				join_expr_info->Release();
 			}
 
 			if (EJoinOrderQuery == algo)
@@ -917,6 +922,15 @@ CJoinOrderDPv2::FinalizeDPLevel(ULONG level)
 			level_info->m_groups->Append(winner);
 		}
 
+		SGroupInfo *loser;
+
+		// also remove the groups that didn't make it from the bitset to group info map
+		while (NULL != (loser = level_info->m_top_k_groups->RemoveNextElement()))
+		{
+			m_bitset_to_group_info_map->Delete(loser->m_atoms);
+			loser->Release();
+		}
+
 		// release the remaining groups at this time, they won't be needed anymore
 		level_info->m_top_k_groups->Release();
 		level_info->m_top_k_groups = NULL;
@@ -1002,6 +1016,7 @@ CJoinOrderDPv2::PexprExpand()
 		LookupOrCreateGroupInfo(atom_level, atom_bitset, atom_expr_info);
 		// note that for atoms with stats, the above call will also insert atom_expr_info as first (and only)
 		// expression into the group
+		atom_expr_info->Release();
 	}
 
 	// TODO: Based on optimizer_join_order, call a subset of these
@@ -1026,7 +1041,7 @@ CJoinOrderDPv2::EnumerateDP()
 		{
 			ULONG number_of_allowed_groups = 0;
 
-			if (join_order_exhaustive_limit < l)
+			if (l < join_order_exhaustive_limit)
 			{
 				// at lower levels, limit the number of groups to that of an
 				// <join_order_exhaustive_limit>-way join
