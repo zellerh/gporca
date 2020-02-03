@@ -954,29 +954,23 @@ CJoinOrderDPv2::SearchBushyJoinOrders
 	 ULONG current_level
 	)
 {
+	if (LevelIsFull(current_level))
+	{
+		// we've exceeded the number of joins for which we generate bushy trees
+		// TODO: Transition off of bushy joins more gracefully, note that bushy
+		// trees usually do't add any more groups, they just generate more
+		// expressions for existing groups
+		return;
+	}
+
 	// try bushy joins of bitsets of level x and y, where
 	// x + y = current_level and x > 1 and y > 1
 	// note that join trees of level 3 and below are never bushy,
 	// so this loop only executes at current_level >= 4
-	for (ULONG left_level = 2; left_level < current_level-1; left_level++)
+	for (ULONG right_level = 2; right_level <= current_level/2; right_level++)
 	{
-		if (LevelIsFull(current_level))
-		{
-			// we've exceeded the number of joins for which we generate bushy trees
-			// TODO: Transition off of bushy joins more gracefully, note that bushy
-			// trees usually do't add any more groups, they just generate more
-			// expressions for existing groups
-			return;
-		}
-
-		ULONG right_level = current_level - left_level;
-		if (left_level > right_level)
-			// we've already considered the commuted join
-			break;
-		SearchJoinOrders(left_level, right_level);
+		SearchJoinOrders(current_level - right_level, right_level);
 	}
-
-	return;
 }
 
 
