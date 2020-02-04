@@ -326,6 +326,8 @@ namespace gpopt
 																		  m_expr_index(other.m_expr_index) {}
 				SExpressionInfo *GetExprInfo() const { return (*m_group_info->m_best_expr_info_array)[m_expr_index]; }
 				BOOL IsValid() { return NULL != m_group_info && gpos::ulong_max != m_expr_index; }
+				BOOL operator == (const SGroupAndExpression &other) const
+				{ return m_group_info == other.m_group_info && m_expr_index == other.m_expr_index; }
 			};
 
 			// description of an expression in the DP environment
@@ -377,6 +379,8 @@ namespace gpopt
 				}
 
 				CDouble DCost() { return m_properties.IsGreedy() ? -1.0 : m_cost; }
+				BOOL ChildrenAreEqual(const SExpressionInfo &other) const
+				{ return m_left_child_expr == other.m_left_child_expr && m_right_child_expr == other.m_right_child_expr; }
 			};
 
 			typedef CDynamicPtrArray<SExpressionInfo, CleanupRelease<SExpressionInfo> > SExpressionInfoArray;
@@ -566,7 +570,7 @@ namespace gpopt
 			SGroupAndExpression GetBestExprForProperties(SGroupInfo *group_info, SExpressionProperties &props);
 
 			// add a new property to an existing predicate
-			void AddNewPropertyToExpr(SGroupAndExpression expr, SExpressionProperties props);
+			void AddNewPropertyToExpr(SExpressionInfo *expr_info, SExpressionProperties props);
 
 			// enumerate bushy joins (joins where both children are also joins) of level "current_level"
 			void SearchBushyJoinOrders(ULONG current_level);

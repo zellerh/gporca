@@ -454,10 +454,8 @@ CJoinOrderDPv2::SGroupAndExpression CJoinOrderDPv2::GetBestExprForProperties(SGr
 //		does not yet exist in the current level or in any higher level.
 //
 //---------------------------------------------------------------------------
-void CJoinOrderDPv2::AddNewPropertyToExpr(SGroupAndExpression expr, SExpressionProperties props)
+void CJoinOrderDPv2::AddNewPropertyToExpr(SExpressionInfo *expr_info, SExpressionProperties props)
 {
-	SExpressionInfo *expr_info = expr.GetExprInfo();
-
 	expr_info->m_properties.Add(props);
 }
 
@@ -494,40 +492,135 @@ CJoinOrderDPv2::AddExprToGroupIfNecessary(SGroupInfo *group_info, SExpressionInf
 		group_info->m_lowest_expr_cost = new_cost;
 	}
 
-	// is there another expression already that dominates this one?
-	SGroupAndExpression existing_expr = GetBestExprForProperties(group_info, new_expr_info->m_properties);
+	// loop through the existing expressions, comparing cost and properties with each
+	// existing expression, and perform the following action if cost and properties of
+	// the new expression are:
+	//
+	// case  properties  cost    action
+	// ----  ----------  ------  -------------------
+	//   1       <        <      continue
+	//   2       <        >=     discard, stop
+	//   3       =        <      replace, stop
+	//   4       =        >=     discard, stop
+	//   5       >        <=     replace, stop (*)
+	//   6       >        >      continue
+	//   7    different   any    continue
+	//
+	// if we reach the end of the list of existing expressions and have not yet stopped,
+	// then we add the new expression.
+	//
+	// (*) Note that if we find a new expression that provides more properties for the same
+	// or lower cost, we could potentially replace more than one expression. Right now this
+	// is not done, we replace only the first such expression we find (see the rule below
+	// for the reason).
+	//
+	// Since we are using indexes into the array of expressions, we follow this ground rule
+	// to keep those indexes consistent: Once an SExpressionInfo is inserted into the
+	// m_best_expr_info_array at an index i, this entry will remain at the same index.
+	// This method ensures that its cost can only go down and its properties can only increase.
+	// This rule holds across multiple enumeration algorithms. Therefore, SExpressionInfos from higher
+	// groups can reliably refer to indexes in the m_best_expr_info_array of their child groups.
 
-	if (!existing_expr.IsValid())
-	{
-		// this expression provides new properties, insert it
-		group_info->m_best_expr_info_array->Append(new_expr_info);
-	}
-	else
-	{
-		SExpressionInfo *existing_expr_info = existing_expr.GetExprInfo();
+	BOOL discard = false;
+	BOOL replaced_expr = false;
 
-		// we found an existing expression that satisfies the properties, now check whether
-		// we should keep the existing one, the new one, or both
-		if (new_cost < existing_expr_info->m_cost)
+	for (ULONG ul=0; ul < group_info->m_best_expr_info_array->Size(); ul++)
+	{
+		SExpressionInfo *expr_info = (*group_info->m_best_expr_info_array)[ul];
+		BOOL old_ge_new = IsASupersetOfProperties(expr_info->m_properties, new_expr_info->m_properties);
+		BOOL new_ge_old = IsASupersetOfProperties(new_expr_info->m_properties, expr_info->m_properties);
+		CDouble old_cost = expr_info->m_cost;
+		CDouble new_cost = new_expr_info->m_cost;
+
+		if (old_ge_new)
 		{
-			// our new expression is cheaper, now check whether it provides all the properties of the existing one
-			if (IsASupersetOfProperties(new_expr_info->m_properties, existing_expr_info->m_properties))
+			if (!new_ge_old)
 			{
-				// yes, the new expression dominates the existing one (provides same or better properties for lower cost)
-				// replace the existing one with the new one
-				group_info->m_best_expr_info_array->Replace(existing_expr.m_expr_index, new_expr_info);
+				// new expression provides fewer properties
+				if (new_cost < old_cost)
+				{
+					// case 1
+				}
+				else
+				{
+					// case 2
+					discard = true;
+					break;
+				}
 			}
 			else
 			{
-				// the new expression is cheaper, but it provides less than the existing one, so keep both
-				group_info->m_best_expr_info_array->Append(new_expr_info);
+				// both expressions provide the same properties
+				if (new_cost < old_cost)
+				{
+					// case 3
+					group_info->m_best_expr_info_array->Replace(ul, new_expr_info);
+					replaced_expr = true;
+					break;
+				}
+				else
+				{
+					// case 4
+					discard = true;
+					break;
+				}
 			}
 		}
 		else
 		{
-			// the new expression does not provide any properties for the lowest cost, so discard it
-			new_expr_info->Release();
+			if (new_ge_old)
+			{
+				// new expression provides more properties
+				if (new_cost <= old_cost)
+				{
+					// case 5
+					group_info->m_best_expr_info_array->Replace(ul, new_expr_info);
+					replaced_expr = true;
+					break;
+				}
+				else
+				{
+					// case 6
+				}
+			}
+			else
+			{
+				// new expression provides different properties, neither more nor less
+				// case 7
+				if (expr_info->ChildrenAreEqual(*new_expr_info))
+				{
+					// One more action not shown in the table above:
+					// If the expressions provide different properties, but have the same
+					// child groups and child expressions, they are equivalent and are able
+					// to produce the superset of the properties. This case happens when we
+					// introduce new properties, such as EJoinOrderMinCard, in a later
+					// enumeration algorithm. It also happens with EJoinOrderStats, however,
+					// which is part of the generated CExpression, when we later generate an
+					// equivalent expression without deriving stats on it. To preserve stats,
+					// we make sure that we keep the CExpression that has the stats (it is
+					// always the existing one).
+
+					AddNewPropertyToExpr(expr_info, new_expr_info->m_properties);
+					GPOS_ASSERT(expr_info->m_properties.Satisfies(EJoinOrderStats) ||
+								!new_expr_info->m_properties.Satisfies(EJoinOrderStats));
+					discard = true;
+					break;
+				}
+			}
 		}
+	}
+
+	if (discard)
+	{
+		// the new expression needs to be discarded
+		new_expr_info->Release();
+	}
+	else if (!replaced_expr)
+	{
+		// we went through all existing expressions without replacing an existing one and
+		// without deciding to discard the new expression, therefore we need to add the
+		// new expression
+		group_info->m_best_expr_info_array->Append(new_expr_info);
 	}
 }
 
@@ -1233,7 +1326,7 @@ CJoinOrderDPv2::FindMinCardGreedyStartingJoin()
 	// mark the lowest cardinality 2-way join as the MinCard and GreedyAvoidXProd solutions
 	SGroupAndExpression min_card_2_way_join = GetBestExprForProperties(min_card_group, any_props);
 
-	AddNewPropertyToExpr(min_card_2_way_join, SExpressionProperties(EJoinOrderMincard + EJoinOrderGreedyAvoidXProd));
+	AddNewPropertyToExpr(min_card_2_way_join.GetExprInfo(), SExpressionProperties(EJoinOrderMincard + EJoinOrderGreedyAvoidXProd));
 }
 
 
