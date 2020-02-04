@@ -289,11 +289,12 @@ namespace gpopt
 			// note that the numbers (other than the first) must be powers of 2!!!
 			enum JoinOrderPropType
 			{
-				EJoinOrderAny      = 0,  // the overall best solution (used for exhaustive2)
-				EJoinOrderQuery    = 1,  // this expression uses the "query" join order
-				EJoinOrderMincard  = 2,  // this expression has the "mincard" property
-				EJoinOrderStats    = 4   // this expression is used to calculate the statistics
-										 // (row count) for the group
+				EJoinOrderAny              = 0,  // the overall best solution (used for exhaustive2)
+				EJoinOrderQuery            = 1,  // this expression uses the "query" join order
+				EJoinOrderMincard          = 2,  // this expression has the "mincard" property
+				EJoinOrderGreedyAvoidXProd = 4,  // best "greedy" expression with minimal cross products
+				EJoinOrderStats            = 8   // this expression is used to calculate the statistics
+												 // (row count) for the group
 			};
 
 			// properties of an expression in the DP structure (also used as required properties)
@@ -507,6 +508,9 @@ namespace gpopt
 			// top K expressions at the top level
 			KHeap<SExpressionInfoArray, SExpressionInfo> *m_top_k_expressions;
 
+			// current penalty for cross products (depends on enumeration algorithm)
+			CDouble m_cross_prod_penalty;
+
 			CMemoryPool *m_mp;
 
 			SLevelInfo *Level(ULONG l) { return (*m_join_levels)[l]; }
@@ -584,7 +588,9 @@ namespace gpopt
 
 			void EnumerateDP();
 			void EnumerateQuery();
+			void FindMinCardGreedyStartingJoin();
 			void EnumerateMinCard();
+			void EnumerateGreedyAvoidXProd();
 
 		public:
 

@@ -34,8 +34,12 @@
 
 using namespace gpopt;
 
+// how many expressions will we return at the end of the DP phase?
 #define GPOPT_DPV2_JOIN_ORDERING_TOPK 10
-#define GPOPT_DPV2_CROSS_JOIN_PENALTY 5
+// cost penalty (a factor) for cross product for enumeration algorithms other than GreedyAvoidXProd
+#define GPOPT_DPV2_CROSS_JOIN_DEFAULT_PENALTY 5
+// prohibitively high penalty for cross products when in GreedyAvoidXProd
+#define GPOPT_DPV2_CROSS_JOIN_GREEDY_PENALTY 1e9
 
 
 //---------------------------------------------------------------------------
@@ -59,7 +63,8 @@ CJoinOrderDPv2::CJoinOrderDPv2
 	m_expression_to_edge_map(NULL),
 	m_on_pred_conjuncts(onPredConjuncts),
 	m_child_pred_indexes(childPredIndexes),
-	m_non_inner_join_dependencies(NULL)
+	m_non_inner_join_dependencies(NULL),
+	m_cross_prod_penalty(GPOPT_DPV2_CROSS_JOIN_DEFAULT_PENALTY)
 {
 	m_join_levels = GPOS_NEW(mp) DPv2Levels(mp, m_ulComps+1);
 	// populate levels array with n+1 levels for an n-way join
@@ -174,7 +179,7 @@ CJoinOrderDPv2::ComputeCost
 		if (CUtils::FCrossJoin(expr_info->m_expr))
 		{
 			// penalize cross joins, similar to what we do in the optimization phase
-			dCost = dCost * GPOPT_DPV2_CROSS_JOIN_PENALTY;
+			dCost = dCost * m_cross_prod_penalty;
 		}
 	}
 
@@ -1013,10 +1018,14 @@ CJoinOrderDPv2::PexprExpand()
 		atom_expr_info->Release();
 	}
 
-	// TODO: Based on optimizer_join_order, call a subset of these
+	// call all the enumeration strategies, start with DP, as it builds some needed data structures
+	// for MinCard and GreedyAvoidXProd
 	EnumerateDP();
 	EnumerateQuery();
+	FindMinCardGreedyStartingJoin();
 	EnumerateMinCard();
+	EnumerateGreedyAvoidXProd();
+
 }
 
 
@@ -1085,11 +1094,8 @@ CJoinOrderDPv2::EnumerateQuery()
 
 
 void
-CJoinOrderDPv2::EnumerateMinCard()
+CJoinOrderDPv2::FindMinCardGreedyStartingJoin()
 {
-	// call SearchJoinOrders(1,1); if not already done elsewhere
-
-	// find the starting pair
 	SLevelInfo *level_2 = Level(2);
 	CDouble min_card(0.0);
 	SGroupInfo *min_card_group = NULL;
@@ -1107,15 +1113,35 @@ CJoinOrderDPv2::EnumerateMinCard()
 		}
 	}
 
-	// mark the lowest cardinality 2-way join as the MinCard solution
+	// mark the lowest cardinality 2-way join as the MinCard and GreedyAvoidXProd solutions
 	SGroupAndExpression min_card_2_way_join = GetBestExprForProperties(min_card_group, any_props);
 
-	AddNewPropertyToExpr(min_card_2_way_join, SExpressionProperties(EJoinOrderMincard));
+	AddNewPropertyToExpr(min_card_2_way_join, SExpressionProperties(EJoinOrderMincard + EJoinOrderGreedyAvoidXProd));
+}
 
+
+void
+CJoinOrderDPv2::EnumerateMinCard()
+{
 	for (ULONG current_join_level = 3; current_join_level <= m_ulComps; current_join_level++)
 	{
 		GreedySearchJoinOrders(current_join_level-1, EJoinOrderMincard);
 	}
+}
+
+
+void
+CJoinOrderDPv2::EnumerateGreedyAvoidXProd()
+{
+	// avoid cross products by adding a very high penalty to their cost
+	// note that we can still do mandatory cross products
+	m_cross_prod_penalty = GPOPT_DPV2_CROSS_JOIN_GREEDY_PENALTY;
+
+	for (ULONG current_join_level = 3; current_join_level <= m_ulComps; current_join_level++)
+	{
+		GreedySearchJoinOrders(current_join_level-1, EJoinOrderGreedyAvoidXProd);
+	}
+	m_cross_prod_penalty = GPOPT_DPV2_CROSS_JOIN_DEFAULT_PENALTY;
 }
 
 
