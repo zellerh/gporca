@@ -186,6 +186,7 @@ CJoinOrderDPv2::ComputeCost
 	expr_info->m_cost = dCost;
 }
 
+
 //---------------------------------------------------------------------------
 //	@function:
 //		CJoinOrderDPv2::PexprBuildInnerJoinPred
@@ -377,18 +378,48 @@ CJoinOrderDPv2::GetJoinExpr
 }
 
 
+//---------------------------------------------------------------------------
+//	@function:
+//		CJoinOrderDPv2::IsASupersetOfProperties
+//
+//	@doc:
+//		Return whether <prop> provides a superset of the properties <other_prop>
+//
+//---------------------------------------------------------------------------
 BOOL CJoinOrderDPv2::IsASupersetOfProperties(SExpressionProperties &prop, SExpressionProperties &other_prop)
 {
 	// are the bits in other_prop a subset of the bits in prop?
 	return 0 == (other_prop.m_join_order & ~prop.m_join_order);
 }
 
+
+//---------------------------------------------------------------------------
+//	@function:
+//		CJoinOrderDPv2::ArePropertiesDisjoint
+//
+//	@doc:
+//		Return whether each of the two properties provides something that
+//		the other property doesn't provide.
+//
+//---------------------------------------------------------------------------
 BOOL CJoinOrderDPv2::ArePropertiesDisjoint(SExpressionProperties &prop, SExpressionProperties &other_prop)
 {
 	return	!IsASupersetOfProperties(prop, other_prop) && !IsASupersetOfProperties(other_prop, prop);
 }
 
 
+//---------------------------------------------------------------------------
+//	@function:
+//		CJoinOrderDPv2::GetBestExprForProperties
+//
+//	@doc:
+//		Given a group and required properties, return an expression in the
+//		group that satisfies the required properties or return an invalid
+//		SGroupAndExpression object if no such expression exists.
+//		Use SGroupAndExpression::IsValid() to test the validity of the
+//		return value.
+//
+//---------------------------------------------------------------------------
 CJoinOrderDPv2::SGroupAndExpression CJoinOrderDPv2::GetBestExprForProperties(SGroupInfo *group_info, SExpressionProperties &props)
 {
 	ULONG best_ix = gpos::ulong_max;
@@ -413,6 +444,16 @@ CJoinOrderDPv2::SGroupAndExpression CJoinOrderDPv2::GetBestExprForProperties(SGr
 }
 
 
+//---------------------------------------------------------------------------
+//	@function:
+//		CJoinOrderDPv2::AddNewPropertyToExpr
+//
+//	@doc:
+//		Add a new property that an existing expression in a group provides.
+//		NOTE: This method should be used with care! Only add a property that
+//		does not yet exist in the current level or in any higher level.
+//
+//---------------------------------------------------------------------------
 void CJoinOrderDPv2::AddNewPropertyToExpr(SGroupAndExpression expr, SExpressionProperties props)
 {
 	SExpressionInfo *expr_info = expr.GetExprInfo();
@@ -421,6 +462,17 @@ void CJoinOrderDPv2::AddNewPropertyToExpr(SGroupAndExpression expr, SExpressionP
 }
 
 
+//---------------------------------------------------------------------------
+//	@function:
+//		CJoinOrderDPv2::AddExprToGroupIfNecessary
+//
+//	@doc:
+//		Check a new expression to see whether it provides any new property or
+//		whether it provides the same property as an existing expression at a
+//		lower cost. If so, add the new expression or replace an existing
+//		expression with the better one. Otherwise, release the expression.
+//
+//---------------------------------------------------------------------------
 void
 CJoinOrderDPv2::AddExprToGroupIfNecessary(SGroupInfo *group_info, SExpressionInfo *new_expr_info)
 {
@@ -480,16 +532,23 @@ CJoinOrderDPv2::AddExprToGroupIfNecessary(SGroupInfo *group_info, SExpressionInf
 }
 
 
+//---------------------------------------------------------------------------
+//	@function:
+//		CJoinOrderDPv2::PopulateExpressionToEdgeMapIfNeeded
+//
+//	@doc:
+//		In some cases we may not place all of the predicates in the NAry join in
+//		the resulting tree of binary joins. If that situation is a possibility,
+//		we'll create a map from expressions to edges, so that we can find any
+//		unused edges to be placed in a select node on top of the join.
+//
+//		Example:
+//		select * from foo left join bar on foo.a=bar.a where coalesce(bar.b, 0) < 10;
+//
+//---------------------------------------------------------------------------
 BOOL
 CJoinOrderDPv2::PopulateExpressionToEdgeMapIfNeeded()
 {
-	// In some cases we may not place all of the predicates in the NAry join in
-	// the resulting tree of binary joins. If that situation is a possibility,
-	// we'll create a map from expressions to edges, so that we can find any
-	// unused edges to be placed in a select node on top of the join.
-	//
-	// Example:
-	// select * from foo left join bar on foo.a=bar.a where coalesce(bar.b, 0) < 10;
 	if (0 == m_child_pred_indexes->Size())
 	{
 		// all inner joins, all predicates will be placed
@@ -544,8 +603,16 @@ CJoinOrderDPv2::PopulateExpressionToEdgeMapIfNeeded()
 	return populate;
 }
 
-// add a select node with any remaining edges (predicates) that have
-// not been incorporated in the join tree
+
+//---------------------------------------------------------------------------
+//	@function:
+//		CJoinOrderDPv2::AddSelectNodeForRemainingEdges
+//
+//	@doc:
+//		add a select node with any remaining edges (predicates) that have
+//		not been incorporated in the join tree
+//
+//---------------------------------------------------------------------------
 CExpression *
 CJoinOrderDPv2::AddSelectNodeForRemainingEdges(CExpression *join_expr)
 {
@@ -590,6 +657,14 @@ CJoinOrderDPv2::AddSelectNodeForRemainingEdges(CExpression *join_expr)
 }
 
 
+//---------------------------------------------------------------------------
+//	@function:
+//		CJoinOrderDPv2::RecursivelyMarkEdgesAsUsed
+//
+//	@doc:
+//		mark all the edges corresponding to any part of <expr> as used
+//
+//---------------------------------------------------------------------------
 void CJoinOrderDPv2::RecursivelyMarkEdgesAsUsed(CExpression *expr)
 {
 	GPOS_CHECK_STACK_SIZE;
@@ -622,6 +697,7 @@ void CJoinOrderDPv2::RecursivelyMarkEdgesAsUsed(CExpression *expr)
 		}
 	}
 }
+
 
 //---------------------------------------------------------------------------
 //	@function:
@@ -703,7 +779,7 @@ CJoinOrderDPv2::SearchJoinOrders
 //	@doc:
 //		Enumerate all the possible joins between a list of groups and the
 //		list of atoms, only add the best new expression. Note that this
-//		method is used for query and mincard join orders
+//		method is used for Query, Mincard and GreedyAvoidXProd join orders
 //
 //---------------------------------------------------------------------------
 void
@@ -911,6 +987,16 @@ CJoinOrderDPv2::LookupOrCreateGroupInfo(SLevelInfo *levelInfo, CBitSet *atoms, S
 }
 
 
+//---------------------------------------------------------------------------
+//	@function:
+//		CJoinOrderDPv2::FinalizeDPLevel
+//
+//	@doc:
+//		Called when we finish a level in the DP enumeration algorithm. Apply
+//		limit on the number of groups and move the remaining groups into the
+//		SLevelInfo::m_groups array.
+//
+//---------------------------------------------------------------------------
 void
 CJoinOrderDPv2::FinalizeDPLevel(ULONG level)
 {
@@ -949,8 +1035,7 @@ CJoinOrderDPv2::FinalizeDPLevel(ULONG level)
 //		CJoinOrderDPv2::SearchBushyJoinOrders
 //
 //	@doc:
-//		Generate all bushy join trees of level current_level,
-//		given an array of an array of bit sets (components), arranged by level
+//		Generate all bushy join trees of level current_level
 //
 //---------------------------------------------------------------------------
 void
@@ -1029,6 +1114,19 @@ CJoinOrderDPv2::PexprExpand()
 }
 
 
+//---------------------------------------------------------------------------
+//	@function:
+//		CJoinOrderDPv2::EnumerateDP
+//
+//	@doc:
+//		Exhaustive enumeration of join orders, try linear and bushy trees
+//		and cross products. This method limits the join orders in two ways:
+//		First, if it generates an expression A join B, then it won't also
+//		generate B join A (this is left to the join commutativity rule).
+//		Second, we may apply limits to the number of groups when we finalize
+//		each level.
+//
+//---------------------------------------------------------------------------
 void
 CJoinOrderDPv2::EnumerateDP()
 {
@@ -1083,6 +1181,15 @@ CJoinOrderDPv2::EnumerateDP()
 }
 
 
+//---------------------------------------------------------------------------
+//	@function:
+//		CJoinOrderDPv2::EnumerateQuery
+//
+//	@doc:
+//		Generate a tree that has the same join order as the SQL query. Note
+//		that the generated tree is linear, even if the SQL query was bushy.
+//
+//---------------------------------------------------------------------------
 void
 CJoinOrderDPv2::EnumerateQuery()
 {
@@ -1093,6 +1200,16 @@ CJoinOrderDPv2::EnumerateQuery()
 }
 
 
+//---------------------------------------------------------------------------
+//	@function:
+//		CJoinOrderDPv2::FindMinCardGreedyStartingJoin
+//
+//	@doc:
+//		Find the 2-way join with the smallest cardinality. This is the
+//		starting base for MinCard and GreedyAvoidXProd - these algorithms
+//		don't start with the smallest atom.
+//
+//---------------------------------------------------------------------------
 void
 CJoinOrderDPv2::FindMinCardGreedyStartingJoin()
 {
@@ -1120,6 +1237,16 @@ CJoinOrderDPv2::FindMinCardGreedyStartingJoin()
 }
 
 
+//---------------------------------------------------------------------------
+//	@function:
+//		CJoinOrderDPv2::EnumerateMinCard
+//
+//	@doc:
+//		Create a linear join tree, using the MinCard algorithm. We create
+//		level n+1 of the tree by combining the MinCard solution of level
+//		n (n>2) with the atom that produces the lowest cardinality join.
+//
+//---------------------------------------------------------------------------
 void
 CJoinOrderDPv2::EnumerateMinCard()
 {
@@ -1130,6 +1257,19 @@ CJoinOrderDPv2::EnumerateMinCard()
 }
 
 
+//---------------------------------------------------------------------------
+//	@function:
+//		CJoinOrderDPv2::EnumerateGreedyAvoidXProd
+//
+//	@doc:
+//		Create a linear join tree, using the GreedyAvoidXProd algorithm. This
+//		is similar to MinCard, except that we avoid unnecessary cross
+//		products. Note that this corresponds to the "greedy" value in the
+//		optimizer_join_order guc, but we call it GreedyAvoidXProd here, since
+//		Query, MinCard and GreedyAvoidXProd are all greedy enumeration
+//		algorithms.
+//
+//---------------------------------------------------------------------------
 void
 CJoinOrderDPv2::EnumerateGreedyAvoidXProd()
 {
@@ -1145,6 +1285,16 @@ CJoinOrderDPv2::EnumerateGreedyAvoidXProd()
 }
 
 
+//---------------------------------------------------------------------------
+//	@function:
+//		CJoinOrderDPv2::GetNextOfTopK
+//
+//	@doc:
+//		Return the next of the stored expressions in the top level. This
+//		expression can then be used as an alternative of the transform.
+//		Return NULL if there are no more alternatives.
+//
+//---------------------------------------------------------------------------
 CExpression*
 CJoinOrderDPv2::GetNextOfTopK()
 {
@@ -1164,6 +1314,19 @@ CJoinOrderDPv2::GetNextOfTopK()
 }
 
 
+//---------------------------------------------------------------------------
+//	@function:
+//		CJoinOrderDPv2::IsRightChildOfNIJ
+//
+//	@doc:
+//		Given a group info that is an atom, is this group the right child of
+//		a non-inner-join (like an LOJ)?
+//		Return false, if the group is not an atom. If the method returns
+//		true, then it also returns the ON predicate to use for the join
+//		and the set of atoms that have to be present in the left side of
+//		the join (the join's right side will be <groupInfo>).
+//
+//---------------------------------------------------------------------------
 BOOL
 CJoinOrderDPv2::IsRightChildOfNIJ
 	(SGroupInfo *groupInfo,
@@ -1205,6 +1368,15 @@ CJoinOrderDPv2::IsRightChildOfNIJ
 }
 
 
+//---------------------------------------------------------------------------
+//	@function:
+//		CJoinOrderDPv2::FindLogicalChildByNijId
+//
+//	@doc:
+//		Which of the NAry join children is the n-th NIJ child?
+//		Return 0 if no such child exists.
+//
+//---------------------------------------------------------------------------
 ULONG
 CJoinOrderDPv2::FindLogicalChildByNijId(ULONG nij_num)
 {
@@ -1221,7 +1393,15 @@ CJoinOrderDPv2::FindLogicalChildByNijId(ULONG nij_num)
 	return 0;
 }
 
-
+//---------------------------------------------------------------------------
+//	@function:
+//		CJoinOrderDPv2::NChooseK
+//
+//	@doc:
+//		Static method to calculate the mathematical (n choose k) formula:
+//		n! / (k! * (n-k)!)
+//
+//---------------------------------------------------------------------------
 ULONG CJoinOrderDPv2::NChooseK(ULONG n, ULONG k)
 {
 	ULLONG numerator = 1;
@@ -1237,6 +1417,15 @@ ULONG CJoinOrderDPv2::NChooseK(ULONG n, ULONG k)
 }
 
 
+//---------------------------------------------------------------------------
+//	@function:
+//		CJoinOrderDPv2::LevelIsFull
+//
+//	@doc:
+//		Return whether a given level has a limit for the number of groups in
+//		it and whether that limit has already been exceeded
+//
+//---------------------------------------------------------------------------
 BOOL
 CJoinOrderDPv2::LevelIsFull(ULONG level)
 {
