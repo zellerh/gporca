@@ -587,25 +587,6 @@ CJoinOrderDPv2::AddExprToGroupIfNecessary(SGroupInfo *group_info, SExpressionInf
 			{
 				// new expression provides different properties, neither more nor less
 				// case 7
-				if (expr_info->ChildrenAreEqual(*new_expr_info))
-				{
-					// One more action not shown in the table above:
-					// If the expressions provide different properties, but have the same
-					// child groups and child expressions, they are equivalent and are able
-					// to produce the superset of the properties. This case happens when we
-					// introduce new properties, such as EJoinOrderMinCard, in a later
-					// enumeration algorithm. It also happens with EJoinOrderStats, however,
-					// which is part of the generated CExpression, when we later generate an
-					// equivalent expression without deriving stats on it. To preserve stats,
-					// we make sure that we keep the CExpression that has the stats (it is
-					// always the existing one).
-
-					AddNewPropertyToExpr(expr_info, new_expr_info->m_properties);
-					GPOS_ASSERT(expr_info->m_properties.Satisfies(EJoinOrderStats) ||
-								!new_expr_info->m_properties.Satisfies(EJoinOrderStats));
-					discard = true;
-					break;
-				}
 			}
 		}
 	}
