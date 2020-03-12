@@ -1352,7 +1352,7 @@
     <dxl:Plan Id="0" SpaceSize="1137">
       <dxl:GatherMotion InputSegments="0,1" OutputSegments="-1">
         <dxl:Properties>
-          <dxl:Cost StartupCost="0" TotalCost="2531098.435121" Rows="5111.442548" Width="246"/>
+          <dxl:Cost StartupCost="0" TotalCost="1872661.043854" Rows="3597.491725" Width="246"/>
         </dxl:Properties>
         <dxl:ProjList>
           <dxl:ProjElem ColId="0" Alias="ss_sold_date_sk">
@@ -1513,7 +1513,7 @@
         <dxl:SortingColumnList/>
         <dxl:HashJoin JoinType="Inner">
           <dxl:Properties>
-            <dxl:Cost StartupCost="0" TotalCost="2530483.463018" Rows="5111.442548" Width="246"/>
+            <dxl:Cost StartupCost="0" TotalCost="1872227.923266" Rows="3597.491725" Width="246"/>
           </dxl:Properties>
           <dxl:ProjList>
             <dxl:ProjElem ColId="0" Alias="ss_sold_date_sk">
@@ -1680,7 +1680,7 @@
           </dxl:HashCondList>
           <dxl:DynamicTableScan PartIndexId="1">
             <dxl:Properties>
-              <dxl:Cost StartupCost="0" TotalCost="833299.908641" Rows="12277684.984863" Width="139"/>
+              <dxl:Cost StartupCost="0" TotalCost="613882.057372" Rows="9044823.406461" Width="139"/>
             </dxl:Properties>
             <dxl:ProjList>
               <dxl:ProjElem ColId="0" Alias="ss_sold_date_sk">
@@ -1899,7 +1899,7 @@
             </dxl:PrintableFilter>
             <dxl:BroadcastMotion InputSegments="-1" OutputSegments="0,1">
               <dxl:Properties>
-                <dxl:Cost StartupCost="0" TotalCost="30543.603625" Rows="60.823481" Width="107"/>
+                <dxl:Cost StartupCost="0" TotalCost="30543.319919" Rows="58.108380" Width="107"/>
               </dxl:Properties>
               <dxl:ProjList>
                 <dxl:ProjElem ColId="30" Alias="d_date_sk">
@@ -1991,7 +1991,7 @@
               <dxl:SortingColumnList/>
               <dxl:HashJoin JoinType="Inner">
                 <dxl:Properties>
-                  <dxl:Cost StartupCost="0" TotalCost="30536.248047" Rows="30.411740" Width="107"/>
+                  <dxl:Cost StartupCost="0" TotalCost="30536.248047" Rows="29.054190" Width="107"/>
                 </dxl:Properties>
                 <dxl:ProjList>
                   <dxl:ProjElem ColId="30" Alias="d_date_sk">

@@ -12440,7 +12440,7 @@
           <dxl:OneTimeFilter/>
           <dxl:HashJoin JoinType="Left">
             <dxl:Properties>
-              <dxl:Cost StartupCost="0" TotalCost="944425.022949" Rows="6352219.549592" Width="251"/>
+              <dxl:Cost StartupCost="0" TotalCost="944425.022949" Rows="6351778.089185" Width="251"/>
             </dxl:Properties>
             <dxl:ProjList>
               <dxl:ProjElem ColId="0" Alias="ss_sold_date_sk">

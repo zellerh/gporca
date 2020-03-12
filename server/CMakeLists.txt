@@ -289,7 +289,7 @@ CGinIndexTest:
 GinIndex GinIndexPathOpfamily GinIndexSearchModeAll;
 
 CReplicatedTableTest:
-ReplicatedTableSelect ReplicatedTableInsert ReplicatedTable-CTAS ReplicatedHashJoinReplicated ReplicatedJoinHashDistributedTable ReplicatedJoinRandomDistributedTable ReplicatedLOJHashDistributedTable ReplicatedLOJRandomDistributedTable ReplicatedLOJReplicated ReplicatedNLJReplicated ReplicatedTableAggregate ReplicatedTableCTE ReplicatedTableGroupBy ReplicatedJoinPartitionedTable ReplicatedTableInClause;
+ReplicatedTableSelect ReplicatedTableInsert ReplicatedTable-CTAS ReplicatedHashJoinReplicated ReplicatedJoinHashDistributedTable ReplicatedJoinRandomDistributedTable ReplicatedLOJHashDistributedTable ReplicatedLOJRandomDistributedTable ReplicatedLOJReplicated ReplicatedNLJReplicated ReplicatedTableAggregate ReplicatedTableCTE ReplicatedTableGroupBy ReplicatedJoinPartitionedTable;
 
 CDqaTest:
 DqaHavingMax DqaMax DqaMin DqaSubqueryMax DqaNoRedistribute;
@@ -390,7 +390,6 @@ add_orca_test(CMiniDumperDXLTest)
 add_orca_test(CExpressionPreprocessorTest)
 add_orca_test(CWindowTest)
 add_orca_test(CICGTest)
-add_orca_test(CMultilevelPartitionTest)
 add_orca_test(CDMLTest)
 add_orca_test(CDirectDispatchTest)
 add_orca_test(CTVFTest)
@@ -414,7 +413,6 @@ add_orca_test(CPointTest)
 add_orca_test(CBucketTest)
 add_orca_test(CHistogramTest)
 add_orca_test(CMCVTest)
-add_orca_test(CJoinCardinalityTest)
 add_orca_test(CJoinCardinalityNDVBasedEqPredTest)
 add_orca_test(CFilterCardinalityTest)
 add_orca_test(CTranslatorDXLToExprTest)

@@ -3666,7 +3666,7 @@ INNER JOIN  (SELECT FOO10.i1 AS i1 FROM foo10 FOO10 WHERE FOO10.i2 = 'EN' ) FOO1
     <dxl:Plan Id="0" SpaceSize="0">
       <dxl:GatherMotion InputSegments="0,1,2" OutputSegments="-1">
         <dxl:Properties>
-          <dxl:Cost StartupCost="0" TotalCost="2168.997309" Rows="1000.000000" Width="8"/>
+          <dxl:Cost StartupCost="0" TotalCost="2168.993707" Rows="960.421361" Width="8"/>
         </dxl:Properties>
         <dxl:ProjList>
           <dxl:ProjElem ColId="11" Alias="m8">
@@ -3680,7 +3680,7 @@ INNER JOIN  (SELECT FOO10.i1 AS i1 FROM foo10 FOO10 WHERE FOO10.i2 = 'EN' ) FOO1
         <dxl:SortingColumnList/>
         <dxl:HashJoin JoinType="Inner">
           <dxl:Properties>
-            <dxl:Cost StartupCost="0" TotalCost="2168.967496" Rows="1000.000000" Width="8"/>
+            <dxl:Cost StartupCost="0" TotalCost="2168.965073" Rows="960.421361" Width="8"/>
           </dxl:Properties>
           <dxl:ProjList>
             <dxl:ProjElem ColId="11" Alias="m8">
@@ -3694,8 +3694,8 @@ INNER JOIN  (SELECT FOO10.i1 AS i1 FROM foo10 FOO10 WHERE FOO10.i2 = 'EN' ) FOO1
           <dxl:JoinFilter/>
           <dxl:HashCondList>
             <dxl:Comparison ComparisonOperator="=" OperatorMdid="0.96.1.0">
-              <dxl:Ident ColId="16" ColName="h1" TypeMdid="0.23.1.0"/>
-              <dxl:Ident ColId="9" ColName="m6" TypeMdid="0.23.1.0"/>
+              <dxl:Ident ColId="20" ColName="g1" TypeMdid="0.23.1.0"/>
+              <dxl:Ident ColId="5" ColName="m2" TypeMdid="0.23.1.0"/>
             </dxl:Comparison>
           </dxl:HashCondList>
           <dxl:TableScan>
@@ -3703,30 +3703,30 @@ INNER JOIN  (SELECT FOO10.i1 AS i1 FROM foo10 FOO10 WHERE FOO10.i2 = 'EN' ) FOO1
               <dxl:Cost StartupCost="0" TotalCost="431.330000" Rows="100000.000000" Width="4"/>
             </dxl:Properties>
             <dxl:ProjList>
-              <dxl:ProjElem ColId="16" Alias="h1">
-                <dxl:Ident ColId="16" ColName="h1" TypeMdid="0.23.1.0"/>
+              <dxl:ProjElem ColId="20" Alias="g1">
+                <dxl:Ident ColId="20" ColName="g1" TypeMdid="0.23.1.0"/>
               </dxl:ProjElem>
             </dxl:ProjList>
             <dxl:Filter/>
-            <dxl:TableDescriptor Mdid="0.57478.1.0" TableName="foo8">
+            <dxl:TableDescriptor Mdid="0.57485.1.0" TableName="foo9">
               <dxl:Columns>
-                <dxl:Column ColId="16" Attno="1" ColName="h1" TypeMdid="0.23.1.0" ColWidth="4"/>
-                <dxl:Column ColId="17" Attno="-1" ColName="ctid" TypeMdid="0.27.1.0" ColWidth="6"/>
-                <dxl:Column ColId="18" Attno="-7" ColName="tableoid" TypeMdid="0.26.1.0" ColWidth="4"/>
-                <dxl:Column ColId="19" Attno="-8" ColName="gp_segment_id" TypeMdid="0.23.1.0" ColWidth="4"/>
+                <dxl:Column ColId="20" Attno="1" ColName="g1" TypeMdid="0.23.1.0" ColWidth="4"/>
+                <dxl:Column ColId="21" Attno="-1" ColName="ctid" TypeMdid="0.27.1.0" ColWidth="6"/>
+                <dxl:Column ColId="22" Attno="-7" ColName="tableoid" TypeMdid="0.26.1.0" ColWidth="4"/>
+                <dxl:Column ColId="23" Attno="-8" ColName="gp_segment_id" TypeMdid="0.23.1.0" ColWidth="4"/>
               </dxl:Columns>
             </dxl:TableDescriptor>
           </dxl:TableScan>
           <dxl:BroadcastMotion InputSegments="0,1,2" OutputSegments="0,1,2">
             <dxl:Properties>
-              <dxl:Cost StartupCost="0" TotalCost="1731.468389" Rows="300.000000" Width="12"/>
+              <dxl:Cost StartupCost="0" TotalCost="1731.467447" Rows="291.047066" Width="12"/>
             </dxl:Properties>
             <dxl:ProjList>
               <dxl:ProjElem ColId="4" Alias="m1">
                 <dxl:Ident ColId="4" ColName="m1" TypeMdid="0.23.1.0"/>
               </dxl:ProjElem>
-              <dxl:ProjElem ColId="9" Alias="m6">
-                <dxl:Ident ColId="9" ColName="m6" TypeMdid="0.23.1.0"/>
+              <dxl:ProjElem ColId="5" Alias="m2">
+                <dxl:Ident ColId="5" ColName="m2" TypeMdid="0.23.1.0"/>
               </dxl:ProjElem>
               <dxl:ProjElem ColId="11" Alias="m8">
                 <dxl:Ident ColId="11" ColName="m8" TypeMdid="0.23.1.0"/>
@@ -3736,14 +3736,14 @@ INNER JOIN  (SELECT FOO10.i1 AS i1 FROM foo10 FOO10 WHERE FOO10.i2 = 'EN' ) FOO1
             <dxl:SortingColumnList/>
             <dxl:HashJoin JoinType="Inner">
               <dxl:Properties>
-                <dxl:Cost StartupCost="0" TotalCost="1731.446909" Rows="100.000000" Width="12"/>
+                <dxl:Cost StartupCost="0" TotalCost="1731.446608" Rows="97.015689" Width="12"/>
               </dxl:Properties>
               <dxl:ProjList>
                 <dxl:ProjElem ColId="4" Alias="m1">
                   <dxl:Ident ColId="4" ColName="m1" TypeMdid="0.23.1.0"/>
                 </dxl:ProjElem>
-                <dxl:ProjElem ColId="9" Alias="m6">
-                  <dxl:Ident ColId="9" ColName="m6" TypeMdid="0.23.1.0"/>
+                <dxl:ProjElem ColId="5" Alias="m2">
+                  <dxl:Ident ColId="5" ColName="m2" TypeMdid="0.23.1.0"/>
                 </dxl:ProjElem>
                 <dxl:ProjElem ColId="11" Alias="m8">
                   <dxl:Ident ColId="11" ColName="m8" TypeMdid="0.23.1.0"/>
@@ -3753,8 +3753,8 @@ INNER JOIN  (SELECT FOO10.i1 AS i1 FROM foo10 FOO10 WHERE FOO10.i2 = 'EN' ) FOO1
               <dxl:JoinFilter/>
               <dxl:HashCondList>
                 <dxl:Comparison ComparisonOperator="=" OperatorMdid="0.96.1.0">
-                  <dxl:Ident ColId="20" ColName="g1" TypeMdid="0.23.1.0"/>
-                  <dxl:Ident ColId="5" ColName="m2" TypeMdid="0.23.1.0"/>
+                  <dxl:Ident ColId="16" ColName="h1" TypeMdid="0.23.1.0"/>
+                  <dxl:Ident ColId="9" ColName="m6" TypeMdid="0.23.1.0"/>
                 </dxl:Comparison>
               </dxl:HashCondList>
               <dxl:TableScan>
@@ -3762,23 +3762,23 @@ INNER JOIN  (SELECT FOO10.i1 AS i1 FROM foo10 FOO10 WHERE FOO10.i2 = 'EN' ) FOO1
                   <dxl:Cost StartupCost="0" TotalCost="431.330000" Rows="100000.000000" Width="4"/>
                 </dxl:Properties>
                 <dxl:ProjList>
-                  <dxl:ProjElem ColId="20" Alias="g1">
-                    <dxl:Ident ColId="20" ColName="g1" TypeMdid="0.23.1.0"/>
+                  <dxl:ProjElem ColId="16" Alias="h1">
+                    <dxl:Ident ColId="16" ColName="h1" TypeMdid="0.23.1.0"/>
                   </dxl:ProjElem>
                 </dxl:ProjList>
                 <dxl:Filter/>
-                <dxl:TableDescriptor Mdid="0.57485.1.0" TableName="foo9">
+                <dxl:TableDescriptor Mdid="0.57478.1.0" TableName="foo8">
                   <dxl:Columns>
-                    <dxl:Column ColId="20" Attno="1" ColName="g1" TypeMdid="0.23.1.0" ColWidth="4"/>
-                    <dxl:Column ColId="21" Attno="-1" ColName="ctid" TypeMdid="0.27.1.0" ColWidth="6"/>
-                    <dxl:Column ColId="22" Attno="-7" ColName="tableoid" TypeMdid="0.26.1.0" ColWidth="4"/>
-                    <dxl:Column ColId="23" Attno="-8" ColName="gp_segment_id" TypeMdid="0.23.1.0" ColWidth="4"/>
+                    <dxl:Column ColId="16" Attno="1" ColName="h1" TypeMdid="0.23.1.0" ColWidth="4"/>
+                    <dxl:Column ColId="17" Attno="-1" ColName="ctid" TypeMdid="0.27.1.0" ColWidth="6"/>
+                    <dxl:Column ColId="18" Attno="-7" ColName="tableoid" TypeMdid="0.26.1.0" ColWidth="4"/>
+                    <dxl:Column ColId="19" Attno="-8" ColName="gp_segment_id" TypeMdid="0.23.1.0" ColWidth="4"/>
                   </dxl:Columns>
                 </dxl:TableDescriptor>
               </dxl:TableScan>
               <dxl:BroadcastMotion InputSegments="0,1,2" OutputSegments="0,1,2">
                 <dxl:Properties>
-                  <dxl:Cost StartupCost="0" TotalCost="1293.988344" Rows="30.000000" Width="16"/>
+                  <dxl:Cost StartupCost="0" TotalCost="1293.988177" Rows="29.403000" Width="16"/>
                 </dxl:Properties>
                 <dxl:ProjList>
                   <dxl:ProjElem ColId="4" Alias="m1">
@@ -3798,7 +3798,7 @@ INNER JOIN  (SELECT FOO10.i1 AS i1 FROM foo10 FOO10 WHERE FOO10.i2 = 'EN' ) FOO1
                 <dxl:SortingColumnList/>
                 <dxl:HashJoin JoinType="Inner">
                   <dxl:Properties>
-                    <dxl:Cost StartupCost="0" TotalCost="1293.985480" Rows="10.000000" Width="16"/>
+                    <dxl:Cost StartupCost="0" TotalCost="1293.985370" Rows="9.801000" Width="16"/>
                   </dxl:Properties>
                   <dxl:ProjList>
                     <dxl:ProjElem ColId="4" Alias="m1">
@@ -3824,7 +3824,7 @@ INNER JOIN  (SELECT FOO10.i1 AS i1 FROM foo10 FOO10 WHERE FOO10.i2 = 'EN' ) FOO1
                   </dxl:HashCondList>
                   <dxl:RedistributeMotion InputSegments="0,1,2" OutputSegments="0,1,2">
                     <dxl:Properties>
-                      <dxl:Cost StartupCost="0" TotalCost="862.905541" Rows="100.000000" Width="20"/>
+                      <dxl:Cost StartupCost="0" TotalCost="862.905496" Rows="99.000000" Width="20"/>
                     </dxl:Properties>
                     <dxl:ProjList>
                       <dxl:ProjElem ColId="4" Alias="m1">
@@ -3852,7 +3852,7 @@ INNER JOIN  (SELECT FOO10.i1 AS i1 FROM foo10 FOO10 WHERE FOO10.i2 = 'EN' ) FOO1
                     </dxl:HashExprList>
                     <dxl:HashJoin JoinType="Inner">
                       <dxl:Properties>
-                        <dxl:Cost StartupCost="0" TotalCost="862.903454" Rows="100.000000" Width="20"/>
+                        <dxl:Cost StartupCost="0" TotalCost="862.903431" Rows="99.000000" Width="20"/>
                       </dxl:Properties>
                       <dxl:ProjList>
                         <dxl:ProjElem ColId="4" Alias="m1">

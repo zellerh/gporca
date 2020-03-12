@@ -3436,7 +3436,7 @@
     <dxl:Plan Id="0" SpaceSize="196">
       <dxl:GatherMotion InputSegments="0,1" OutputSegments="-1">
         <dxl:Properties>
-          <dxl:Cost StartupCost="0" TotalCost="16.567860" Rows="15.000118" Width="4"/>
+          <dxl:Cost StartupCost="0" TotalCost="16.567857" Rows="15.000118" Width="4"/>
         </dxl:Properties>
         <dxl:ProjList>
           <dxl:ProjElem ColId="33" Alias="code">
@@ -3447,7 +3447,7 @@
         <dxl:SortingColumnList/>
         <dxl:Aggregate AggregationStrategy="Hashed" StreamSafe="false">
           <dxl:Properties>
-            <dxl:Cost StartupCost="0" TotalCost="14.479968" Rows="15.000118" Width="4"/>
+            <dxl:Cost StartupCost="0" TotalCost="14.479966" Rows="15.000118" Width="4"/>
           </dxl:Properties>
           <dxl:GroupingColumns>
             <dxl:GroupingColumn ColId="33"/>
@@ -3460,7 +3460,7 @@
           <dxl:Filter/>
           <dxl:RedistributeMotion InputSegments="0,1" OutputSegments="0,1">
             <dxl:Properties>
-              <dxl:Cost StartupCost="0" TotalCost="12.926467" Rows="63.348139" Width="4"/>
+              <dxl:Cost StartupCost="0" TotalCost="12.926466" Rows="63.347886" Width="4"/>
             </dxl:Properties>
             <dxl:ProjList>
               <dxl:ProjElem ColId="33" Alias="code">
@@ -3476,7 +3476,7 @@
             </dxl:HashExprList>
             <dxl:HashJoin JoinType="Inner">
               <dxl:Properties>
-                <dxl:Cost StartupCost="0" TotalCost="11.802740" Rows="63.348139" Width="4"/>
+                <dxl:Cost StartupCost="0" TotalCost="11.802740" Rows="63.347886" Width="4"/>
               </dxl:Properties>
               <dxl:ProjList>
                 <dxl:ProjElem ColId="33" Alias="code">

@@ -2010,7 +2010,7 @@
     <dxl:Plan Id="0" SpaceSize="150">
       <dxl:GatherMotion InputSegments="0,1,2" OutputSegments="-1">
         <dxl:Properties>
-          <dxl:Cost StartupCost="0" TotalCost="1324604.464841" Rows="728.177778" Width="28"/>
+          <dxl:Cost StartupCost="0" TotalCost="1324604.463660" Rows="719.561514" Width="28"/>
         </dxl:Properties>
         <dxl:ProjList>
           <dxl:ProjElem ColId="0" Alias="a">
@@ -2039,7 +2039,7 @@
         <dxl:SortingColumnList/>
         <dxl:HashJoin JoinType="Inner">
           <dxl:Properties>
-            <dxl:Cost StartupCost="0" TotalCost="1324604.388858" Rows="728.177778" Width="28"/>
+            <dxl:Cost StartupCost="0" TotalCost="1324604.388576" Rows="719.561514" Width="28"/>
           </dxl:Properties>
           <dxl:ProjList>
             <dxl:ProjElem ColId="0" Alias="a">
@@ -2156,7 +2156,7 @@
                     <dxl:CoerceViaIO TypeMdid="0.23.1.0" CoercionForm="1" Location="0">
                       <dxl:FuncExpr FuncId="0.1773.1.0" FuncRetSet="false" TypeMdid="0.25.1.0">
                         <dxl:Ident ColId="19" ColName="f" TypeMdid="0.23.1.0"/>
-                        <dxl:ConstValue TypeMdid="0.25.1.0" IsNull="false" Value="AAAABzk5OQ==" LintValue="724274224"/>
+                        <dxl:ConstValue TypeMdid="0.25.1.0" Value="AAAABzk5OQ==" LintValue="724274224"/>
                       </dxl:FuncExpr>
                     </dxl:CoerceViaIO>
                   </dxl:Comparison>
@@ -2165,7 +2165,7 @@
                     <dxl:CoerceViaIO TypeMdid="0.23.1.0" CoercionForm="1" Location="0">
                       <dxl:FuncExpr FuncId="0.1773.1.0" FuncRetSet="false" TypeMdid="0.25.1.0">
                         <dxl:Ident ColId="19" ColName="f" TypeMdid="0.23.1.0"/>
-                        <dxl:ConstValue TypeMdid="0.25.1.0" IsNull="false" Value="AAAABzk5OQ==" LintValue="724274224"/>
+                        <dxl:ConstValue TypeMdid="0.25.1.0" Value="AAAABzk5OQ==" LintValue="724274224"/>
                       </dxl:FuncExpr>
                     </dxl:CoerceViaIO>
                   </dxl:Comparison>
@@ -2184,7 +2184,7 @@
                   </dxl:ProjElem>
                 </dxl:ProjList>
                 <dxl:PartEqFilters>
-                  <dxl:ConstValue TypeMdid="0.16.1.0" IsNull="false" Value="true"/>
+                  <dxl:ConstValue TypeMdid="0.16.1.0" Value="true"/>
                 </dxl:PartEqFilters>
                 <dxl:PartFilters>
                   <dxl:Or>
@@ -2196,7 +2196,7 @@
                             <dxl:CoerceViaIO TypeMdid="0.23.1.0" CoercionForm="1" Location="0">
                               <dxl:FuncExpr FuncId="0.1773.1.0" FuncRetSet="false" TypeMdid="0.25.1.0">
                                 <dxl:Ident ColId="19" ColName="f" TypeMdid="0.23.1.0"/>
-                                <dxl:ConstValue TypeMdid="0.25.1.0" IsNull="false" Value="AAAABzk5OQ==" LintValue="724274224"/>
+                                <dxl:ConstValue TypeMdid="0.25.1.0" Value="AAAABzk5OQ==" LintValue="724274224"/>
                               </dxl:FuncExpr>
                             </dxl:CoerceViaIO>
                           </dxl:Comparison>
@@ -2207,7 +2207,7 @@
                           <dxl:CoerceViaIO TypeMdid="0.23.1.0" CoercionForm="1" Location="0">
                             <dxl:FuncExpr FuncId="0.1773.1.0" FuncRetSet="false" TypeMdid="0.25.1.0">
                               <dxl:Ident ColId="19" ColName="f" TypeMdid="0.23.1.0"/>
-                              <dxl:ConstValue TypeMdid="0.25.1.0" IsNull="false" Value="AAAABzk5OQ==" LintValue="724274224"/>
+                              <dxl:ConstValue TypeMdid="0.25.1.0" Value="AAAABzk5OQ==" LintValue="724274224"/>
                             </dxl:FuncExpr>
                           </dxl:CoerceViaIO>
                         </dxl:Comparison>
@@ -2219,7 +2219,7 @@
                             <dxl:CoerceViaIO TypeMdid="0.23.1.0" CoercionForm="1" Location="0">
                               <dxl:FuncExpr FuncId="0.1773.1.0" FuncRetSet="false" TypeMdid="0.25.1.0">
                                 <dxl:Ident ColId="19" ColName="f" TypeMdid="0.23.1.0"/>
-                                <dxl:ConstValue TypeMdid="0.25.1.0" IsNull="false" Value="AAAABzk5OQ==" LintValue="724274224"/>
+                                <dxl:ConstValue TypeMdid="0.25.1.0" Value="AAAABzk5OQ==" LintValue="724274224"/>
                               </dxl:FuncExpr>
                             </dxl:CoerceViaIO>
                           </dxl:Comparison>
@@ -2230,7 +2230,7 @@
                           <dxl:CoerceViaIO TypeMdid="0.23.1.0" CoercionForm="1" Location="0">
                             <dxl:FuncExpr FuncId="0.1773.1.0" FuncRetSet="false" TypeMdid="0.25.1.0">
                               <dxl:Ident ColId="19" ColName="f" TypeMdid="0.23.1.0"/>
-                              <dxl:ConstValue TypeMdid="0.25.1.0" IsNull="false" Value="AAAABzk5OQ==" LintValue="724274224"/>
+                              <dxl:ConstValue TypeMdid="0.25.1.0" Value="AAAABzk5OQ==" LintValue="724274224"/>
                             </dxl:FuncExpr>
                           </dxl:CoerceViaIO>
                         </dxl:Comparison>
@@ -2246,10 +2246,10 @@
                   </dxl:Or>
                 </dxl:PartFilters>
                 <dxl:ResidualFilter>
-                  <dxl:ConstValue TypeMdid="0.16.1.0" IsNull="false" Value="true"/>
+                  <dxl:ConstValue TypeMdid="0.16.1.0" Value="true"/>
                 </dxl:ResidualFilter>
                 <dxl:PropagationExpression>
-                  <dxl:ConstValue TypeMdid="0.23.1.0" IsNull="false" Value="1"/>
+                  <dxl:ConstValue TypeMdid="0.23.1.0" Value="1"/>
                 </dxl:PropagationExpression>
                 <dxl:PrintableFilter>
                   <dxl:And>
@@ -2258,7 +2258,7 @@
                       <dxl:CoerceViaIO TypeMdid="0.23.1.0" CoercionForm="1" Location="0">
                         <dxl:FuncExpr FuncId="0.1773.1.0" FuncRetSet="false" TypeMdid="0.25.1.0">
                           <dxl:Ident ColId="19" ColName="f" TypeMdid="0.23.1.0"/>
-                          <dxl:ConstValue TypeMdid="0.25.1.0" IsNull="false" Value="AAAABzk5OQ==" LintValue="724274224"/>
+                          <dxl:ConstValue TypeMdid="0.25.1.0" Value="AAAABzk5OQ==" LintValue="724274224"/>
                         </dxl:FuncExpr>
                       </dxl:CoerceViaIO>
                     </dxl:Comparison>
@@ -2267,7 +2267,7 @@
                       <dxl:CoerceViaIO TypeMdid="0.23.1.0" CoercionForm="1" Location="0">
                         <dxl:FuncExpr FuncId="0.1773.1.0" FuncRetSet="false" TypeMdid="0.25.1.0">
                           <dxl:Ident ColId="19" ColName="f" TypeMdid="0.23.1.0"/>
-                          <dxl:ConstValue TypeMdid="0.25.1.0" IsNull="false" Value="AAAABzk5OQ==" LintValue="724274224"/>
+                          <dxl:ConstValue TypeMdid="0.25.1.0" Value="AAAABzk5OQ==" LintValue="724274224"/>
                         </dxl:FuncExpr>
                       </dxl:CoerceViaIO>
                     </dxl:Comparison>

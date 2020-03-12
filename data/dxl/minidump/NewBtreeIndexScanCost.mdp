@@ -4175,7 +4175,7 @@ explain select *  from oip oip  join ria a on ip=cidr and oip.oid=194073;
     <dxl:Plan Id="0" SpaceSize="16">
       <dxl:GatherMotion InputSegments="0,1,2" OutputSegments="-1">
         <dxl:Properties>
-          <dxl:Cost StartupCost="0" TotalCost="4402.991811" Rows="2284199.908555" Width="156"/>
+          <dxl:Cost StartupCost="0" TotalCost="4058.406310" Rows="1967341.619931" Width="156"/>
         </dxl:Properties>
         <dxl:ProjList>
           <dxl:ProjElem ColId="0" Alias="id">
@@ -4250,9 +4250,9 @@ explain select *  from oip oip  join ria a on ip=cidr and oip.oid=194073;
         </dxl:ProjList>
         <dxl:Filter/>
         <dxl:SortingColumnList/>
-        <dxl:NestedLoopJoin JoinType="Inner" IndexNestedLoopJoin="true">
+        <dxl:NestedLoopJoin JoinType="Inner" IndexNestedLoopJoin="true" OuterRefAsParam="false">
           <dxl:Properties>
-            <dxl:Cost StartupCost="0" TotalCost="3075.049352" Rows="2284199.908555" Width="156"/>
+            <dxl:Cost StartupCost="0" TotalCost="2914.672586" Rows="1967341.619931" Width="156"/>
           </dxl:Properties>
           <dxl:ProjList>
             <dxl:ProjElem ColId="0" Alias="id">
@@ -4427,7 +4427,7 @@ explain select *  from oip oip  join ria a on ip=cidr and oip.oid=194073;
           </dxl:BroadcastMotion>
           <dxl:Sequence>
             <dxl:Properties>
-              <dxl:Cost StartupCost="0" TotalCost="1890.606295" Rows="9908.370184" Width="107"/>
+              <dxl:Cost StartupCost="0" TotalCost="1820.219395" Rows="8533.906764" Width="107"/>
             </dxl:Properties>
             <dxl:ProjList>
               <dxl:ProjElem ColId="16" Alias="id">
@@ -4496,7 +4496,7 @@ explain select *  from oip oip  join ria a on ip=cidr and oip.oid=194073;
             </dxl:PartitionSelector>
             <dxl:DynamicIndexScan IndexScanDirection="Forward" PartIndexId="1">
               <dxl:Properties>
-                <dxl:Cost StartupCost="0" TotalCost="1890.606295" Rows="9908.370184" Width="107"/>
+                <dxl:Cost StartupCost="0" TotalCost="1820.219395" Rows="8533.906764" Width="107"/>
               </dxl:Properties>
               <dxl:ProjList>
                 <dxl:ProjElem ColId="16" Alias="id">

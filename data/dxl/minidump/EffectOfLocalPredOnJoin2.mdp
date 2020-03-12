@@ -10287,7 +10287,7 @@
     <dxl:Plan Id="0" SpaceSize="41">
       <dxl:GatherMotion InputSegments="0,1" OutputSegments="-1">
         <dxl:Properties>
-          <dxl:Cost StartupCost="0" TotalCost="888.989563" Rows="3866.533707" Width="116"/>
+          <dxl:Cost StartupCost="0" TotalCost="36.220038" Rows="102.585460" Width="116"/>
         </dxl:Properties>
         <dxl:ProjList>
           <dxl:ProjElem ColId="0" Alias="sr_returned_date_sk">
@@ -10355,7 +10355,7 @@
         <dxl:SortingColumnList/>
         <dxl:HashJoin JoinType="In">
           <dxl:Properties>
-            <dxl:Cost StartupCost="0" TotalCost="668.986677" Rows="3866.533707" Width="116"/>
+            <dxl:Cost StartupCost="0" TotalCost="29.409533" Rows="102.585460" Width="116"/>
           </dxl:Properties>
           <dxl:ProjList>
             <dxl:ProjElem ColId="0" Alias="sr_returned_date_sk">
@@ -10429,7 +10429,7 @@
           </dxl:HashCondList>
           <dxl:DynamicTableScan PartIndexId="1">
             <dxl:Properties>
-              <dxl:Cost StartupCost="0" TotalCost="219.002886" Rows="3866.533707" Width="116"/>
+              <dxl:Cost StartupCost="0" TotalCost="5.810505" Rows="102.585460" Width="116"/>
             </dxl:Properties>
             <dxl:ProjList>
               <dxl:ProjElem ColId="0" Alias="sr_returned_date_sk">

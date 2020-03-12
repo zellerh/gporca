@@ -805,7 +805,7 @@
     <dxl:Plan Id="0" SpaceSize="17">
       <dxl:GatherMotion InputSegments="0,1" OutputSegments="-1">
         <dxl:Properties>
-          <dxl:Cost StartupCost="0" TotalCost="52.876302" Rows="100.000000" Width="16"/>
+          <dxl:Cost StartupCost="0" TotalCost="41.186651" Rows="25.434787" Width="16"/>
         </dxl:Properties>
         <dxl:ProjList>
           <dxl:ProjElem ColId="0" Alias="i">
@@ -823,9 +823,9 @@
         </dxl:ProjList>
         <dxl:Filter/>
         <dxl:SortingColumnList/>
-        <dxl:NestedLoopJoin JoinType="Inner" IndexNestedLoopJoin="true">
+        <dxl:NestedLoopJoin JoinType="Inner" IndexNestedLoopJoin="true" OuterRefAsParam="false">
           <dxl:Properties>
-            <dxl:Cost StartupCost="0" TotalCost="51.095052" Rows="100.000000" Width="16"/>
+            <dxl:Cost StartupCost="0" TotalCost="39.987942" Rows="25.434787" Width="16"/>
           </dxl:Properties>
           <dxl:ProjList>
             <dxl:ProjElem ColId="0" Alias="i">
@@ -874,7 +874,7 @@
           </dxl:TableScan>
           <dxl:IndexScan IndexScanDirection="Forward">
             <dxl:Properties>
-              <dxl:Cost StartupCost="0" TotalCost="13.333333" Rows="0.011098" Width="8"/>
+              <dxl:Cost StartupCost="0" TotalCost="3.391305" Rows="0.002823" Width="8"/>
             </dxl:Properties>
             <dxl:ProjList>
               <dxl:ProjElem ColId="0" Alias="i">

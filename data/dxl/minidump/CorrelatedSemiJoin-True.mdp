@@ -889,7 +889,7 @@ SELECT pn, cn, vn FROM sale s WHERE EXISTS (SELECT * FROM customer WHERE EXISTS 
             </dxl:ParamList>
             <dxl:Result>
               <dxl:Properties>
-                <dxl:Cost StartupCost="0" TotalCost="1293.003213" Rows="4.000000" Width="4"/>
+                <dxl:Cost StartupCost="0" TotalCost="1293.003213" Rows="3.996000" Width="4"/>
               </dxl:Properties>
               <dxl:ProjList>
                 <dxl:ProjElem ColId="13" Alias="cn">

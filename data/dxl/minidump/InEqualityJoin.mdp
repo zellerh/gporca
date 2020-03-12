@@ -9994,7 +9994,7 @@
     <dxl:Plan Id="0" SpaceSize="6">
       <dxl:GatherMotion InputSegments="0,1" OutputSegments="-1">
         <dxl:Properties>
-          <dxl:Cost StartupCost="0" TotalCost="1630541875973909504.000000" Rows="28304179680000000.000000" Width="16"/>
+          <dxl:Cost StartupCost="0" TotalCost="1630541872872637184.000000" Rows="28303782717129312.000000" Width="16"/>
         </dxl:Properties>
         <dxl:ProjList>
           <dxl:ProjElem ColId="17" Alias="ws_order_number">
@@ -10011,7 +10011,7 @@
         <dxl:SortingColumnList/>
         <dxl:NestedLoopJoin JoinType="Inner" IndexNestedLoopJoin="false" OuterRefAsParam="false">
           <dxl:Properties>
-            <dxl:Cost StartupCost="0" TotalCost="1630320749570159616.000000" Rows="28304179680000000.000000" Width="16"/>
+            <dxl:Cost StartupCost="0" TotalCost="1630320749570159616.000000" Rows="28303782717129312.000000" Width="16"/>
           </dxl:Properties>
           <dxl:ProjList>
             <dxl:ProjElem ColId="17" Alias="ws_order_number">

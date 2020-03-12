@@ -772,7 +772,7 @@
     <dxl:Plan Id="0" SpaceSize="1">
       <dxl:Result>
         <dxl:Properties>
-          <dxl:Cost StartupCost="0" TotalCost="771.863300" Rows="10.000000" Width="8"/>
+          <dxl:Cost StartupCost="0" TotalCost="771.949242" Rows="10.000000" Width="8"/>
         </dxl:Properties>
         <dxl:ProjList>
           <dxl:ProjElem ColId="22" Alias="?column?">
@@ -783,7 +783,7 @@
               </dxl:ParamList>
               <dxl:Result>
                 <dxl:Properties>
-                  <dxl:Cost StartupCost="0" TotalCost="128.667988" Rows="1.000000" Width="8"/>
+                  <dxl:Cost StartupCost="0" TotalCost="128.753930" Rows="1.000000" Width="8"/>
                 </dxl:Properties>
                 <dxl:ProjList>
                   <dxl:ProjElem ColId="21" Alias="?column?">
@@ -796,7 +796,7 @@
                         </dxl:ParamList>
                         <dxl:Result>
                           <dxl:Properties>
-                            <dxl:Cost StartupCost="0" TotalCost="110.650410" Rows="1.000000" Width="8"/>
+                            <dxl:Cost StartupCost="0" TotalCost="110.736352" Rows="1.000000" Width="8"/>
                           </dxl:Properties>
                           <dxl:ProjList>
                             <dxl:ProjElem ColId="20" Alias="?column?">
@@ -810,7 +810,7 @@
                           <dxl:OneTimeFilter/>
                           <dxl:Aggregate AggregationStrategy="Plain" StreamSafe="false">
                             <dxl:Properties>
-                              <dxl:Cost StartupCost="0" TotalCost="109.634785" Rows="1.000000" Width="8"/>
+                              <dxl:Cost StartupCost="0" TotalCost="109.720727" Rows="1.000000" Width="8"/>
                             </dxl:Properties>
                             <dxl:GroupingColumns/>
                             <dxl:ProjList>
@@ -821,7 +821,7 @@
                             <dxl:Filter/>
                             <dxl:Result>
                               <dxl:Properties>
-                                <dxl:Cost StartupCost="0" TotalCost="108.617205" Rows="1.000889" Width="1"/>
+                                <dxl:Cost StartupCost="0" TotalCost="108.695334" Rows="5.001105" Width="1"/>
                               </dxl:Properties>
                               <dxl:ProjList/>
                               <dxl:Filter>

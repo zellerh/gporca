@@ -953,7 +953,7 @@ SELECT pn, cn, vn FROM sale s WHERE NOT EXISTS (SELECT * FROM customer WHERE NOT
               </dxl:Materialize>
               <dxl:Result>
                 <dxl:Properties>
-                  <dxl:Cost StartupCost="0" TotalCost="431.025576" Rows="1.000000" Width="1"/>
+                  <dxl:Cost StartupCost="0" TotalCost="431.025576" Rows="0.999000" Width="1"/>
                 </dxl:Properties>
                 <dxl:ProjList/>
                 <dxl:Filter>
