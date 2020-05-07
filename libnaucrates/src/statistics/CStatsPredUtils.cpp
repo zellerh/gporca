@@ -54,34 +54,29 @@ CStatsPredUtils::StatsCmpType
 
 	CStatsPred::EStatsCmpType stats_cmp_type = CStatsPred::EstatscmptOther;
 
+	CWStringConst str_eq(GPOS_WSZ_LIT("="));
 	CWStringConst str_lt(GPOS_WSZ_LIT("<"));
 	CWStringConst str_leq(GPOS_WSZ_LIT("<="));
-	CWStringConst str_eq(GPOS_WSZ_LIT("="));
 	CWStringConst str_geq(GPOS_WSZ_LIT(">="));
 	CWStringConst str_gt(GPOS_WSZ_LIT(">"));
 	CWStringConst str_neq(GPOS_WSZ_LIT("<>"));
 
-	if (str_opname->Equals(&str_lt))
-	{
-		stats_cmp_type = CStatsPred::EstatscmptL;
-	}
-	if (str_opname->Equals(&str_leq))
-	{
-		stats_cmp_type = CStatsPred::EstatscmptLEq;
-	}
 	if (str_opname->Equals(&str_eq))
 	{
 		stats_cmp_type = CStatsPred::EstatscmptEq;
-	}
-	if (str_opname->Equals(&str_geq))
+	} else if (str_opname->Equals(&str_lt))
+	{
+		stats_cmp_type = CStatsPred::EstatscmptL;
+	} else if (str_opname->Equals(&str_leq))
+	{
+		stats_cmp_type = CStatsPred::EstatscmptLEq;
+	} else if (str_opname->Equals(&str_geq))
 	{
 		stats_cmp_type = CStatsPred::EstatscmptGEq;
-	}
-	if (str_opname->Equals(&str_gt))
+	} else if (str_opname->Equals(&str_gt))
 	{
 		stats_cmp_type = CStatsPred::EstatscmptG;
-	}
-	if (str_opname->Equals(&str_neq))
+	} else if (str_opname->Equals(&str_neq))
 	{
 		stats_cmp_type = CStatsPred::EstatscmptNEq;
 	}
