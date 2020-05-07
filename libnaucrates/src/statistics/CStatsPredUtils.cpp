@@ -1119,6 +1119,7 @@ CStatsPredUtils::ExtractJoinStatsFromJoinPred
 	CExpression *join_pred_expr,
 	CColRefSetArray *output_col_refsets,  // array of output columns of join's relational inputs
 	CColRefSet *outer_refs,
+	BOOL is_semi_or_anti_join,
 	CExpressionArray *unsupported_expr_array
 	)
 {
@@ -1197,6 +1198,7 @@ CStatsPredUtils::ExtractJoinStatsFromJoinPredArray
 	CExpression *scalar_expr,
 	CColRefSetArray *output_col_refsets,  // array of output columns of join's relational inputs
 	CColRefSet *outer_refs,
+	BOOL is_semi_or_antijoin,
 	CStatsPred **unsupported_stats_pred_array
 	)
 {
@@ -1219,6 +1221,7 @@ CStatsPredUtils::ExtractJoinStatsFromJoinPredArray
 										predicate_expr,
 										output_col_refsets,
 										outer_refs,
+										is_semi_or_antijoin,
 										unsupported_expr_array
 										);
 		if (NULL != join_stats)
@@ -1263,7 +1266,8 @@ CStatsPredUtils::ExtractJoinStatsFromExpr
 	CExpressionHandle &expr_handle,
 	CExpression *pexprScalarInput,
 	CColRefSetArray *output_col_refsets, // array of output columns of join's relational inputs
-	CColRefSet *outer_refs
+	CColRefSet *outer_refs,
+	BOOL is_semi_or_anti_join
 	)
 {
 	GPOS_ASSERT(NULL != output_col_refsets);
@@ -1279,6 +1283,7 @@ CStatsPredUtils::ExtractJoinStatsFromExpr
 										scalar_expr,
 										output_col_refsets,
 										outer_refs,
+										is_semi_or_anti_join,
 										&unsupported_pred_stats
 										);
 
@@ -1302,8 +1307,9 @@ CStatsPredUtils::ExtractJoinStatsFromExpr
 CStatsPredJoinArray *
 CStatsPredUtils::ExtractJoinStatsFromExprHandle
 	(
-	CMemoryPool *mp,
-	CExpressionHandle &expr_handle
+	 CMemoryPool *mp,
+	 CExpressionHandle &expr_handle,
+	 BOOL is_semi_or_anti_join
 	)
 {
 	// in case of subquery in join predicate, we return empty stats
@@ -1325,7 +1331,15 @@ CStatsPredUtils::ExtractJoinStatsFromExprHandle
 	CExpression *scalar_expr = expr_handle.PexprScalarChild(expr_handle.Arity() - 1);
 	CColRefSet *outer_refs = expr_handle.DeriveOuterReferences();
 
-	CStatsPredJoinArray *join_pred_stats = ExtractJoinStatsFromExpr(mp, expr_handle, scalar_expr, output_col_refsets, outer_refs);
+	CStatsPredJoinArray *join_pred_stats = ExtractJoinStatsFromExpr
+											(
+											 mp,
+											 expr_handle,
+											 scalar_expr,
+											 output_col_refsets,
+											 outer_refs,
+											 is_semi_or_anti_join
+											);
 
 	// clean up
 	output_col_refsets->Release();

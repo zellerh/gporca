@@ -214,6 +214,7 @@ CJoinStatsProcessor::CalcAllJoinStats
 			 join_preds_available,
 			 output_colrefsets,
 			 outer_refs,
+			 is_a_left_join, // left joins use an anti-semijoin internally
 			 &unsupported_pred_stats
 			);
 

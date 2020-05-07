@@ -180,14 +180,20 @@ namespace gpopt
 								(
 								CMemoryPool *mp,
 								CExpression *scalar_expr,
-			CColRefSetArray *output_col_refset,  // array of output columns of join's relational inputs
+								CColRefSetArray *output_col_refset,  // array of output columns of join's relational inputs
 								CColRefSet *outer_refs,
+								BOOL is_semi_or_anti_join,
 								CStatsPred **unsupported_pred_stats
 								);
 
 			// helper function to extract array of statistics join filter from an expression handle
 			static
-			CStatsPredJoinArray *ExtractJoinStatsFromExprHandle(CMemoryPool *mp, CExpressionHandle &expr_handle);
+			CStatsPredJoinArray *ExtractJoinStatsFromExprHandle
+								(
+								CMemoryPool *mp,
+								CExpressionHandle &expr_handle,
+								BOOL is_semi_or_anti_join
+								);
 
 			// helper function to extract array of statistics join filter from an expression
 			static
@@ -197,7 +203,8 @@ namespace gpopt
 								CExpressionHandle &expr_handle,
 								CExpression *scalar_expression,
 								CColRefSetArray *output_col_refset,
-								CColRefSet *outer_refs
+								CColRefSet *outer_refs,
+								BOOL is_semi_or_anti_join
 								);
 
 			// is the predicate a conjunctive or disjunctive predicate

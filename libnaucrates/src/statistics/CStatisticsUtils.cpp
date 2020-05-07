@@ -1176,6 +1176,7 @@ CStatisticsUtils::DeriveStatsForDynamicScan
 														scalar_expr,
 														output_colrefs,
 														outer_refs,
+														true, // semi-join
 														&unsupported_pred_stats
 														);
 
