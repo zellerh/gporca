@@ -140,32 +140,40 @@ namespace gpopt
 			static
 			CStatsPred::EStatsCmpType GetStatsCmpType(IMDId *mdid);
 
-			// derive whether it is EstatscmptEqNDVInner or EstatscmptEqNDVOuter
-			static
-			CStatsPred::EStatsCmpType DeriveStatCmpEqNDVType ( ULONG left_index, ULONG right_index, BOOL left_is_null, BOOL right_is_null);
-
 			// helper function to extract statistics join filter from a given join predicate
 			static
 			CStatsPredJoin *ExtractJoinStatsFromJoinPred
 								(
 								CMemoryPool *mp,
 								CExpression *join_predicate_expr,
-			CColRefSetArray *join_output_col_refset,  // array of output columns of join's relational inputs
+								CColRefSetArray *join_output_col_refset,  // array of output columns of join's relational inputs
 								CColRefSet *outer_refs,
+								BOOL is_semi_or_anti_join,
 								CExpressionArray *unsupported_predicates_expr
 								);
 
-			// is the expression a comparison of scalar idents (or casted scalar idents).
-			// If so, extract relevant info.
+			// Is the expression a comparison of scalar idents (or casted scalar idents),
+			// or of other supported expressions? If so, extract relevant info.
 			static
-			BOOL IsPredCmpColsOrIgnoreCast
+			BOOL IsJoinPredSupportedForStatsEstimation
 				(
 				CExpression *expr,
-				const CColRef **col_ref1,
+				CColRefSetArray *output_col_refsets,  // array of output columns of join's relational inputs
+				BOOL is_semi_or_anti_join,
+				const CColRef **col_ref_outer,
 				CStatsPred::EStatsCmpType *stats_pred_cmp_type,
-				const CColRef **col_ref2,
-				BOOL &left_is_null,
-				BOOL &right_is_null
+				const CColRef **col_ref_inner
+				);
+
+			// find out whether one of the input expressions refers only to the inner table and the other
+			// refers only to the outer table, and return which is which
+			static BOOL AssignExprsToOuterAndInner
+				(
+				CColRefSetArray *output_col_refsets,  // array of output columns of join's relational inputs
+				CExpression *expr_1,
+				CExpression *expr_2,
+				CExpression **outer_expr,
+				CExpression **inner_expr
 				);
 
 		public:
