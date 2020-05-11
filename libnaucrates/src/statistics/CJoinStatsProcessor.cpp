@@ -333,7 +333,6 @@ CJoinStatsProcessor::SetResultingJoinStats
 	for (ULONG i = 0; i < num_join_conds; i++)
 	{
 		CStatsPredJoin *pred_info = (*join_pred_stats_info)[i];
-		CStatsPred::EStatsCmpType stats_cmp_type = pred_info->GetCmpType();
 		ULONG colid1 = pred_info->ColIdOuter();
 		ULONG colid2 = pred_info->ColIdInner();
 		GPOS_ASSERT(colid1 != colid2);
@@ -362,13 +361,13 @@ CJoinStatsProcessor::SetResultingJoinStats
 		// we calculate the NDV of such a join as NDV(b) ( from Selinger et al.)
 		if (NULL == outer_histogram)
 		{
-			GPOS_ASSERT(CStatsPred::EstatscmptEqNDV == stats_cmp_type);
+			GPOS_ASSERT(CStatsPred::EstatscmptEqNDV == pred_info->GetCmpType());
 			outer_histogram = inner_histogram;
 			colid1 = colid2;
 		}
 		else if (NULL == inner_histogram)
 		{
-			GPOS_ASSERT(CStatsPred::EstatscmptEqNDV == stats_cmp_type);
+			GPOS_ASSERT(CStatsPred::EstatscmptEqNDV == pred_info->GetCmpType());
 			inner_histogram = outer_histogram;
 			colid2 = colid1;
 		}
