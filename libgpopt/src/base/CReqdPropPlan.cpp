@@ -672,13 +672,17 @@ CReqdPropPlan::OsPrint
 	)
 	const
 {
-	os << "req cols: [";
-	if (NULL != m_pcrs)
+	if (GPOS_FTRACE(EopttracePrintRequiredColumns))
 	{
-		os << (*m_pcrs);
+		os << "req cols: [";
+		if (NULL != m_pcrs)
+		{
+			os << (*m_pcrs);
+		}
+		os << "], ";
 	}
 
-	os << "], req CTEs: [";
+	os << "req CTEs: [";
 	if (NULL != m_pcter)
 	{
 		os << (*m_pcter);
