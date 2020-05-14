@@ -329,13 +329,13 @@ namespace gpopt
 				);
 
 			// print scalar group properties
-			IOstream &OsPrintGrpScalarProps(IOstream &os, const CHAR *szPrefix);
+			IOstream &OsPrintGrpScalarProps(IOstream &os, const CHAR *szPrefix) const;
 
 			// print group properties
-			IOstream &OsPrintGrpProps(IOstream &os, const CHAR *szPrefix);
+			IOstream &OsPrintGrpProps(IOstream &os, const CHAR *szPrefix) const;
 
 			// print group optimization contexts
-			IOstream &OsPrintGrpOptCtxts(IOstream &os, const CHAR *szPrefix);
+			IOstream &OsPrintGrpOptCtxts(IOstream &os, const CHAR *szPrefix) const;
 
 			// initialize and return empty stats for this group
 			IStatistics *PstatsInitEmpty(CMemoryPool *pmpGlobal);
@@ -605,14 +605,15 @@ namespace gpopt
 				);
 
 			// print function
-			IOstream &OsPrint(IOstream &os);
+			virtual
+			IOstream &OsPrint(IOstream &os) const;
 
 			// slink for group list in memo
 			SLink m_link;
 
 #ifdef GPOS_DEBUG
 			// debug print; for interactive debugging sessions only
-			void DbgPrint();
+			void DbgPrintWithProperties();
 #endif
 
 	}; // class CGroup

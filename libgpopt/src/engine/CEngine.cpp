@@ -2437,7 +2437,7 @@ CEngine::PrintOptCtxts()
 	GPOS_ASSERT(NULL != poc);
 
 	at.Os() << std::endl << "Main Opt Ctxt:" << std::endl;
-	(void) poc->OsPrint(at.Os(), " ");
+	(void) poc->OsPrintWithPrefix(at.Os(), " ");
 	at.Os() << std::endl;
 	at.Os() << "Optimal Cost Ctxt:" << std::endl;
 	(void) poc->PccBest()->OsPrint(at.Os());
