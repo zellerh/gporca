@@ -614,6 +614,8 @@ namespace gpopt
 #ifdef GPOS_DEBUG
 			// debug print; for interactive debugging sessions only
 			void DbgPrintWithProperties();
+
+			COptimizationContext *Ppoc(ULONG i) const;
 #endif
 
 	}; // class CGroup
