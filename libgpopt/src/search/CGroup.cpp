@@ -415,6 +415,35 @@ CGroup::PocLookupBest
 
 //---------------------------------------------------------------------------
 //	@function:
+//		CGroup::Ppoc
+//
+//	@doc:
+//		Lookup a context by id
+//
+//---------------------------------------------------------------------------
+COptimizationContext *
+CGroup::Ppoc(ULONG id) const
+{
+	COptimizationContext *poc = NULL;
+	ShtIter shtit(const_cast<CGroup *>(this)->m_sht);
+	while (shtit.Advance())
+	{
+		{
+			ShtAccIter shtitacc(shtit);
+			poc = shtitacc.Value();
+
+			if (poc->Id() == id)
+			{
+				return poc;
+			}
+		}
+	}
+	return NULL;
+}
+
+
+//---------------------------------------------------------------------------
+//	@function:
 //		CGroup::PocInsert
 //
 //	@doc:
@@ -2179,26 +2208,6 @@ CGroup::DbgPrintWithProperties()
 	CAutoTraceFlag atf(EopttracePrintGroupProperties, true);
 	CAutoTrace at(m_mp);
 	(void) this->OsPrint(at.Os());
-}
-
-COptimizationContext *
-CGroup::Ppoc(ULONG i) const
-{
-	COptimizationContext *poc = NULL;
-	ShtIter shtit(const_cast<CGroup *>(this)->m_sht);
-	while (shtit.Advance())
-	{
-		{
-			ShtAccIter shtitacc(shtit);
-			poc = shtitacc.Value();
-
-			if (poc->Id() == i)
-			{
-				return poc;
-			}
-		}
-	}
-	return NULL;
 }
 
 #endif
