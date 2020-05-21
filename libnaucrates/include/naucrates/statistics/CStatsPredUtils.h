@@ -160,13 +160,13 @@ namespace gpopt
 				CExpression *expr,
 				CColRefSetArray *output_col_refsets,  // array of output columns of join's relational inputs
 				BOOL is_semi_or_anti_join,
-				const CColRef **col_ref_outer,
 				CStatsPred::EStatsCmpType *stats_pred_cmp_type,
+				const CColRef **col_ref_outer,
 				const CColRef **col_ref_inner
 				);
 
-			// find out whether one of the input expressions refers only to the inner table and the other
-			// refers only to the outer table, and return which is which
+			// find out which input expression refers only to the inner table and which
+			// refers only to the outer table, and return accordingly
 			static BOOL AssignExprsToOuterAndInner
 				(
 				CColRefSetArray *output_col_refsets,  // array of output columns of join's relational inputs

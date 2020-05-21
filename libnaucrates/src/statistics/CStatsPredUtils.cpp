@@ -349,8 +349,8 @@ CStatsPredUtils::IsJoinPredSupportedForStatsEstimation
 	CExpression *expr,
 	CColRefSetArray *output_col_refsets,  // array of output columns of join's relational inputs
 	BOOL is_semi_or_anti_join,
-	const CColRef **col_ref_outer,
 	CStatsPred::EStatsCmpType *stats_pred_cmp_type,
+	const CColRef **col_ref_outer,
 	const CColRef **col_ref_inner
 	)
 {
@@ -366,9 +366,10 @@ CStatsPredUtils::IsJoinPredSupportedForStatsEstimation
 	// left and right children of our join pred operator
 	CExpression *expr_left = NULL;
 	CExpression *expr_right = NULL;
-	// expr_left and expr_right associated with the outer and inner tables
-	CExpression *expr_outer = NULL;
-	CExpression *expr_inner = NULL;
+
+	// initialize output parameters
+	*col_ref_inner = NULL;
+	*col_ref_outer = NULL;
 
 	if (!is_scalar_cmp && !is_INDF && !is_IDF)
 	{
@@ -404,7 +405,11 @@ CStatsPredUtils::IsJoinPredSupportedForStatsEstimation
 		expr_right = (*expr)[1];
 	}
 
-	if (!AssignExprsToOuterAndInner(output_col_refsets, expr_left, expr_right, &expr_outer, &expr_inner))
+	// expr_left and expr_right associated with the outer and inner tables
+	CExpression *assigned_expr_outer = NULL;
+	CExpression *assigned_expr_inner = NULL;
+
+	if (!AssignExprsToOuterAndInner(output_col_refsets, expr_left, expr_right, &assigned_expr_outer, &assigned_expr_inner))
 	{
 		// we are not dealing with a join predicate where one side of the operator
 		// refers to the outer table and the other side refers to the inner
@@ -413,8 +418,8 @@ CStatsPredUtils::IsJoinPredSupportedForStatsEstimation
 
 	// check whether left or right expressions are simple columns or casts
 	// of simple columns
-	(*col_ref_outer) = CCastUtils::PcrExtractFromScIdOrCastScId(expr_outer);
-	(*col_ref_inner) = CCastUtils::PcrExtractFromScIdOrCastScId(expr_inner);
+	(*col_ref_outer) = CCastUtils::PcrExtractFromScIdOrCastScId(assigned_expr_outer);
+	(*col_ref_inner) = CCastUtils::PcrExtractFromScIdOrCastScId(assigned_expr_inner);
 
 	if (NULL != *col_ref_outer && NULL != *col_ref_inner)
 	{
@@ -431,8 +436,10 @@ CStatsPredUtils::IsJoinPredSupportedForStatsEstimation
 
 	if (*stats_pred_cmp_type == CStatsPred::EstatscmptEq)
 	{
-		BOOL outer_is_ndv_preserving = CUtils::IsExprNDVPreserving(expr_outer, col_ref_outer);
-		BOOL inner_is_ndv_preserving = CUtils::IsExprNDVPreserving(expr_inner, col_ref_inner);
+		BOOL outer_is_ndv_preserving =
+			(NULL != *col_ref_outer || CUtils::IsExprNDVPreserving(assigned_expr_outer, col_ref_outer));
+		BOOL inner_is_ndv_preserving =
+			(NULL != *col_ref_inner || CUtils::IsExprNDVPreserving(assigned_expr_inner, col_ref_inner));
 
 		if (!outer_is_ndv_preserving && !inner_is_ndv_preserving)
 		{
@@ -475,6 +482,7 @@ CStatsPredUtils::AssignExprsToOuterAndInner
 	CExpression **inner_expr
 	)
 {
+	// see also CPhysicalJoin::FPredKeysSeparated(), which returns similar info
 	CColRefSet *used_cols_1 = expr_1->DeriveUsedColumns();
 	CColRefSet *used_cols_2 = expr_2->DeriveUsedColumns();
 	ULONG child_index_1 = 0;
@@ -1221,8 +1229,8 @@ CStatsPredUtils::ExtractJoinStatsFromJoinPred
 										 join_pred_expr,
 										 output_col_refsets,
 										 is_semi_or_anti_join,
-										 &col_ref_outer,
 										 &stats_cmp_type,
+										 &col_ref_outer,
 										 &col_ref_inner
 										);
 	if (fSupportedScIdentComparison && CStatsPred::EstatscmptOther != stats_cmp_type)

@@ -5105,7 +5105,7 @@ CUtils::IsExprNDVPreserving
 
 	*underlying_colref = NULL;
 
-	// go down the expression tree, visiting the one child that contains a scalar ident until
+	// go down the expression tree, visiting the child containing a scalar ident until
 	// we found the ident or until we found a non-NDV-preserving function (at which point there
 	// is no more need to check)
 	while (1)
@@ -5121,6 +5121,7 @@ CUtils::IsExprNDVPreserving
 				CScalarIdent *cr = CScalarIdent::PopConvert(pop);
 
 				*underlying_colref = cr->Pcr();
+				GPOS_ASSERT(1 == pexpr->DeriveUsedColumns()->Size());
 				return true;
 			}
 
