@@ -313,10 +313,8 @@ CStatsPredUtils::GetPredStats
 
 
 //---------------------------------------------------------------------------
-//	@function:
 //		CStatsPredUtils::IsJoinPredSupportedForStatsEstimation
 //
-//	@doc:
 //		Given a join predicate <expr>, return whether this is a supported
 //		join predicate for cardinality estimation, and what method to use
 //		to build the join statistics.

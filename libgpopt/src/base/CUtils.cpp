@@ -5127,6 +5127,9 @@ CUtils::IsExprNDVPreserving
 
 			case COperator::EopScalarCast:
 				// skip over casts
+				// Note: We might in the future investigate whether there are some casts
+				// that reduce NDVs by too much. Most, if not all, casts that have that potential are
+				// converted to functions, though. Examples: timestamp -> date, double precision -> int.
 				break;
 
 			case COperator::EopScalarCoalesce:
