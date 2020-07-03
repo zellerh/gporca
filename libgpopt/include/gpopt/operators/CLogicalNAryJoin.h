@@ -175,10 +175,44 @@ namespace gpopt
 				return m_lojChildPredIndexes;
 			}
 
+			CExpression *
+			GetInnerJoinPreds(CExpression *nary_join_expr) const
+			{
+				GPOS_ASSERT(nary_join_expr->Pop() == this);
+				if (HasOuterJoinChildren())
+				{
+					// return the first child of CScalarNAryJoinPredList
+					return (*((*nary_join_expr)[nary_join_expr->Arity()-1]))[0];
+				}
+				return (*nary_join_expr)[nary_join_expr->Arity()-1];
+			}
+
+			CExpression *
+			GetOnPredicateForLOJChild(CExpression *nary_join_expr, ULONG child_num) const
+			{
+				GPOS_ASSERT(nary_join_expr->Pop() == this);
+				GPOS_ASSERT(0 < *(*m_lojChildPredIndexes)[child_num]);
+
+				// m_lojChildPredIndexes stores the index in the child of the scalar argument
+				// (a CScalarNAryJoinPredList) that has our ON predicate
+				//     |------ the scalar child of the NAry join ------|  |- grandchild corresponding to LOJ-|
+				return (*((*nary_join_expr)[nary_join_expr->Arity()-1]))[ *(*m_lojChildPredIndexes)[child_num] ];
+			}
+
 			// get the true inner join predicates, excluding predicates that use ColRefs
 			// coming from non-inner joins
 			CExpression*
 			GetTrueInnerJoinPreds (CMemoryPool *mp, CExpressionHandle &exprhdl) const;
+
+			// given an existing scalar child of an NAry join, make a new copy, replacing
+			// only the inner join predicates and leaving the LOJ ON predicates the same
+			CExpression *
+			ReplaceInnerJoinPredicates
+				(
+				 CMemoryPool *mp,
+				 CExpression *old_nary_join_scalar_expr,
+				 CExpression *new_inner_join_preds
+				);
 
 			virtual
 			IOstream & OsPrint(IOstream &os) const;

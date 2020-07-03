@@ -212,6 +212,51 @@ CLogicalNAryJoin::GetTrueInnerJoinPreds(CMemoryPool *mp, CExpressionHandle &expr
 	}
 	return CPredicateUtils::PexprConjDisj(mp, trueInnerJoinPredArray, isAConjunction);
 }
+
+
+//---------------------------------------------------------------------------
+// CLogicalNAryJoin::ReplaceInnerJoinPredicates
+//
+// given an existing scalar child of an NAry join, make a new copy, replacing
+// only the inner join predicates and leaving the LOJ ON predicates the same
+//---------------------------------------------------------------------------
+CExpression *
+CLogicalNAryJoin::ReplaceInnerJoinPredicates
+	(
+	 CMemoryPool *mp,
+	 CExpression *old_nary_join_scalar_expr,
+	 CExpression *new_inner_join_preds
+	)
+{
+	COperator *pop = old_nary_join_scalar_expr->Pop();
+
+	if (EopScalarNAryJoinPredList == pop->Eopid())
+	{
+		// this requires a bit of surgery, make a new copy of the
+		// CScalarNAryJoinPredList with the first child replaced
+		CExpressionArray *new_children = GPOS_NEW(mp) CExpressionArray(mp);
+
+		new_children->Append(new_inner_join_preds);
+
+		for (ULONG ul=1; ul<old_nary_join_scalar_expr->Arity(); ul++)
+		{
+			CExpression *existing_child = (*old_nary_join_scalar_expr)[ul];
+
+			existing_child->AddRef();
+			new_children->Append(existing_child);
+		}
+
+		pop->AddRef();
+
+		return GPOS_NEW(mp) CExpression(mp, pop, new_children);
+	}
+
+	// with all inner joins it's a total replacement, just return the inner join preds
+	// (caller should have passed us a ref count which they now get back from us)
+	return new_inner_join_preds;
+}
+
+
 //---------------------------------------------------------------------------
 //	@function:
 //		CLogicalNAryJoin::OsPrint
