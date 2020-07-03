@@ -32,7 +32,7 @@ namespace gpopt
 		private:
 
 			// definition of operator processor
-			typedef BOOL(FnProcessor)(CMemoryPool *, CExpression *, BOOL, CExpression **, CExpressionArray *);
+			typedef BOOL(FnProcessor)(CMemoryPool *, CExpression *, BOOL, CExpression **, CExpressionArray *, CColRefSet *);
 
 			//---------------------------------------------------------------------------
 			//	@struct:
@@ -88,7 +88,8 @@ namespace gpopt
 				CExpression *pexpr,
 				BOOL fEqualityOnly,
 				CExpression **ppexprDecorrelated,
-				CExpressionArray *pdrgpexprCorrelations
+				CExpressionArray *pdrgpexprCorrelations,
+				CColRefSet *outerRefsToRemove
 				);
 				
 			// processor for predicates
@@ -99,9 +100,9 @@ namespace gpopt
 				CExpression *pexprLogical,
 				CExpression *pexprScalar,
 				BOOL fEqualityOnly,
-				CColRefSet *pcrsOutput,
 				CExpression **ppexprDecorrelated,
-				CExpressionArray *pdrgpexprCorrelations
+				CExpressionArray *pdrgpexprCorrelations,
+				CColRefSet *outerRefsToRemove
 				);
 			
 			// processor for select operators
@@ -112,7 +113,8 @@ namespace gpopt
 				CExpression *pexpr,
 				BOOL fEqualityOnly,
 				CExpression **ppexprDecorrelated,
-				CExpressionArray *pdrgpexprCorrelations
+				CExpressionArray *pdrgpexprCorrelations,
+				CColRefSet *outerRefsToRemove
 				);
 
 		
@@ -124,7 +126,8 @@ namespace gpopt
 				CExpression *pexpr,
 				BOOL fEqualityOnly,
 				CExpression **ppexprDecorrelated,
-				CExpressionArray *pdrgpexprCorrelations
+				CExpressionArray *pdrgpexprCorrelations,
+				CColRefSet *outerRefsToRemove
 				);
 
 			// processor for joins (inner/n-ary)
@@ -135,7 +138,8 @@ namespace gpopt
 				CExpression *pexpr,
 				BOOL fEqualityOnly,
 				CExpression **ppexprDecorrelated,
-				CExpressionArray *pdrgpexprCorrelations
+				CExpressionArray *pdrgpexprCorrelations,
+				CColRefSet *outerRefsToRemove
 				);
 
 
@@ -147,7 +151,8 @@ namespace gpopt
 				CExpression *pexpr,
 				BOOL fEqualityOnly,
 				CExpression **ppexprDecorrelated,
-				CExpressionArray *pdrgpexprCorrelations
+				CExpressionArray *pdrgpexprCorrelations,
+				CColRefSet *outerRefsToRemove
 				);
 		
 			// processor for assert
@@ -158,7 +163,8 @@ namespace gpopt
 				CExpression *pexpr,
 				BOOL fEqualityOnly,
 				CExpression **ppexprDecorrelated,
-				CExpressionArray *pdrgpexprCorrelations
+				CExpressionArray *pdrgpexprCorrelations,
+				CColRefSet *outerRefsToRemove
 				);
 
 			// processor for MaxOneRow
@@ -169,7 +175,8 @@ namespace gpopt
 				CExpression *pexpr,
 				BOOL fEqualityOnly,
 				CExpression **ppexprDecorrelated,
-				CExpressionArray *pdrgpexprCorrelations
+				CExpressionArray *pdrgpexprCorrelations,
+				CColRefSet *outerRefsToRemove
 				);
 
 			// processor for limits
@@ -180,7 +187,8 @@ namespace gpopt
 				CExpression *pexpr,
 				BOOL fEqualityOnly,
 				CExpression **ppexprDecorrelated,
-				CExpressionArray *pdrgpexprCorrelations
+				CExpressionArray *pdrgpexprCorrelations,
+				CColRefSet *outerRefsToRemove
 				);
 
 		public:
@@ -193,7 +201,8 @@ namespace gpopt
 				CExpression *pexprOrig,
 				BOOL fEqualityOnly,
 				CExpression **ppexprDecorrelated,
-				CExpressionArray *pdrgpexprCorrelations
+				CExpressionArray *pdrgpexprCorrelations,
+				CColRefSet *outerRefsToRemove
 				);
 
 	}; // class CDecorrelator
