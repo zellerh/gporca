@@ -52,10 +52,6 @@ namespace gpopt
 
 			}; // struct SOperatorHandler
 
-			// array of mappings
-			static
-			const SOperatorProcessor m_rgopproc[];
-
 			// private ctor
 			CDecorrelator();
 
