@@ -205,6 +205,8 @@ namespace gpopt
 
 			// return true if outer references are included in Partition/Order, or window frame edges
 			BOOL FHasLocalOuterRefs(CExpressionHandle &exprhdl) const;
+			// check for specific outer refs in Partition/Order, or window frame edges
+			BOOL FHasLocalReferencesTo(const CColRefSet *outerRefsToCheck) const;
 
 			// conversion function
 			static

@@ -293,6 +293,24 @@ CLogicalSequenceProject::FHasLocalOuterRefs
 
 
 //---------------------------------------------------------------------------
+// CLogicalSequenceProject::FHasReferencesTo
+//
+// Return true if Partition/Order or window frame edges reference one of
+// the provided ColRefs
+//
+//---------------------------------------------------------------------------
+BOOL
+CLogicalSequenceProject::FHasLocalReferencesTo
+	(
+	const CColRefSet *outerRefsToCheck
+	)
+	const
+{
+	return !outerRefsToCheck->IsDisjoint(m_pcrsLocalUsed);
+}
+
+
+//---------------------------------------------------------------------------
 //	@function:
 //		CLogicalSequenceProject::PkcDeriveKeys
 //
