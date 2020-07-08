@@ -2200,6 +2200,34 @@ CPredicateUtils::SeparateOuterRefs
 		return;
 	}
 
+	if (COperator::EopScalarNAryJoinPredList == pexprScalar->Pop()->Eopid())
+	{
+		// for a ScalarNAryJoinPredList we have to preserve that operator and
+		// separate the outer refs from each of its children
+		CExpressionArray *localChildren = GPOS_NEW(mp) CExpressionArray(mp);
+		CExpressionArray *outerRefChildren = GPOS_NEW(mp) CExpressionArray(mp);
+
+		for (ULONG c=0; c<pexprScalar->Arity(); c++)
+		{
+			CExpression *childLocalExpr = NULL;
+			CExpression *childOuterRefExpr = NULL;
+
+			SeparateOuterRefs(mp, (*pexprScalar)[c], outer_refs, &childLocalExpr, &childOuterRefExpr);
+			localChildren->Append(childLocalExpr);
+			outerRefChildren->Append(childOuterRefExpr);
+		}
+
+		// reassemble the CScalarNAryJoinPredList with its new children without outer refs
+		pexprScalar->Pop()->AddRef();
+		*ppexprLocal = GPOS_NEW(mp) CExpression(mp, pexprScalar->Pop(), localChildren);
+
+		// do the same with the outer refs
+		pexprScalar->Pop()->AddRef();
+		*ppexprOuterRef = GPOS_NEW(mp) CExpression(mp, pexprScalar->Pop(), outerRefChildren);
+
+		return;
+	}
+
 	CExpressionArray *pdrgpexpr = PdrgpexprConjuncts(mp, pexprScalar);
 	CExpressionArray *pdrgpexprLocal = GPOS_NEW(mp) CExpressionArray(mp);
 	CExpressionArray *pdrgpexprOuterRefs = GPOS_NEW(mp) CExpressionArray(mp);
