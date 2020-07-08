@@ -27,26 +27,6 @@
 
 using namespace gpopt;
 
-// initialization of handlers array
-const CDecorrelator::SOperatorProcessor CDecorrelator::m_rgopproc[] =
-{
-	{COperator::EopLogicalSelect, FProcessSelect},
-	{COperator::EopLogicalGbAgg, FProcessGbAgg},
-	{COperator::EopLogicalInnerJoin, FProcessJoin},
-	{COperator::EopLogicalInnerCorrelatedApply, FProcessJoin},
-	{COperator::EopLogicalLeftSemiJoin, FProcessJoin},
-	{COperator::EopLogicalLeftSemiCorrelatedApplyIn, FProcessJoin},
-	{COperator::EopLogicalLeftAntiSemiJoin, FProcessJoin},
-	{COperator::EopLogicalLeftOuterJoin, FProcessJoin},
-	{COperator::EopLogicalLeftOuterCorrelatedApply, FProcessJoin},
-	{COperator::EopLogicalNAryJoin, FProcessJoin},
-	{COperator::EopLogicalProject, FProcessProject},
-	{COperator::EopLogicalSequenceProject, FProcessProject},
-	{COperator::EopLogicalAssert, FProcessAssert},
-	{COperator::EopLogicalMaxOneRow, FProcessMaxOneRow},
-	{COperator::EopLogicalLimit, FProcessLimit},
-};
-
 
 //---------------------------------------------------------------------------
 //	@function:
@@ -238,34 +218,61 @@ CDecorrelator::FProcessOperator
 	CExpressionArray *pdrgpexprCorrelations
 	)
 {
-	FnProcessor *pfnp = NULL;
-	COperator::EOperatorId op_id = pexpr->Pop()->Eopid();
-	const ULONG size = GPOS_ARRAY_SIZE(m_rgopproc);
-	// find the handler corresponding to the given operator
-	for (ULONG ul = 0; pfnp == NULL && ul < size; ul++)
-	{
-		if (op_id == m_rgopproc[ul].m_eopid)
-		{
-			pfnp = m_rgopproc[ul].m_pfnp;
-		}
-	}
-	
-	if (NULL != pfnp)
-	{
-		// subqueries must be processed before reaching here
-		const ULONG arity = pexpr->Arity();
-		if ((*pexpr)[arity - 1]->Pop()->FScalar() && CUtils::FHasSubquery((*pexpr)[arity - 1]))
-		{
-			return false;
-		}
+	BOOL result = false;
 
-		// check for abort before descending into recursion
-		GPOS_CHECK_ABORT;
-
-		return pfnp(mp, pexpr, fEqualityOnly, ppexprDecorrelated, pdrgpexprCorrelations);
+	// subqueries must be processed before reaching here
+	const ULONG arity = pexpr->Arity();
+	if ((*pexpr)[arity - 1]->Pop()->FScalar() && CUtils::FHasSubquery((*pexpr)[arity - 1]))
+	{
+		return false;
 	}
-	
-	return false;
+
+	// check for abort before descending into recursion
+	GPOS_CHECK_ABORT;
+
+	switch (pexpr->Pop()->Eopid())
+	{
+		case COperator::EopLogicalSelect:
+			result = FProcessSelect(mp, pexpr, fEqualityOnly, ppexprDecorrelated, pdrgpexprCorrelations, outerRefsToRemove);
+			break;
+
+		case COperator::EopLogicalGbAgg:
+			result = FProcessGbAgg(mp, pexpr, fEqualityOnly, ppexprDecorrelated, pdrgpexprCorrelations, outerRefsToRemove);
+			break;
+
+		case COperator::EopLogicalInnerJoin:
+		case COperator::EopLogicalInnerCorrelatedApply:
+		case COperator::EopLogicalLeftSemiJoin:
+		case COperator::EopLogicalLeftSemiCorrelatedApplyIn:
+		case COperator::EopLogicalLeftAntiSemiJoin:
+		case COperator::EopLogicalLeftOuterJoin:
+		case COperator::EopLogicalLeftOuterCorrelatedApply:
+		case COperator::EopLogicalNAryJoin:
+			result = FProcessJoin(mp, pexpr, fEqualityOnly, ppexprDecorrelated, pdrgpexprCorrelations, outerRefsToRemove);
+			break;
+
+		case COperator::EopLogicalProject:
+		case COperator::EopLogicalSequenceProject:
+			result = FProcessProject(mp, pexpr, fEqualityOnly, ppexprDecorrelated, pdrgpexprCorrelations, outerRefsToRemove);
+			break;
+
+		case COperator::EopLogicalAssert:
+			result = FProcessAssert(mp, pexpr, fEqualityOnly, ppexprDecorrelated, pdrgpexprCorrelations, outerRefsToRemove);
+			break;
+
+		case COperator::EopLogicalMaxOneRow:
+			result = FProcessMaxOneRow(mp, pexpr, fEqualityOnly, ppexprDecorrelated, pdrgpexprCorrelations, outerRefsToRemove);
+			break;
+
+		case COperator::EopLogicalLimit:
+			result = FProcessLimit(mp, pexpr, fEqualityOnly, ppexprDecorrelated, pdrgpexprCorrelations, outerRefsToRemove);
+			break;
+
+		default:
+			break;
+	}
+
+	return result;
 }
 
 
