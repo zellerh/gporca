@@ -118,7 +118,13 @@ CXformUtils::ExfpExpandJoinOrder
 	CExpressionHandle &exprhdl
 	)
 {
-	if (exprhdl.DeriveHasSubquery(exprhdl.Arity() - 1) || exprhdl.HasOuterRefs())
+	// Note that there is a potential problem here: If we have outer refs that
+	// can't be removed by the decorrelator, then we should expand this join
+	// despite the outer refs. This is something we could investigate. For now,
+	// we exempt NAray joins with LOJs in them from this check (you will see
+	// the reason in a gporca regression test failure when removing the exemption).
+	if (exprhdl.DeriveHasSubquery(exprhdl.Arity() - 1) ||
+		(exprhdl.HasOuterRefs() && !CLogicalNAryJoin::PopConvert(exprhdl.Pop())->HasOuterJoinChildren()))
 	{
 		// subqueries must be unnested before applying xform
 		return CXform::ExfpNone;
