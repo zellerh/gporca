@@ -140,6 +140,18 @@ CLogicalNAryJoin::PxfsCandidates
 	return xform_set;
 }
 
+CLogicalNAryJoin *CLogicalNAryJoin::PopConvertNAryLOJ(COperator *pop)
+{
+	CLogicalNAryJoin *naryJoin = PopConvert(pop);
+
+	if (NULL != naryJoin && naryJoin->HasOuterJoinChildren())
+	{
+		return naryJoin;
+	}
+
+	return NULL;
+}
+
 CExpression*
 CLogicalNAryJoin::GetTrueInnerJoinPreds(CMemoryPool *mp, CExpressionHandle &exprhdl) const
 {

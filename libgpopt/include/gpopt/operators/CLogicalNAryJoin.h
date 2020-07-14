@@ -157,6 +157,10 @@ namespace gpopt
 				return dynamic_cast<CLogicalNAryJoin*>(pop);
 			}
 
+			// conversion function, only if the NAryJoin has LOJ children
+			static
+			CLogicalNAryJoin *PopConvertNAryLOJ(COperator *pop);
+
 			BOOL
 			HasOuterJoinChildren() const
 			{
