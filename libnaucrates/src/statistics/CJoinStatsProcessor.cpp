@@ -559,8 +559,9 @@ CJoinStatsProcessor::DeriveJoinStats
 		statistics_array->Append(child_stats);
 	}
 
-	CExpression *join_pred_expr = NULL;
-	if (exprhdl.DeriveHasSubquery(arity - 1))
+	CExpression *join_pred_expr = exprhdl.PexprScalarExactChild(arity - 1);
+
+	if (NULL == join_pred_expr)
 	{
 		// in case of subquery in join predicate, assume join condition is True
 		join_pred_expr = CUtils::PexprScalarConstBool(mp, true /*value*/);
@@ -568,7 +569,7 @@ CJoinStatsProcessor::DeriveJoinStats
 	else
 	{
 		// remove implied predicates from join condition to avoid cardinality under-estimation
-		join_pred_expr = CPredicateUtils::PexprRemoveImpliedConjuncts(mp, exprhdl.PexprScalarChild(arity - 1), exprhdl);
+		join_pred_expr = CPredicateUtils::PexprRemoveImpliedConjuncts(mp, join_pred_expr, exprhdl);
 	}
 
 	// split join predicate into local predicate and predicate involving outer references

@@ -2416,6 +2416,23 @@ CPredicateUtils::PexprRemoveImpliedConjuncts
 	CExpressionHandle &exprhdl
 	)
 {
+	if (COperator::EopScalarNAryJoinPredList == pexprScalar->Pop()->Eopid())
+	{
+		// for a ScalarNAryJoinPredList we have to preserve that operator and
+		// remove implied preds from each child individually
+		CExpressionArray *newChildren = GPOS_NEW(mp) CExpressionArray(mp);
+
+		for (ULONG c=0; c<pexprScalar->Arity(); c++)
+		{
+			newChildren->Append(PexprRemoveImpliedConjuncts(mp, (*pexprScalar)[c], exprhdl));
+		}
+
+		// reassemble the CScalarNAryJoinPredList with its new children without outer refs
+		pexprScalar->Pop()->AddRef();
+
+		return GPOS_NEW(mp) CExpression(mp, pexprScalar->Pop(), newChildren);
+	}
+
 	// extract equivalence classes from logical children
 	CColRefSetArray *pdrgpcrs = CUtils::PdrgpcrsCopyChildEquivClasses(mp, exprhdl);
 
