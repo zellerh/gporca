@@ -670,7 +670,7 @@ CLogical::PpcDeriveConstraintFromPredicates
 	{
 		if (exprhdl.FScalarChild(ul))
 		{
-			CExpression *pexprScalar = exprhdl.PexprScalarChild(ul);
+			CExpression *pexprScalar = exprhdl.PexprScalarExactChild(ul);
 			BOOL needToReleasePexprScalar = false;
 
 			// make sure it is a predicate... boolop, cmp, nulltest,
@@ -683,6 +683,7 @@ CLogical::PpcDeriveConstraintFromPredicates
 			{
 				CLogicalNAryJoin *naryJoin = CLogicalNAryJoin::PopConvert(exprhdl.Pop());
 				pexprScalar = naryJoin->GetTrueInnerJoinPreds(mp,exprhdl);
+				GPOS_ASSERT(NULL != pexprScalar);
 				needToReleasePexprScalar = true;
 			}
 			CColRefSetArray *pdrgpcrsChild = NULL;
@@ -1130,7 +1131,7 @@ CLogical::Maxcard
 	)
 {
 	// in case of a false condition (when the operator is not Full / Left Outer Join) or a contradiction, maxcard should be zero
-	CExpression *pexprScalar = exprhdl.PexprScalarChild(ulScalarIndex);
+	CExpression *pexprScalar = exprhdl.PexprScalarExactChild(ulScalarIndex);
 
 	if (NULL != pexprScalar)
 	{

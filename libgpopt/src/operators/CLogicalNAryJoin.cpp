@@ -87,7 +87,7 @@ CLogicalNAryJoin::DeriveMaxCard
 		return CMaxCard(0 /*ull*/);
 	}
 
-	CExpression *pexprScalar = exprhdl.PexprScalarChild(arity-1);
+	CExpression *pexprScalar = exprhdl.PexprScalarExactChild(arity-1);
 
 	if (NULL != pexprScalar)
 	{
@@ -97,12 +97,12 @@ CLogicalNAryJoin::DeriveMaxCard
 
 			// in case of a false condition (when the operator is non Inner Join)
 			// maxcard should be zero
-			if (CUtils::FScalarConstFalse(pexprScalarChild))
+			if (NULL != pexprScalarChild && CUtils::FScalarConstFalse(pexprScalarChild))
 			{
 				pexprScalarChild->Release();
 				return CMaxCard(0 /*ull*/);
 			}
-			pexprScalarChild->Release();
+			CRefCount::SafeRelease(pexprScalarChild);
 		}
 		else
 		{
@@ -153,7 +153,13 @@ CLogicalNAryJoin::GetTrueInnerJoinPreds(CMemoryPool *mp, CExpressionHandle &expr
 	// bar.c might have been created with a NOT NULL constraint. We don't want to use
 	// such predicates in constraint derivation.
 	ULONG arity = exprhdl.Arity();
-	CExpression *pexprScalar =  exprhdl.PexprScalarChild(arity-1);
+	CExpression *pexprScalar =  exprhdl.PexprScalarExactChild(arity-1);
+
+	if (NULL == pexprScalar)
+	{
+		// can't determine the true inner join preds, as there is no exact scalar expression available
+		return NULL;
+	}
 
 	if (!HasOuterJoinChildren())
 	{

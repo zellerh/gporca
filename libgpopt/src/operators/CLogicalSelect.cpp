@@ -136,7 +136,7 @@ CLogicalSelect::DeriveMaxCard
 	const
 {
 	// in case of a false condition or a contradiction, maxcard should be zero
-	CExpression *pexprScalar = exprhdl.PexprScalarChild(1);
+	CExpression *pexprScalar = exprhdl.PexprScalarRepChild(1);
 	if ((NULL != pexprScalar && (CUtils::FScalarConstFalse(pexprScalar) ||  CUtils::FScalarConstBoolNull(pexprScalar))) ||
 		exprhdl.DerivePropertyConstraint()->FContradiction())
 	{
@@ -176,7 +176,7 @@ CLogicalSelect::PstatsDerive
 	}
 
 	// remove implied predicates from selection condition to avoid cardinality under-estimation
-	CExpression *pexprScalar = exprhdl.PexprScalarChild(1 /*child_index*/);
+	CExpression *pexprScalar = exprhdl.PexprScalarRepChild(1 /*child_index*/);
 	CExpression *pexprPredicate = CPredicateUtils::PexprRemoveImpliedConjuncts(mp, pexprScalar, exprhdl);
 
 
@@ -233,15 +233,13 @@ CLogicalSelect::PexprPartPred
 {
 	GPOS_ASSERT(0 == child_index);
 
-	// in case of subquery in select predicate, we cannot extract the whole
-	// predicate, and it would not be helpful anyway, so return NULL
-	if (exprhdl.DeriveHasSubquery(1))
+	CExpression *pexprScalar = exprhdl.PexprScalarExactChild(1 /*child_index*/);
+
+	if (NULL == pexprScalar)
 	{
+		// no exact predicate is available (e.g. when we have a subquery in the predicate)
 		return NULL;
 	}
-
-	CExpression *pexprScalar = exprhdl.PexprScalarChild(1 /*child_index*/);
-	GPOS_ASSERT(NULL != pexprScalar);
 
 	// get partition keys
 	CPartInfo *ppartinfo = exprhdl.DerivePartitionInfo();

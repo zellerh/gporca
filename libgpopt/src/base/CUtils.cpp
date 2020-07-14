@@ -36,6 +36,12 @@
 #include "gpopt/operators/CExpressionPreprocessor.h"
 
 #include "naucrates/exception.h"
+#include "naucrates/base/CDatumBoolGPDB.h"
+#include "naucrates/base/CDatumGenericGPDB.h"
+#include "naucrates/base/CDatumInt2GPDB.h"
+#include "naucrates/base/CDatumInt4GPDB.h"
+#include "naucrates/base/CDatumInt8GPDB.h"
+#include "naucrates/base/CDatumOidGPDB.h"
 #include "naucrates/base/IDatumInt2.h"
 #include "naucrates/base/IDatumInt4.h"
 #include "naucrates/base/IDatumInt8.h"
@@ -1902,6 +1908,58 @@ CUtils::PexprScalarConstOid
 			GPOS_NEW(mp) CExpression(mp, GPOS_NEW(mp) CScalarConst(mp, (IDatum*) datum));
 
 	return pexpr;
+}
+
+// generate a NULL constant of a given type
+CExpression *
+CUtils::PexprScalarConstNull(CMemoryPool *mp, const IMDType *typ, INT type_modifier)
+{
+	IDatum *datum = NULL;
+	IMDId *mdid = typ->MDId();
+	mdid->AddRef();
+
+	switch (typ->GetDatumType())
+	{
+		case IMDType::EtiInt2:
+			datum = GPOS_NEW(mp) CDatumInt2GPDB(mdid, 0, true);
+			break;
+
+		case IMDType::EtiInt4:
+			datum = GPOS_NEW(mp) CDatumInt4GPDB(mdid, 0, true);
+			break;
+
+		case IMDType::EtiInt8:
+			datum = GPOS_NEW(mp) CDatumInt8GPDB(mdid, 0, true);
+			break;
+
+		case IMDType::EtiBool:
+			datum = GPOS_NEW(mp) CDatumBoolGPDB(mdid, true, true);
+			break;
+
+		case IMDType::EtiOid:
+			datum = GPOS_NEW(mp) CDatumOidGPDB(mdid, 0, true);
+			break;
+
+		case IMDType::EtiGeneric:
+			datum = GPOS_NEW(mp) CDatumGenericGPDB
+									(
+									 mp,
+									 mdid,
+									 type_modifier,
+									 NULL, // source value buffer
+									 0,    // source value buffer length
+									 true, // is NULL
+									 0,    // LINT mapping for stats
+									 0.0   // CDouble mapping for stats
+									);
+			break;
+
+		default:
+			// shouldn't come here
+			GPOS_RTL_ASSERT(0);
+	}
+
+	return GPOS_NEW(mp) CExpression(mp, GPOS_NEW(mp) CScalarConst(mp, datum));
 }
 
 // get column reference defined by project element
@@ -5300,7 +5358,8 @@ CUtils::MakeJoinWithoutInferredPreds
 
 	CExpressionHandle expression_handle(mp);
 	expression_handle.Attach(join_expr);
-	CExpression *scalar_expr = expression_handle.PexprScalarChild(join_expr->Arity() - 1);
+	CExpression *scalar_expr = expression_handle.PexprScalarExactChild(join_expr->Arity() - 1);
+	GPOS_ASSERT(NULL != scalar_expr);
 	CExpression *scalar_expr_without_inferred_pred = CPredicateUtils::PexprRemoveImpliedConjuncts(mp, scalar_expr, expression_handle);
 
 	// create a new join expression using the scalar expr without inferred predicate

@@ -223,8 +223,9 @@ CLogicalLimit::DeriveMaxCard
 	)
 	const
 {
-	CExpression *pexprCount = exprhdl.PexprScalarChild(2 /*child_index*/);
-	if (CUtils::FScalarConstInt<IMDTypeInt8>(pexprCount))
+	CExpression *pexprCount = exprhdl.PexprScalarExactChild(2 /*child_index*/);
+
+	if (NULL != pexprCount && CUtils::FScalarConstInt<IMDTypeInt8>(pexprCount) && !pexprCount->DeriveHasSubquery())
 	{
 		CScalarConst *popScalarConst = CScalarConst::PopConvert(pexprCount->Pop());
 		IDatumInt8 *pdatumInt8 = dynamic_cast<IDatumInt8 *>(popScalarConst->GetDatum());

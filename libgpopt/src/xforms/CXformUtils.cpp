@@ -4453,7 +4453,8 @@ CXformUtils::FJoinPredOnSingleChild
 		pdrgpcrs->Append(pcrsOutput);
 	}
 
-	CExpressionArray *pdrgpexprPreds = CPredicateUtils::PdrgpexprConjuncts(mp, exprhdl.PexprScalarChild(arity- 1));
+	GPOS_ASSERT(NULL != exprhdl.PexprScalarExactChild(arity- 1));
+	CExpressionArray *pdrgpexprPreds = CPredicateUtils::PdrgpexprConjuncts(mp, exprhdl.PexprScalarExactChild(arity- 1));
 	const ULONG ulPreds = pdrgpexprPreds->Size();
 	BOOL fPredUsesSingleChild = false;
 	for (ULONG ulPred = 0; !fPredUsesSingleChild && ulPred < ulPreds; ulPred++)
