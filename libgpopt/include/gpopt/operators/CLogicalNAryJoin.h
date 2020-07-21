@@ -84,22 +84,7 @@ namespace gpopt
 				CMemoryPool *mp,
 				CExpressionHandle &exprhdl
 				)
-				const
-			{
-				return PcrsDeriveNotNullCombineLogical(mp, exprhdl);
-			}
-
-			// derive partition consumer info
-			virtual
-			CPartInfo *DerivePartitionInfo
-				(
-				CMemoryPool *mp,
-				CExpressionHandle &exprhdl
-				) 
-				const
-			{
-				return PpartinfoDeriveCombine(mp, exprhdl);
-			}
+				const;
 
 			// derive max card
 			virtual
@@ -112,10 +97,7 @@ namespace gpopt
 				CMemoryPool *mp,
 				CExpressionHandle &exprhdl
 				)
-				const
-			{
-				return PpcDeriveConstraintFromPredicates(mp, exprhdl);
-			}
+				const;
 
 			//-------------------------------------------------------------------------------------
 			// Derived Stats

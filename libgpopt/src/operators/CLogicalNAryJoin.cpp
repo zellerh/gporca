@@ -71,7 +71,7 @@ CLogicalNAryJoin::DeriveMaxCard
 	CMaxCard maxCard(1);
 	const ULONG arity = exprhdl.Arity();
 
-	// loop over the inner join logical children only
+	// multiply the max cards of the children (use at least 1 for LOJ children)
 	for (ULONG ul = 0; ul < arity - 1; ul++)
 	{
 		CMaxCard childMaxCard = exprhdl.DeriveMaxCard(ul);
@@ -111,6 +111,103 @@ CLogicalNAryJoin::DeriveMaxCard
 	}
 
 	return maxCard;
+}
+
+CColRefSet *
+CLogicalNAryJoin::DeriveNotNullColumns
+	(
+	CMemoryPool *mp,
+	CExpressionHandle &exprhdl
+	)
+	const
+{
+	CColRefSet *pcrs = GPOS_NEW(mp) CColRefSet(mp);
+
+	// union not nullable columns from the first N-1 children that are not right children of LOJs
+	ULONG arity = exprhdl.Arity();
+	for (ULONG ul = 0; ul < arity - 1; ul++)
+	{
+		if (IsInnerJoinChild(ul))
+		{
+			CColRefSet *pcrsChild = exprhdl.DeriveNotNullColumns(ul);
+			GPOS_ASSERT(pcrs->IsDisjoint(pcrsChild) && "Input columns are not disjoint");
+
+			pcrs->Union(pcrsChild);
+		}
+	}
+
+	return pcrs;
+}
+
+CPropConstraint *
+CLogicalNAryJoin::DerivePropertyConstraint
+	(
+	CMemoryPool *mp,
+	CExpressionHandle &exprhdl
+	)
+	const
+{
+	if (!HasOuterJoinChildren())
+	{
+		// shortcut for inner joins
+		return PpcDeriveConstraintFromPredicates(mp, exprhdl);
+	}
+
+	// the following logic is similar to PpcDeriveConstraintFromPredicates, except that
+	// it excludes right children of LOJs and their ON predicates
+	CColRefSetArray *equivalenceClasses = GPOS_NEW(mp) CColRefSetArray(mp);
+	CConstraintArray *constraints = GPOS_NEW(mp) CConstraintArray(mp);
+
+	// collect constraint properties from inner join children
+	const ULONG arity = exprhdl.Arity();
+	for (ULONG ul = 0; ul < arity-1; ul++)
+	{
+		if (IsInnerJoinChild(ul))
+		{
+			CPropConstraint *ppc = exprhdl.DerivePropertyConstraint(ul);
+
+			// equivalence classes coming from child
+			CColRefSetArray *pdrgpcrsChild = ppc->PdrgpcrsEquivClasses();
+
+			// merge with the equivalence classes we have so far
+			CColRefSetArray *pdrgpcrsMerged = CUtils::PdrgpcrsMergeEquivClasses(mp, equivalenceClasses, pdrgpcrsChild);
+			equivalenceClasses->Release();
+			equivalenceClasses = pdrgpcrsMerged;
+
+			// constraint coming from child
+			CConstraint *pcnstr = ppc->Pcnstr();
+			if (NULL != pcnstr)
+			{
+				pcnstr->AddRef();
+				constraints->Append(pcnstr);
+			}
+		}
+	}
+
+	// process inner join predicates
+	CExpression *trueInnerJoinPreds = GetTrueInnerJoinPreds(mp, exprhdl);
+	if (NULL != trueInnerJoinPreds)
+	{
+		CColRefSetArray *equivClassesFromInnerJoinPreds = NULL;
+		CConstraint *pcnstr = CConstraint::PcnstrFromScalarExpr(mp, trueInnerJoinPreds, &equivClassesFromInnerJoinPreds);
+
+		if (NULL != pcnstr)
+		{
+			constraints->Append(pcnstr);
+
+			// merge with the equivalence classes we have so far
+			CColRefSetArray *pdrgpcrsMerged = CUtils::PdrgpcrsMergeEquivClasses(mp, equivalenceClasses, equivClassesFromInnerJoinPreds);
+			equivalenceClasses->Release();
+			equivalenceClasses = pdrgpcrsMerged;
+		}
+
+		trueInnerJoinPreds->Release();
+		CRefCount::SafeRelease(equivClassesFromInnerJoinPreds);
+	}
+
+	CConstraint *pcnstrNew = CConstraint::PcnstrConjunction(mp, constraints);
+
+	return GPOS_NEW(mp) CPropConstraint(mp, equivalenceClasses, pcnstrNew);
 }
 
 //---------------------------------------------------------------------------
