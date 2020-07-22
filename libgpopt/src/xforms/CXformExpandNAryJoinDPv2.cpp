@@ -70,7 +70,7 @@ CXformExpandNAryJoinDPv2::Exfp
 	)
 	const
 {
-	return CXformUtils::ExfpExpandJoinOrder(exprhdl);
+	return CXformUtils::ExfpExpandJoinOrder(exprhdl, this);
 }
 
 

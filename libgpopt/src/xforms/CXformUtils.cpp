@@ -115,16 +115,17 @@ CXformUtils::ExfpSemiJoin2CrossProduct
 CXform::EXformPromise
 CXformUtils::ExfpExpandJoinOrder
 	(
-	CExpressionHandle &exprhdl
+	 CExpressionHandle &exprhdl,
+	 const CXform *xform
 	)
 {
-	// Note that there is a potential problem here: If we have outer refs that
-	// can't be removed by the decorrelator, then we should expand this join
-	// despite the outer refs. This is something we could investigate. For now,
-	// we exempt NAray joins with LOJs in them from this check (you will see
-	// the reason in a gporca regression test failure when removing the exemption).
+	// With optimizer_join_order set to 'query' or 'exhaustive', the
+	// 'query' join order will expand the join even if it contains
+	// outer refs, using another method to get the promise.
+	// Therefore we also allow expansion for 'exhaustive2'
+	// when we have outer refs.
 	if (exprhdl.DeriveHasSubquery(exprhdl.Arity() - 1) ||
-		(exprhdl.HasOuterRefs() && !CLogicalNAryJoin::PopConvert(exprhdl.Pop())->HasOuterJoinChildren()))
+		(exprhdl.HasOuterRefs() && CXform::ExfExpandNAryJoinDPv2 != xform->Exfid()))
 	{
 		// subqueries must be unnested before applying xform
 		return CXform::ExfpNone;
