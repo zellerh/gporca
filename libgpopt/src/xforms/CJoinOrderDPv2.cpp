@@ -59,7 +59,8 @@ CJoinOrderDPv2::CJoinOrderDPv2
 	CExpressionArray *pdrgpexprAtoms,
 	CExpressionArray *innerJoinConjuncts,
 	CExpressionArray *onPredConjuncts,
-	ULongPtrArray *childPredIndexes
+	ULongPtrArray *childPredIndexes,
+	CColRefSet *outerRefs
 	)
 	:
 	CJoinOrder(mp, pdrgpexprAtoms, innerJoinConjuncts, onPredConjuncts, childPredIndexes),
@@ -67,7 +68,8 @@ CJoinOrderDPv2::CJoinOrderDPv2
 	m_on_pred_conjuncts(onPredConjuncts),
 	m_child_pred_indexes(childPredIndexes),
 	m_non_inner_join_dependencies(NULL),
-	m_cross_prod_penalty(GPOPT_DPV2_CROSS_JOIN_DEFAULT_PENALTY)
+	m_cross_prod_penalty(GPOPT_DPV2_CROSS_JOIN_DEFAULT_PENALTY),
+	m_outer_refs(outerRefs)
 {
 	m_join_levels = GPOS_NEW(mp) DPv2Levels(mp, m_ulComps+1);
 	// populate levels array with n+1 levels for an n-way join
@@ -118,8 +120,8 @@ CJoinOrderDPv2::CJoinOrderDPv2
 				nijBitSet->ExchangeClear(logicalChildNum);
 			}
 		}
-		PopulateExpressionToEdgeMapIfNeeded();
 	}
+	PopulateExpressionToEdgeMapIfNeeded();
 }
 
 
@@ -144,6 +146,7 @@ CJoinOrderDPv2::~CJoinOrderDPv2()
 	m_top_k_expressions->Release();
 	m_join_levels->Release();
 	m_on_pred_conjuncts->Release();
+	m_outer_refs->Release();
 #endif // GPOS_DEBUG
 }
 
@@ -652,39 +655,47 @@ CJoinOrderDPv2::AddExprToGroupIfNecessary
 void
 CJoinOrderDPv2::PopulateExpressionToEdgeMapIfNeeded()
 {
-	if (0 == m_child_pred_indexes->Size())
-	{
-		// all inner joins, all predicates will be placed
-		return;
-	}
-
 	BOOL populate = false;
-	// make a bitset b with all the LOJ right children
-	CBitSet *loj_right_children = GPOS_NEW(m_mp) CBitSet(m_mp);
 
-	for (ULONG c=0; c<m_child_pred_indexes->Size(); c++)
+	if (0 < m_outer_refs->Size())
 	{
-		if (0 < *((*m_child_pred_indexes)[c]))
-		{
-			loj_right_children->ExchangeSet(c);
-		}
+		// with outer refs we can get predicates like <col> = <outer ref>
+		// that are not real join predicates
+		populate = true;
 	}
 
-	for (ULONG en1 = 0; en1 < m_ulEdges; en1++)
+	if (!populate && NULL != m_child_pred_indexes)
 	{
-		SEdge *pedge = m_rgpedge[en1];
+		// check for WHERE predicates involving LOJ right children
 
-		if (pedge->m_loj_num == 0)
+		// make a bitset b with all the LOJ right children
+		CBitSet *loj_right_children = GPOS_NEW(m_mp) CBitSet(m_mp);
+
+		for (ULONG c=0; c<m_child_pred_indexes->Size(); c++)
 		{
-			// check whether this inner join (WHERE) predicate refers to any LOJ right child
-			// (whether its bitset overlaps with b)
-			// or whether we see any local predicates (this should be uncommon)
-			if (!loj_right_children->IsDisjoint(pedge->m_pbs) || 1 == pedge->m_pbs->Size())
+			if (0 < *((*m_child_pred_indexes)[c]))
 			{
-				populate = true;
-				break;
+				loj_right_children->ExchangeSet(c);
 			}
 		}
+
+		for (ULONG en1 = 0; en1 < m_ulEdges; en1++)
+		{
+			SEdge *pedge = m_rgpedge[en1];
+
+			if (pedge->m_loj_num == 0)
+			{
+				// check whether this inner join (WHERE) predicate refers to any LOJ right child
+				// (whether its bitset overlaps with b)
+				// or whether we see any local predicates (this should be uncommon)
+				if (!loj_right_children->IsDisjoint(pedge->m_pbs) || 1 == pedge->m_pbs->Size())
+				{
+					populate = true;
+					break;
+				}
+			}
+		}
+		loj_right_children->Release();
 	}
 
 	if (populate)
@@ -700,8 +711,6 @@ CJoinOrderDPv2::PopulateExpressionToEdgeMapIfNeeded()
 			m_expression_to_edge_map->Insert(pedge->m_pexpr, pedge);
 		}
 	}
-
-	loj_right_children->Release();
 }
 
 
