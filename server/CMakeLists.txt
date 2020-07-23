@@ -299,7 +299,7 @@ CMCVCardinalityTest:
 BpCharMCVCardinalityEquals BpCharMCVCardinalityGreaterThan TextMCVCardinalityEquals TextMCVCardinalityGreaterThan VarcharMCVCardinalityEquals VarcharMCVCardinalityGreaterThan Citext-Cardinality Name-Cardinality Char-Cardinality;
 
 CSubquery2Test:
-Subq2PartialDecorrelate
+Subq2PartialDecorrelate Subq2CorrSQInLOJOn Subq2NotInWhereLOJ
 ")
 
 set(mdp_dir "../data/dxl/minidump/")
