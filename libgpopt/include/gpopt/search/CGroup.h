@@ -205,7 +205,7 @@ namespace gpopt
 			// scalar expression for stat derivation (subqueries substituted with a dummy)
 			CExpression *m_pexprScalarRep;
 
-			// scalar expression above is an exact version of the scalar expr in the group
+			// scalar expression above is exactly the same as the scalar expr in the group
 			BOOL m_pexprScalarRepIsExact;
 
 			// dummy cost context used in scalar groups for plan enumeration

@@ -1399,11 +1399,10 @@ CExpressionHandle::DeriveProducerStats
 }
 
 //---------------------------------------------------------------------------
-//	@function:
-//		CExpressionHandle::PexprScalarRepChild
+// CExpressionHandle::PexprScalarRepChild
 //
-//	@doc:
-//		Get the scalar child at given index
+// Get a representative (inexact) scalar child at given index. Subqueries
+// in the child are replaced by a TRUE or NULL constant.
 //
 //---------------------------------------------------------------------------
 CExpression *
@@ -1445,14 +1444,13 @@ CExpressionHandle::PexprScalarRepChild
 
 
 //---------------------------------------------------------------------------
-//	@function:
-//		CExpressionHandle::PexprScalarRep
+// CExpressionHandle::PexprScalarRep
 //
-//	@doc:
-//		Get a representative scalar expression attached to handle,
-//		return NULL if handle is not attached to a scalar expression.
-//		Note that this may be inexact if handle is attached to a
-//		CGroupExpression
+// Get a representative scalar expression attached to handle,
+// return NULL if handle is not attached to a scalar expression.
+// Note that this may be inexact if handle is attached to a
+// CGroupExpression - subqueries will be replaced by a TRUE or NULL
+// constant.
 //
 //---------------------------------------------------------------------------
 CExpression *

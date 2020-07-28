@@ -269,31 +269,7 @@ CLogicalSequenceProject::DeriveOuterReferences
 }
 
 //---------------------------------------------------------------------------
-//	@function:
-//		CLogicalSequenceProject::FHasLocalOuterRefs
-//
-//	@doc:
-//		Return true if outer references are included in Partition/Order,
-//		or window frame edges
-//
-//---------------------------------------------------------------------------
-BOOL
-CLogicalSequenceProject::FHasLocalOuterRefs
-	(
-	CExpressionHandle &exprhdl
-	)
-	const
-{
-	GPOS_ASSERT(this == exprhdl.Pop());
-
-	CColRefSet *outer_refs = exprhdl.DeriveOuterReferences();
-
-	return !(outer_refs->IsDisjoint(m_pcrsLocalUsed));
-}
-
-
-//---------------------------------------------------------------------------
-// CLogicalSequenceProject::FHasReferencesTo
+// CLogicalSequenceProject::FHasLocalReferencesTo
 //
 // Return true if Partition/Order or window frame edges reference one of
 // the provided ColRefs
