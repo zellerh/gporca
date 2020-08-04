@@ -14,6 +14,7 @@
 #include "gpos/base.h"
 #include "gpos/common/CRefCount.h"
 #include "gpos/common/clibwrapper.h"
+#include "gpos/common/OsPrintTrait.h"
 
 namespace gpos
 {
@@ -369,6 +370,16 @@ namespace gpos
 					result->Append((*this)[*((*indexes_to_choose)[i])]);
 				}
 				return result;
+			}
+
+			virtual
+			IOstream &OsPrint(IOstream &os) const
+			{
+				for (ULONG ul=0; ul<m_size; ul++)
+				{
+					OsPrintTrait<T>::OsPrintElem(os, (*this)[ul], (0 < ul));
+				}
+				return os;
 			}
 
 	}; // class CDynamicPtrArray
