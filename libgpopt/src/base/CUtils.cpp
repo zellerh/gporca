@@ -1917,30 +1917,47 @@ CUtils::PexprScalarConstNull(CMemoryPool *mp, const IMDType *typ, INT type_modif
 	IDatum *datum = NULL;
 	IMDId *mdid = typ->MDId();
 	mdid->AddRef();
+	CMDAccessor *md_accessor = COptCtxt::PoctxtFromTLS()->Pmda();
 
 	switch (typ->GetDatumType())
 	{
 		case IMDType::EtiInt2:
-			datum = GPOS_NEW(mp) CDatumInt2GPDB(mdid, 0, true);
+			{
+				const IMDTypeInt2 *pmdtypeint2 = md_accessor->PtMDType<IMDTypeInt2>();
+				datum =  pmdtypeint2->CreateInt2Datum(mp, 0, true);
+			}
 			break;
 
 		case IMDType::EtiInt4:
-			datum = GPOS_NEW(mp) CDatumInt4GPDB(mdid, 0, true);
+			{
+				const IMDTypeInt4 *pmdtypeint4 = md_accessor->PtMDType<IMDTypeInt4>();
+				datum =  pmdtypeint4->CreateInt4Datum(mp, 0, true);
+			}
 			break;
 
 		case IMDType::EtiInt8:
-			datum = GPOS_NEW(mp) CDatumInt8GPDB(mdid, 0, true);
+			{
+				const IMDTypeInt8 *pmdtypeint8 = md_accessor->PtMDType<IMDTypeInt8>();
+				datum =  pmdtypeint8->CreateInt8Datum(mp, 0, true);
+			}
 			break;
 
 		case IMDType::EtiBool:
-			datum = GPOS_NEW(mp) CDatumBoolGPDB(mdid, true, true);
+			{
+				const IMDTypeBool *pmdtypebool = md_accessor->PtMDType<IMDTypeBool>();
+				datum =  pmdtypebool->CreateBoolDatum(mp, false, true);
+			}
 			break;
 
 		case IMDType::EtiOid:
-			datum = GPOS_NEW(mp) CDatumOidGPDB(mdid, 0, true);
+			{
+				const IMDTypeOid *pmdtypeoid = md_accessor->PtMDType<IMDTypeOid>();
+				datum =  pmdtypeoid->CreateOidDatum(mp, 0, true);
+			}
 			break;
 
 		case IMDType::EtiGeneric:
+			// sorry, no IMDType interface to generate a generic datum
 			datum = GPOS_NEW(mp) CDatumGenericGPDB
 									(
 									 mp,

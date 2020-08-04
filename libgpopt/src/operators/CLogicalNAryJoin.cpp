@@ -266,7 +266,8 @@ CLogicalNAryJoin::GetTrueInnerJoinPreds(CMemoryPool *mp, CExpressionHandle &expr
 
 	if (NULL == pexprScalar)
 	{
-		// can't determine the true inner join preds, as there is no exact scalar expression available
+		// can't determine the true inner join preds, as there is no exact scalar
+		// expression available and this method is expected to return an exact expression
 		return NULL;
 	}
 

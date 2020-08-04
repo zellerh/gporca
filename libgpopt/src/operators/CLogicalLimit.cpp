@@ -223,6 +223,7 @@ CLogicalLimit::DeriveMaxCard
 	)
 	const
 {
+	// max card is a precise property, so we need an exact scalar expr to derive it
 	CExpression *pexprCount = exprhdl.PexprScalarExactChild(2 /*child_index*/);
 
 	if (NULL != pexprCount && CUtils::FScalarConstInt<IMDTypeInt8>(pexprCount) && !pexprCount->DeriveHasSubquery())
