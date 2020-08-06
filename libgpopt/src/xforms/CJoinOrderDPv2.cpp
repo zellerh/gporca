@@ -648,8 +648,9 @@ CJoinOrderDPv2::AddExprToGroupIfNecessary
 //		we'll create a map from expressions to edges, so that we can find any
 //		unused edges to be placed in a select node on top of the join.
 //
-//		Example:
+//		Examples:
 //		select * from foo left join bar on foo.a=bar.a where coalesce(bar.b, 0) < 10;
+//		select * from foo left join bar on foo.a=bar.a where foo.a = outer_ref;
 //
 //---------------------------------------------------------------------------
 void

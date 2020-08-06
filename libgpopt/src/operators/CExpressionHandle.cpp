@@ -1402,7 +1402,8 @@ CExpressionHandle::DeriveProducerStats
 // CExpressionHandle::PexprScalarRepChild
 //
 // Get a representative (inexact) scalar child at given index. Subqueries
-// in the child are replaced by a TRUE or NULL constant.
+// in the child are replaced by a TRUE or NULL constant. Use this method
+// where exactness is not required, e. g. for statistics derivation.
 //
 //---------------------------------------------------------------------------
 CExpression *
@@ -1450,7 +1451,8 @@ CExpressionHandle::PexprScalarRepChild
 // return NULL if handle is not attached to a scalar expression.
 // Note that this may be inexact if handle is attached to a
 // CGroupExpression - subqueries will be replaced by a TRUE or NULL
-// constant.
+// constant. Use this method where exactness is not required, e. g.
+// for statistics derivation.
 //
 //---------------------------------------------------------------------------
 CExpression *
@@ -1476,6 +1478,7 @@ CExpressionHandle::PexprScalarRep() const
 
 
 // return an exact scalar child at given index or return null if not possible
+// (use this where exactness is required, e.g. for constraint derivation)
 CExpression *
 CExpressionHandle::PexprScalarExactChild(ULONG child_index) const
 {
@@ -1497,6 +1500,7 @@ CExpressionHandle::PexprScalarExactChild(ULONG child_index) const
 }
 
 // return an exact scalar expression attached to handle or null if not possible
+// (use this where exactness is required, e.g. for constraint derivation)
 CExpression *
 CExpressionHandle::PexprScalarExact() const
 {

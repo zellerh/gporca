@@ -36,12 +36,7 @@
 #include "gpopt/operators/CExpressionPreprocessor.h"
 
 #include "naucrates/exception.h"
-#include "naucrates/base/CDatumBoolGPDB.h"
 #include "naucrates/base/CDatumGenericGPDB.h"
-#include "naucrates/base/CDatumInt2GPDB.h"
-#include "naucrates/base/CDatumInt4GPDB.h"
-#include "naucrates/base/CDatumInt8GPDB.h"
-#include "naucrates/base/CDatumOidGPDB.h"
 #include "naucrates/base/IDatumInt2.h"
 #include "naucrates/base/IDatumInt4.h"
 #include "naucrates/base/IDatumInt8.h"
@@ -51,6 +46,7 @@
 #include "naucrates/md/IMDScCmp.h"
 #include "naucrates/md/IMDType.h"
 #include "naucrates/md/IMDTypeBool.h"
+#include "naucrates/md/IMDTypeInt2.h"
 #include "naucrates/md/IMDTypeInt4.h"
 #include "naucrates/md/IMDTypeInt8.h"
 #include "naucrates/md/IMDTypeOid.h"
@@ -1973,7 +1969,7 @@ CUtils::PexprScalarConstNull(CMemoryPool *mp, const IMDType *typ, INT type_modif
 
 		default:
 			// shouldn't come here
-			GPOS_RTL_ASSERT(0);
+			GPOS_RTL_ASSERT(!"Invalid operator type");
 	}
 
 	return GPOS_NEW(mp) CExpression(mp, GPOS_NEW(mp) CScalarConst(mp, datum));
