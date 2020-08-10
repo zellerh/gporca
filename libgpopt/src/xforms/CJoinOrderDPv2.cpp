@@ -318,6 +318,13 @@ CJoinOrderDPv2::GetJoinExpr
 	)
 {
 	SGroupInfo *left_group_info      = left_child_expr.m_group_info;
+
+	if (IsRightChildOfNIJ(left_group_info))
+	{
+		// can't use the right child of an NIJ on the left side
+		return NULL;
+	}
+
 	SExpressionInfo *left_expr_info  = left_child_expr.GetExprInfo();
 	SGroupInfo *right_group_info     = right_child_expr.m_group_info;
 	SExpressionInfo *right_expr_info = right_child_expr.GetExprInfo();
@@ -1495,8 +1502,8 @@ CJoinOrderDPv2::IsRightChildOfNIJ
 	 CBitSet **requiredBitsOnLeft
 	)
 {
-	*onPredToUse = NULL;
-	*requiredBitsOnLeft = NULL;
+	GPOS_ASSERT(NULL == onPredToUse || NULL == *onPredToUse);
+	GPOS_ASSERT(NULL == requiredBitsOnLeft || NULL == *requiredBitsOnLeft);
 
 	if (1 != groupInfo->m_atoms->Size() || 0 == m_on_pred_conjuncts->Size())
 	{
@@ -1517,10 +1524,16 @@ CJoinOrderDPv2::IsRightChildOfNIJ
 	if (GPOPT_ZERO_INNER_JOIN_PRED_INDEX != childPredIndex)
 	{
 		// this non-join vertex component is the right child of an
-		// NIJ, return the ON predicate to use and also return TRUE
-		*onPredToUse = (*m_on_pred_conjuncts)[childPredIndex-1];
-		// also return the required minimal component on the left side of the join
-		*requiredBitsOnLeft = (*m_non_inner_join_dependencies)[childPredIndex-1];
+		// NIJ, return the ON predicate to use (if requested) and also return TRUE
+		if (NULL != onPredToUse)
+		{
+			*onPredToUse = (*m_on_pred_conjuncts)[childPredIndex-1];
+		}
+		if (NULL != requiredBitsOnLeft)
+		{
+			// also return the required minimal component on the left side of the join
+			*requiredBitsOnLeft = (*m_non_inner_join_dependencies)[childPredIndex-1];
+		}
 		return true;
 	}
 

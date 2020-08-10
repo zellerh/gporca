@@ -638,8 +638,8 @@ namespace gpopt
 			BOOL
 			IsRightChildOfNIJ
 				(SGroupInfo *groupInfo,
-				 CExpression **onPredToUse,
-				 CBitSet **requiredBitsOnLeft
+				 CExpression **onPredToUse = NULL,
+				 CBitSet **requiredBitsOnLeft = NULL
 				);
 
 			// print function
