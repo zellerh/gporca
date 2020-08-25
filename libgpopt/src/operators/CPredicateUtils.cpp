@@ -2427,7 +2427,7 @@ CPredicateUtils::PexprRemoveImpliedConjuncts
 			newChildren->Append(PexprRemoveImpliedConjuncts(mp, (*pexprScalar)[c], exprhdl));
 		}
 
-		// reassemble the CScalarNAryJoinPredList with its new children without outer refs
+		// reassemble the CScalarNAryJoinPredList with its new children without implied conjuncts
 		pexprScalar->Pop()->AddRef();
 
 		return GPOS_NEW(mp) CExpression(mp, pexprScalar->Pop(), newChildren);

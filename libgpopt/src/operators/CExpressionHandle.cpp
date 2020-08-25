@@ -1403,7 +1403,8 @@ CExpressionHandle::DeriveProducerStats
 //
 // Get a representative (inexact) scalar child at given index. Subqueries
 // in the child are replaced by a TRUE or NULL constant. Use this method
-// where exactness is not required, e. g. for statistics derivation.
+// where exactness is not required, e. g. for statistics derivation,
+// costing, or for heuristics.
 //
 //---------------------------------------------------------------------------
 CExpression *
@@ -1452,7 +1453,7 @@ CExpressionHandle::PexprScalarRepChild
 // Note that this may be inexact if handle is attached to a
 // CGroupExpression - subqueries will be replaced by a TRUE or NULL
 // constant. Use this method where exactness is not required, e. g.
-// for statistics derivation.
+// for statistics derivation, costing, or for heuristics.
 //
 //---------------------------------------------------------------------------
 CExpression *
