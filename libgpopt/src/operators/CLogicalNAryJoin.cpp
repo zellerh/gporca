@@ -348,6 +348,7 @@ CLogicalNAryJoin::ReplaceInnerJoinPredicates
 
 	if (EopScalarNAryJoinPredList == pop->Eopid())
 	{
+		GPOS_ASSERT(NULL != m_lojChildPredIndexes);
 		// this requires a bit of surgery, make a new copy of the
 		// CScalarNAryJoinPredList with the first child replaced
 		CExpressionArray *new_children = GPOS_NEW(mp) CExpressionArray(mp);
@@ -369,6 +370,8 @@ CLogicalNAryJoin::ReplaceInnerJoinPredicates
 
 	// with all inner joins it's a total replacement, just return the inner join preds
 	// (caller should have passed us a ref count which they now get back from us)
+	GPOS_ASSERT(NULL == m_lojChildPredIndexes);
+
 	return new_inner_join_preds;
 }
 
