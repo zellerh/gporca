@@ -23,6 +23,7 @@
 #include "gpopt/operators/CPhysicalMotion.h"
 #include "gpopt/operators/CPhysicalPartitionSelector.h"
 #include "gpopt/operators/CPredicateUtils.h"
+#include "gpopt/operators/CScalarBitmapIndexProbe.h"
 #include "naucrates/statistics/CStatisticsUtils.h"
 #include "gpopt/operators/CExpression.h"
 #include "gpdbcost/CCostModelGPDB.h"
@@ -1597,6 +1598,10 @@ CCostModelGPDB::CostBitmapTableScan(CMemoryPool *mp, CExpressionHandle &exprhdl,
 	CColRefSet *pcrsUsed = pexprIndexCond->DeriveUsedColumns();
 	CColRefSet *outerRefs = exprhdl.DeriveOuterReferences();
 	CColRefSet *pcrsLocalUsed = GPOS_NEW(mp) CColRefSet(mp, *pcrsUsed);
+	BOOL isInPredOnBtreeIndex =
+		(COperator::EopScalarBitmapIndexProbe == pexprIndexCond->Pop()->Eopid() &&
+		 COperator::EopScalarArrayCmp == (*pexprIndexCond)[0]->Pop()->Eopid() &&
+		 IMDIndex::EmdindBtree == CScalarBitmapIndexProbe::PopConvert(pexprIndexCond->Pop())->Pindexdesc()->IndexType());
 
 	// subtract outer references from the used colrefs, so we can see
 	// how many colrefs are used for this table
@@ -1611,9 +1616,15 @@ CCostModelGPDB::CostBitmapTableScan(CMemoryPool *mp, CExpressionHandle &exprhdl,
 
 	if (COperator::EopScalarBitmapIndexProbe !=
 			pexprIndexCond->Pop()->Eopid() ||
-		1 < pcrsLocalUsed->Size())
+		1 < pcrsLocalUsed->Size() ||
+		(isInPredOnBtreeIndex && rows > 2.0))
 	{
-		// child is Bitmap AND/OR, or we use Multi column index
+		// Child is Bitmap AND/OR, or we use Multi column index or this is an IN predicate.
+		// Handling the IN predicate in this code path is to avoid plan regressions from
+		// earlier versions of the code that treated IN predicates like ORs and therefore
+		// also handled them in this code path. This is especially noticeable for btree
+		// indexes that often have a high NDV, because the small/large NDV cost model
+		// produces very high estimates for cases with a higher NDV.
 		const CDouble dIndexFilterCostUnit =
 			pcmgpdb->GetCostModelParams()
 				->PcpLookup(CCostModelParamsGPDB::EcpIndexFilterCostUnit)
