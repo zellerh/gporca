@@ -1598,10 +1598,16 @@ CCostModelGPDB::CostBitmapTableScan(CMemoryPool *mp, CExpressionHandle &exprhdl,
 	CColRefSet *pcrsUsed = pexprIndexCond->DeriveUsedColumns();
 	CColRefSet *outerRefs = exprhdl.DeriveOuterReferences();
 	CColRefSet *pcrsLocalUsed = GPOS_NEW(mp) CColRefSet(mp, *pcrsUsed);
+	IMDIndex::EmdindexType indexType = IMDIndex::EmdindSentinel;
+
+	if (COperator::EopScalarBitmapIndexProbe == pexprIndexCond->Pop()->Eopid())
+	{
+		indexType = CScalarBitmapIndexProbe::PopConvert(pexprIndexCond->Pop())->Pindexdesc()->IndexType();
+	}
+
 	BOOL isInPredOnBtreeIndex =
-		(COperator::EopScalarBitmapIndexProbe == pexprIndexCond->Pop()->Eopid() &&
-		 COperator::EopScalarArrayCmp == (*pexprIndexCond)[0]->Pop()->Eopid() &&
-		 IMDIndex::EmdindBtree == CScalarBitmapIndexProbe::PopConvert(pexprIndexCond->Pop())->Pindexdesc()->IndexType());
+		(IMDIndex::EmdindBtree == indexType &&
+		 COperator::EopScalarArrayCmp == (*pexprIndexCond)[0]->Pop()->Eopid());
 
 	// subtract outer references from the used colrefs, so we can see
 	// how many colrefs are used for this table
@@ -1617,9 +1623,10 @@ CCostModelGPDB::CostBitmapTableScan(CMemoryPool *mp, CExpressionHandle &exprhdl,
 	if (COperator::EopScalarBitmapIndexProbe !=
 			pexprIndexCond->Pop()->Eopid() ||
 		1 < pcrsLocalUsed->Size() ||
-		(isInPredOnBtreeIndex && rows > 2.0))
+		(isInPredOnBtreeIndex && rows > 2.0 && !GPOS_FTRACE(EopttraceCalibratedBitmapIndexCostModel)))
 	{
-		// Child is Bitmap AND/OR, or we use Multi column index or this is an IN predicate.
+		// Child is Bitmap AND/OR, or we use Multi column index or this is an IN predicate
+		// that's used with the "calibrated" cost model.
 		// Handling the IN predicate in this code path is to avoid plan regressions from
 		// earlier versions of the code that treated IN predicates like ORs and therefore
 		// also handled them in this code path. This is especially noticeable for btree
@@ -1661,6 +1668,11 @@ CCostModelGPDB::CostBitmapTableScan(CMemoryPool *mp, CExpressionHandle &exprhdl,
 		// if the expression is const table get, the pcrsUsed is empty
 		// so we use minimum value MinDistinct for dNDV in that case.
 		CDouble dNDV = CHistogram::MinDistinct;
+		CDouble dNDVThreshold =
+			pcmgpdb->GetCostModelParams()
+				->PcpLookup(CCostModelParamsGPDB::EcpBitmapNDVThreshold)
+				->Get();
+
 		if (rows < 1.0)
 		{
 			// if we aren't accessing a row every rebind, then don't charge a cost for those cases where we don't have a row
@@ -1688,10 +1700,7 @@ CCostModelGPDB::CostBitmapTableScan(CMemoryPool *mp, CExpressionHandle &exprhdl,
 
 		if (!GPOS_FTRACE(EopttraceCalibratedBitmapIndexCostModel))
 		{
-			CDouble dNDVThreshold =
-				pcmgpdb->GetCostModelParams()
-					->PcpLookup(CCostModelParamsGPDB::EcpBitmapNDVThreshold)
-					->Get();
+			// optimizer_cost_model = 'calibrated'
 			if (dNDVThreshold <= dNDV)
 			{
 				result = CostBitmapLargeNDV(pcmgpdb, pci, dNDV);
@@ -1703,6 +1712,7 @@ CCostModelGPDB::CostBitmapTableScan(CMemoryPool *mp, CExpressionHandle &exprhdl,
 		}
 		else
 		{
+			// optimizer_cost_model = 'experimental'
 			CDouble dBitmapIO =
 				pcmgpdb->GetCostModelParams()
 					->PcpLookup(CCostModelParamsGPDB::EcpBitmapIOCostSmallNDV)
@@ -1711,36 +1721,41 @@ CCostModelGPDB::CostBitmapTableScan(CMemoryPool *mp, CExpressionHandle &exprhdl,
 				pcmgpdb->GetCostModelParams()
 					->PcpLookup(CCostModelParamsGPDB::EcpInitScanFactor)
 					->Get();
+			CDouble dBitmapPageCost = pcmgpdb->GetCostModelParams()
+					->PcpLookup(CCostModelParamsGPDB::EcpBitmapPageCost)
+					->Get();
+			BOOL isAOTable = CPhysicalScan::PopConvert(exprhdl.Pop())->Ptabdesc()->IsAORowOrColTable();
 
-			if (1 < pcrsUsed->Size())  // it is a join
+			if (IMDIndex::EmdindBtree == indexType)
 			{
-				// The numbers below were experimentally determined using regression analysis in the cal_bitmap_test.py script
-				// The following dSizeCost is in the form C1 * rows + C2 * rows * width. This is because the width should have
-				// significantly less weight than rows as the execution time does not grow as fast in regards to width
-				CDouble dSizeCost =
-					rows * (1 + std::max(width * 0.005, 1.0)) * 0.05;
-				result = CCost(	 // cost for each byte returned by the index scan plus cost for incremental rebinds
-					pci->NumRebinds() * (dBitmapIO * dSizeCost + dInitRebind) +
-					// the BitmapPageCost * dNDV takes into account the idea of multiple tuples being on the same page.
-					// If you have a small NDV, the likelihood of multiple tuples matching on one page is high and so the
-					// page cost is reduced. Even though the page cost will decrease, the cost of accessing each tuple will
-					// dominate. Likewise, if the NDV is large, the num of tuples matching per page is lower so the page
-					// cost should be higher
-					dInitScan * dNDV);
+				// btree indexes are not sensitive to the NDV, since they don't have any bitmaps
+				dBitmapPageCost = 0.0;
 			}
 			else
 			{
-				// The numbers below were experimentally determined using regression analysis in the cal_bitmap_test.py script
-				CDouble dSizeCost =
-					rows * (1 + std::max(width * 0.005, 1.0)) * 0.001;
-
-				result =
-					CCost(	// cost for each byte returned by the index scan plus cost for incremental rebinds
-						pci->NumRebinds() *
-							(dBitmapIO * dSizeCost + 10 * dInitRebind) * dNDV +
-						// similar to above, the dInitScan * dNDV takes into account the likelihood of multiple tuples per page
-						dInitScan * dNDV);
+				// we found that the bitmap IO cost default is too high for bitmap indexes,
+				// reduce it for the experimental cost model
+				dBitmapPageCost = dBitmapPageCost / 5.0;
 			}
+
+			// The numbers below were experimentally determined using regression analysis in the cal_bitmap_test.py script
+			// The following dSizeCost is in the form C1 * rows + C2 * rows * width. This is because the width should have
+			// significantly less weight than rows as the execution time does not grow as fast in regards to width
+			CDouble dSizeCost = dBitmapIO * (rows * 0.03 + rows * width * 0.0001);
+
+			CDouble bitmapUnionCost = 0;
+
+			if (!isAOTable && indexType == IMDIndex::EmdindBitmap && dNDV > 1.0)
+			{
+				CDouble baseTableRows = CPhysicalScan::PopConvert(exprhdl.Pop())->PstatsBaseTable()->Rows();
+
+				// for bitmap index scans on heap tables, we found that there is an additional cost
+				// associated with unioning them that is proportional to the number of bitmaps involved
+				// (dNDV-1) times the width of the bitmap (proportional to the number of rows in the table)
+				bitmapUnionCost = (dNDV - 1.0) * baseTableRows * 0.000027;
+			}
+
+			result = CCost(pci->NumRebinds() * (dSizeCost + dNDV * dBitmapPageCost + dInitRebind + bitmapUnionCost) + dInitScan);
 		}
 	}
 
